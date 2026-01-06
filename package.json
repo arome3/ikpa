@@ -1,0 +1,34 @@
+{
+  "name": "ikpa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-Powered Personal Finance Co-Pilot for Young Africans",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint -- --fix",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
+    "db:generate": "pnpm --filter api prisma generate",
+    "db:migrate": "pnpm --filter api prisma migrate dev",
+    "db:push": "pnpm --filter api prisma db push",
+    "db:studio": "pnpm --filter api prisma studio"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.19.1",
+    "@typescript-eslint/parser": "^8.19.1",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  }
+}
