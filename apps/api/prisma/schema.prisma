@@ -1,0 +1,474 @@
+// IKPA Database Schema
+// AI-Powered Personal Finance Co-Pilot for Young Africans
+//
+// This schema defines the PostgreSQL database structure using Prisma ORM.
+// Key features:
+// - UUID primary keys for security and distributed systems
+// - Decimal type for monetary values (avoids floating-point errors)
+// - Africa-specific features: family support, ajo/susu savings
+// - Multi-currency support for African currencies
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Country {
+  NIGERIA
+  GHANA
+  KENYA
+  SOUTH_AFRICA
+  EGYPT
+  OTHER
+}
+
+enum Currency {
+  NGN // Nigerian Naira
+  GHS // Ghanaian Cedi
+  KES // Kenyan Shilling
+  ZAR // South African Rand
+  EGP // Egyptian Pound
+  USD // US Dollar
+}
+
+enum EmploymentType {
+  EMPLOYED
+  SELF_EMPLOYED
+  FREELANCER
+  BUSINESS_OWNER
+  STUDENT
+  UNEMPLOYED
+  OTHER
+}
+
+enum IncomeType {
+  SALARY
+  FREELANCE
+  BUSINESS
+  INVESTMENT
+  RENTAL
+  ALLOWANCE
+  GIFT
+  OTHER
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+  ONE_TIME
+}
+
+enum SavingsType {
+  BANK_ACCOUNT
+  MOBILE_MONEY
+  CASH
+  FIXED_DEPOSIT
+  AJO_SUSU // Traditional African rotating savings
+  COOPERATIVE
+  OTHER
+}
+
+enum InvestmentType {
+  STOCKS
+  BONDS
+  MUTUAL_FUNDS
+  REAL_ESTATE
+  CRYPTO
+  PENSION
+  OTHER
+}
+
+enum DebtType {
+  BANK_LOAN
+  CREDIT_CARD
+  BNPL // Buy Now Pay Later
+  PERSONAL_LOAN
+  MORTGAGE
+  STUDENT_LOAN
+  BUSINESS_LOAN
+  OTHER
+}
+
+enum RelationshipType {
+  PARENT
+  SIBLING
+  EXTENDED_FAMILY
+  SPOUSE
+  CHILD
+  FRIEND
+  COMMUNITY
+  OTHER
+}
+
+enum GoalCategory {
+  EMERGENCY_FUND
+  SAVINGS
+  INVESTMENT
+  DEBT_PAYOFF
+  MAJOR_PURCHASE
+  EDUCATION
+  TRAVEL
+  FAMILY
+  BUSINESS
+  RETIREMENT
+  OTHER
+}
+
+enum GoalStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+/// Core user profile with authentication and preferences
+model User {
+  id                   String          @id @default(uuid())
+  email                String          @unique
+  passwordHash         String?
+  name                 String
+  country              Country         @default(NIGERIA)
+  currency             Currency        @default(NGN)
+  timezone             String          @default("Africa/Lagos")
+  dateOfBirth          DateTime?
+  employmentType       EmploymentType?
+  onboardingCompleted  Boolean         @default(false)
+  notificationsEnabled Boolean         @default(true)
+  weeklyReportEnabled  Boolean         @default(true)
+  lastLoginAt          DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  // OAuth providers
+  googleId String? @unique
+  appleId  String? @unique
+
+  // Password reset
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+
+  // Relations
+  incomeSources   IncomeSource[]
+  expenses        Expense[]
+  savingsAccounts SavingsAccount[]
+  investments     Investment[]
+  debts           Debt[]
+  familySupport   FamilySupport[]
+  goals           Goal[]
+  snapshots       FinancialSnapshot[]
+  refreshTokens   RefreshToken[]
+  aiConversations AIConversation[]
+
+  @@index([email])
+  @@index([country])
+  @@map("users")
+}
+
+/// JWT refresh tokens for authentication
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+/// Income sources - salary, freelance, business, etc.
+model IncomeSource {
+  id                 String     @id @default(uuid())
+  userId             String
+  name               String
+  type               IncomeType
+  amount             Decimal    @db.Decimal(15, 2)
+  currency           Currency   @default(NGN)
+  frequency          Frequency
+  variancePercentage Int        @default(0) // For irregular income tracking
+  description        String?
+  isActive           Boolean    @default(true)
+  startDate          DateTime   @default(now())
+  endDate            DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@map("income_sources")
+}
+
+/// System and custom expense categories
+model ExpenseCategory {
+  id        String   @id @default(uuid())
+  name      String
+  icon      String
+  color     String
+  isDefault Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  expenses Expense[]
+
+  @@map("expense_categories")
+}
+
+/// Individual expense transactions
+model Expense {
+  id          String     @id @default(uuid())
+  userId      String
+  categoryId  String
+  amount      Decimal    @db.Decimal(15, 2)
+  currency    Currency   @default(NGN)
+  date        DateTime
+  description String?
+  merchant    String?
+  isRecurring Boolean    @default(false)
+  frequency   Frequency?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([userId, categoryId])
+  @@index([userId, isRecurring])
+  @@map("expenses")
+}
+
+/// Savings accounts - bank, mobile money, ajo/susu
+model SavingsAccount {
+  id              String      @id @default(uuid())
+  userId          String
+  name            String
+  type            SavingsType
+  balance         Decimal     @db.Decimal(15, 2)
+  currency        Currency    @default(NGN)
+  interestRate    Decimal?    @db.Decimal(5, 2)
+  institution     String?
+  accountNumber   String? // Last 4 digits only for security
+  isEmergencyFund Boolean     @default(false)
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@map("savings_accounts")
+}
+
+/// Investment holdings - stocks, crypto, real estate, etc.
+model Investment {
+  id           String         @id @default(uuid())
+  userId       String
+  name         String
+  type         InvestmentType
+  value        Decimal        @db.Decimal(15, 2)
+  currency     Currency       @default(NGN)
+  costBasis    Decimal?       @db.Decimal(15, 2)
+  institution  String?
+  notes        String?
+  isActive     Boolean        @default(true)
+  purchaseDate DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@map("investments")
+}
+
+/// Debt obligations - loans, credit cards, BNPL
+model Debt {
+  id               String   @id @default(uuid())
+  userId           String
+  name             String
+  type             DebtType
+  originalAmount   Decimal  @db.Decimal(15, 2)
+  remainingBalance Decimal  @db.Decimal(15, 2)
+  currency         Currency @default(NGN)
+  interestRate     Decimal  @db.Decimal(5, 2)
+  minimumPayment   Decimal  @db.Decimal(15, 2)
+  dueDate          Int? // Day of month (1-31)
+  institution      String?
+  notes            String?
+  isActive         Boolean  @default(true)
+  startDate        DateTime
+  targetPayoffDate DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@map("debts")
+}
+
+/// Family support obligations - unique to African context
+model FamilySupport {
+  id           String           @id @default(uuid())
+  userId       String
+  name         String // "Mom", "Brother Emeka", etc.
+  relationship RelationshipType
+  amount       Decimal          @db.Decimal(15, 2)
+  currency     Currency         @default(NGN)
+  frequency    Frequency
+  description  String?
+  isActive     Boolean          @default(true)
+  startDate    DateTime         @default(now())
+  endDate      DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@map("family_support")
+}
+
+/// Financial goals with progress tracking
+model Goal {
+  id            String       @id @default(uuid())
+  userId        String
+  name          String
+  description   String?
+  category      GoalCategory
+  targetAmount  Decimal      @db.Decimal(15, 2)
+  currentAmount Decimal      @db.Decimal(15, 2) @default(0)
+  currency      Currency     @default(NGN)
+  targetDate    DateTime?
+  priority      Int          @default(0)
+  status        GoalStatus   @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contributions GoalContribution[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@map("goals")
+}
+
+/// Goal contribution history
+model GoalContribution {
+  id        String   @id @default(uuid())
+  goalId    String
+  amount    Decimal  @db.Decimal(15, 2)
+  date      DateTime @default(now())
+  note      String?
+  createdAt DateTime @default(now())
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([goalId, date])
+  @@map("goal_contributions")
+}
+
+/// Point-in-time financial metrics snapshot
+model FinancialSnapshot {
+  id              String   @id @default(uuid())
+  userId          String
+  date            DateTime @default(now())
+
+  // Core metrics
+  cashFlowScore   Int // 0-100
+  savingsRate     Decimal  @db.Decimal(5, 2)
+  runwayMonths    Decimal  @db.Decimal(5, 2)
+  burnRate        Decimal  @db.Decimal(15, 2)
+  dependencyRatio Decimal  @db.Decimal(5, 2) // % of income supporting others
+
+  // Totals
+  netWorth      Decimal  @db.Decimal(15, 2)
+  totalIncome   Decimal  @db.Decimal(15, 2)
+  totalExpenses Decimal  @db.Decimal(15, 2)
+  totalSavings  Decimal  @db.Decimal(15, 2)
+  totalDebt     Decimal  @db.Decimal(15, 2)
+  totalAssets   Decimal  @db.Decimal(15, 2)
+  totalSupport  Decimal  @db.Decimal(15, 2)
+
+  currency  Currency @default(NGN)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, date])
+  @@map("financial_snapshots")
+}
+
+/// AI conversation containers
+model AIConversation {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AIMessage[]
+
+  @@index([userId])
+  @@index([userId, updatedAt])
+  @@map("ai_conversations")
+}
+
+/// Individual AI chat messages
+model AIMessage {
+  id             String   @id @default(uuid())
+  conversationId String
+  role           String // 'user' | 'assistant'
+  content        String   @db.Text
+  createdAt      DateTime @default(now())
+
+  conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("ai_messages")
+}
+
+/// Landing page waitlist entries
+model WaitlistEntry {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String?
+  country      Country?
+  referralCode String   @unique
+  referredBy   String?
+  source       String?
+  createdAt    DateTime @default(now())
+
+  @@index([email])
+  @@index([referralCode])
+  @@map("waitlist_entries")
+}

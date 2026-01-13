@@ -1,0 +1,47 @@
+/**
+ * API Error Codes
+ *
+ * Standardized error codes for consistent API error responses.
+ * Format: CATEGORY_NNNN where NNNN is a unique number within the category.
+ */
+export const ErrorCodes = {
+  // Authentication (1xxx)
+  AUTH_INVALID_CREDENTIALS: 'AUTH_1001',
+  AUTH_TOKEN_EXPIRED: 'AUTH_1002',
+  AUTH_TOKEN_INVALID: 'AUTH_1003',
+  AUTH_REFRESH_TOKEN_INVALID: 'AUTH_1004',
+  AUTH_UNAUTHORIZED: 'AUTH_1005',
+  AUTH_EMAIL_NOT_VERIFIED: 'AUTH_1006',
+  AUTH_EMAIL_EXISTS: 'AUTH_1007',
+
+  // Validation (2xxx)
+  VALIDATION_ERROR: 'VAL_2001',
+  VALIDATION_REQUIRED_FIELD: 'VAL_2002',
+  VALIDATION_INVALID_FORMAT: 'VAL_2003',
+  VALIDATION_INVALID_VALUE: 'VAL_2004',
+
+  // Resources (3xxx)
+  RESOURCE_NOT_FOUND: 'RES_3001',
+  RESOURCE_ALREADY_EXISTS: 'RES_3002',
+  RESOURCE_CONFLICT: 'RES_3003',
+  RESOURCE_FORBIDDEN: 'RES_3004',
+
+  // Rate Limiting (4xxx)
+  RATE_LIMIT_EXCEEDED: 'RATE_4001',
+
+  // AI Service (5xxx)
+  AI_SERVICE_ERROR: 'AI_5001',
+  AI_RATE_LIMIT: 'AI_5002',
+  AI_CONTEXT_TOO_LARGE: 'AI_5003',
+
+  // External Services (6xxx)
+  EXTERNAL_SERVICE_ERROR: 'EXT_6001',
+  EXTERNAL_SERVICE_TIMEOUT: 'EXT_6002',
+
+  // Server (9xxx)
+  INTERNAL_ERROR: 'SRV_9001',
+  SERVICE_UNAVAILABLE: 'SRV_9002',
+  DATABASE_ERROR: 'SRV_9003',
+} as const;
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
