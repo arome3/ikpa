@@ -132,3 +132,54 @@ export class InvalidFinancialDataException extends ApiException {
     );
   }
 }
+
+/**
+ * Thrown when the Monte Carlo simulation fails
+ *
+ * This can occur due to invalid input parameters, computational errors,
+ * or timeout during the 10,000 iteration simulation.
+ */
+export class SimulationCalculationException extends ApiException {
+  constructor(reason: string, details?: Record<string, unknown>) {
+    super(
+      ErrorCodes.FINANCE_SIMULATION_ERROR,
+      `Failed to run financial simulation: ${reason}`,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      details,
+    );
+  }
+}
+
+/**
+ * Thrown when simulation input parameters are invalid
+ *
+ * This validates that savings rates, income, and other parameters
+ * are within acceptable ranges before starting the simulation.
+ */
+export class InvalidSimulationInputException extends ApiException {
+  constructor(reason: string, details?: Record<string, unknown>) {
+    super(
+      ErrorCodes.FINANCE_INVALID_SIMULATION_INPUT,
+      `Invalid simulation parameters: ${reason}`,
+      HttpStatus.BAD_REQUEST,
+      details,
+    );
+  }
+}
+
+/**
+ * Thrown when a user has no active financial goals
+ *
+ * The simulation requires at least one goal to project
+ * goal achievement probability and timeline.
+ */
+export class NoActiveGoalException extends ApiException {
+  constructor(userId?: string) {
+    super(
+      ErrorCodes.FINANCE_NO_ACTIVE_GOAL,
+      'No active financial goal found. Please create a savings goal before running the simulation.',
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      userId ? { userId } : undefined,
+    );
+  }
+}

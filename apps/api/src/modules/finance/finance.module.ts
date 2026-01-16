@@ -4,7 +4,7 @@ import { UserModule } from '../user/user.module';
 import { FinanceService } from './finance.service';
 import { FinanceController } from './finance.controller';
 import { FinanceCronService } from './finance.cron';
-import { CashFlowScoreCalculator } from './calculators';
+import { CashFlowScoreCalculator, SimulationEngineCalculator } from './calculators';
 
 /**
  * Finance Module
@@ -16,6 +16,7 @@ import { CashFlowScoreCalculator } from './calculators';
  * - Financial snapshot management
  * - Score history and trend analysis
  * - Daily automated score calculations via cron
+ * - Monte Carlo simulation engine for financial projections
  *
  * Dependencies:
  * - PrismaModule: Database access for financial data
@@ -24,6 +25,7 @@ import { CashFlowScoreCalculator } from './calculators';
  *
  * Exports:
  * - FinanceService: For use in other modules (e.g., AI coaching)
+ * - SimulationEngineCalculator: For AI agents to run projections
  */
 @Module({
   imports: [
@@ -35,7 +37,8 @@ import { CashFlowScoreCalculator } from './calculators';
     FinanceService,
     FinanceCronService,
     CashFlowScoreCalculator,
+    SimulationEngineCalculator,
   ],
-  exports: [FinanceService],
+  exports: [FinanceService, SimulationEngineCalculator],
 })
 export class FinanceModule {}

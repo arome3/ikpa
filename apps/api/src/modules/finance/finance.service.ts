@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { subMonths, subDays, startOfDay, endOfDay, format } from 'date-fns';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CashFlowScoreCalculator } from './calculators/cash-flow-score.calculator';
+import { SimulationEngineCalculator } from './calculators/simulation-engine.calculator';
 import {
   CashFlowScoreResult,
   FinancialData,
@@ -11,6 +12,9 @@ import {
   MetricDetailResponse,
   getScoreLabel,
   getScoreColor,
+  SimulationInput,
+  SimulationOutput,
+  ECONOMIC_DEFAULTS,
 } from './interfaces';
 import {
   InsufficientFinancialDataException,
@@ -19,8 +23,10 @@ import {
   CurrencyMismatchException,
   UserNotFoundException,
   InvalidFinancialDataException,
+  NoActiveGoalException,
+  InvalidSimulationInputException,
 } from './exceptions';
-import { FinancialSnapshot, Currency } from '@prisma/client';
+import { FinancialSnapshot, Currency, Country } from '@prisma/client';
 
 /**
  * Valid metric names for the metrics endpoint
@@ -49,6 +55,7 @@ export class FinanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly calculator: CashFlowScoreCalculator,
+    private readonly simulationEngine: SimulationEngineCalculator,
   ) {}
 
   // ==========================================
@@ -1027,5 +1034,289 @@ export class FinanceService {
         currency: (user?.currency as Currency) ?? 'NGN',
       },
     });
+  }
+
+  // ==========================================
+  // SIMULATION METHODS
+  // ==========================================
+
+  /**
+   * Run simulation with user's default financial data
+   *
+   * Automatically builds simulation input from user's financial profile
+   * and active goal. Uses country-specific economic defaults.
+   */
+  async runDefaultSimulation(userId: string): Promise<SimulationOutput> {
+    await this.validateUserExists(userId);
+
+    const simulationInput = await this.buildSimulationInput(userId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { currency: true },
+    });
+
+    return this.simulationEngine.runDualPathSimulation(
+      userId,
+      simulationInput,
+      user?.currency ?? 'NGN',
+    );
+  }
+
+  /**
+   * Run simulation with custom parameters
+   *
+   * Allows users to run "what-if" scenarios by providing custom
+   * values instead of using their actual financial profile.
+   */
+  async runCustomSimulation(
+    userId: string,
+    customInput: {
+      currentSavingsRate: number;
+      monthlyIncome: number;
+      currentNetWorth: number;
+      goalAmount: number;
+      goalDeadline: string;
+      expectedReturnRate?: number;
+      inflationRate?: number;
+      incomeGrowthRate?: number;
+      monthlyExpenses?: number;
+      expenseGrowthRate?: number;
+      taxRateOnReturns?: number;
+      enableMarketRegimes?: boolean;
+      monthlyWithdrawal?: number;
+      goals?: Array<{ id?: string; name?: string; amount: number; deadline: string; priority?: number }>;
+      randomSeed?: number;
+    },
+  ): Promise<SimulationOutput> {
+    await this.validateUserExists(userId);
+
+    // Get user's country for default economic parameters
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { country: true, currency: true },
+    });
+
+    const defaults = this.getEconomicDefaults(user?.country);
+
+    // Validate input parameters
+    this.validateSimulationInput(customInput);
+
+    // Convert goals to proper format
+    const goals = customInput.goals?.map((g) => ({
+      id: g.id,
+      name: g.name,
+      amount: g.amount,
+      deadline: new Date(g.deadline),
+      priority: g.priority,
+    }));
+
+    const simulationInput: SimulationInput = {
+      currentSavingsRate: customInput.currentSavingsRate,
+      monthlyIncome: customInput.monthlyIncome,
+      monthlyExpenses: customInput.monthlyExpenses,
+      currentNetWorth: customInput.currentNetWorth,
+      goalAmount: customInput.goalAmount,
+      goalDeadline: new Date(customInput.goalDeadline),
+      goals,
+      expectedReturnRate: customInput.expectedReturnRate ?? defaults.expectedReturn,
+      inflationRate: customInput.inflationRate ?? defaults.inflationRate,
+      incomeGrowthRate: customInput.incomeGrowthRate ?? defaults.incomeGrowthRate,
+      expenseGrowthRate: customInput.expenseGrowthRate,
+      taxRateOnReturns: customInput.taxRateOnReturns,
+      enableMarketRegimes: customInput.enableMarketRegimes,
+      monthlyWithdrawal: customInput.monthlyWithdrawal,
+      randomSeed: customInput.randomSeed,
+    };
+
+    return this.simulationEngine.runDualPathSimulation(
+      userId,
+      simulationInput,
+      user?.currency ?? 'NGN',
+    );
+  }
+
+  /**
+   * Build simulation input from user's financial profile
+   *
+   * Aggregates data from income sources, savings accounts, debts,
+   * and active goals to create simulation input parameters.
+   *
+   * @param userId - User ID
+   * @param goalId - Optional specific goal ID (uses first active goal if not provided)
+   */
+  async buildSimulationInput(userId: string, goalId?: string): Promise<SimulationInput> {
+    // Fetch user data, financial profile, and goals in parallel
+    const [user, financialData, goals] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { country: true, currency: true },
+      }),
+      this.aggregateFinancialData(userId),
+      this.prisma.goal.findMany({
+        where: {
+          userId,
+          status: 'ACTIVE',
+          ...(goalId ? { id: goalId } : {}),
+        },
+        orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+        take: 1,
+      }),
+    ]);
+
+    // Require at least one active goal for simulation
+    if (goals.length === 0) {
+      throw new NoActiveGoalException(userId);
+    }
+
+    const goal = goals[0];
+
+    // Calculate savings rate from financial data
+    const monthlyIncome = Number(financialData.monthlyIncome);
+    const monthlySavings = Number(financialData.monthlySavings);
+    const currentSavingsRate = monthlyIncome > 0 ? monthlySavings / monthlyIncome : 0;
+
+    // Calculate current net worth
+    const currentNetWorth = Number(financialData.liquidSavings) - Number(financialData.totalDebt);
+
+    // Get economic defaults based on user's country
+    const defaults = this.getEconomicDefaults(user?.country);
+
+    // Use goal's target date or default to 5 years from now
+    const goalDeadline = goal.targetDate ?? new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000);
+
+    return {
+      currentSavingsRate: Math.max(0, Math.min(1, currentSavingsRate)), // Clamp to 0-1
+      monthlyIncome,
+      currentNetWorth,
+      goalAmount: Number(goal.targetAmount),
+      goalDeadline,
+      expectedReturnRate: defaults.expectedReturn,
+      inflationRate: defaults.inflationRate,
+      incomeGrowthRate: defaults.incomeGrowthRate,
+    };
+  }
+
+  /**
+   * Get economic defaults based on user's country
+   */
+  private getEconomicDefaults(country?: Country | null): {
+    inflationRate: number;
+    expectedReturn: number;
+    incomeGrowthRate: number;
+  } {
+    if (!country) {
+      return ECONOMIC_DEFAULTS.DEFAULT;
+    }
+
+    // Map Prisma Country enum to ECONOMIC_DEFAULTS keys
+    const countryKey = country.toString().toUpperCase();
+    return ECONOMIC_DEFAULTS[countryKey] ?? ECONOMIC_DEFAULTS.DEFAULT;
+  }
+
+  /**
+   * Validate simulation input parameters
+   */
+  private validateSimulationInput(input: {
+    currentSavingsRate: number;
+    monthlyIncome: number;
+    currentNetWorth: number;
+    goalAmount: number;
+    goalDeadline: string;
+    expectedReturnRate?: number;
+    inflationRate?: number;
+    incomeGrowthRate?: number;
+    monthlyExpenses?: number;
+    expenseGrowthRate?: number;
+    taxRateOnReturns?: number;
+    monthlyWithdrawal?: number;
+    goals?: Array<{ amount: number; deadline: string }>;
+  }): void {
+    const issues: string[] = [];
+
+    // Validate savings rate
+    if (input.currentSavingsRate < 0 || input.currentSavingsRate > 1) {
+      issues.push('Savings rate must be between 0 and 1');
+    }
+
+    // Validate monthly income
+    if (input.monthlyIncome <= 0) {
+      issues.push('Monthly income must be positive');
+    }
+
+    // Validate goal amount
+    if (input.goalAmount <= 0) {
+      issues.push('Goal amount must be positive');
+    }
+
+    // Validate goal deadline
+    const deadline = new Date(input.goalDeadline);
+    if (isNaN(deadline.getTime())) {
+      issues.push('Goal deadline must be a valid date');
+    } else if (deadline <= new Date()) {
+      issues.push('Goal deadline must be in the future');
+    }
+
+    // Validate optional rates
+    if (input.expectedReturnRate !== undefined) {
+      if (input.expectedReturnRate < 0 || input.expectedReturnRate > 0.5) {
+        issues.push('Expected return rate must be between 0 and 50%');
+      }
+    }
+
+    if (input.inflationRate !== undefined) {
+      if (input.inflationRate < 0 || input.inflationRate > 0.5) {
+        issues.push('Inflation rate must be between 0 and 50%');
+      }
+    }
+
+    if (input.incomeGrowthRate !== undefined) {
+      if (input.incomeGrowthRate < 0 || input.incomeGrowthRate > 0.2) {
+        issues.push('Income growth rate must be between 0 and 20%');
+      }
+    }
+
+    // Validate new optional parameters
+    if (input.monthlyExpenses !== undefined && input.monthlyExpenses < 0) {
+      issues.push('Monthly expenses cannot be negative');
+    }
+
+    if (input.expenseGrowthRate !== undefined) {
+      if (input.expenseGrowthRate < 0 || input.expenseGrowthRate > 0.3) {
+        issues.push('Expense growth rate must be between 0 and 30%');
+      }
+    }
+
+    if (input.taxRateOnReturns !== undefined) {
+      if (input.taxRateOnReturns < 0 || input.taxRateOnReturns > 0.5) {
+        issues.push('Tax rate must be between 0 and 50%');
+      }
+    }
+
+    if (input.monthlyWithdrawal !== undefined && input.monthlyWithdrawal < 0) {
+      issues.push('Monthly withdrawal cannot be negative');
+    }
+
+    // Validate multiple goals
+    if (input.goals && input.goals.length > 0) {
+      if (input.goals.length > 5) {
+        issues.push('Maximum 5 goals allowed');
+      }
+      for (let i = 0; i < input.goals.length; i++) {
+        const goal = input.goals[i];
+        if (goal.amount <= 0) {
+          issues.push(`Goal ${i + 1} amount must be positive`);
+        }
+        const goalDeadline = new Date(goal.deadline);
+        if (isNaN(goalDeadline.getTime())) {
+          issues.push(`Goal ${i + 1} deadline must be a valid date`);
+        }
+      }
+    }
+
+    if (issues.length > 0) {
+      throw new InvalidSimulationInputException(issues.join('; '), {
+        issueCount: issues.length,
+      });
+    }
   }
 }

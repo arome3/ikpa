@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Query, UseGuards, ParseEnumPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, ParseEnumPipe } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -19,6 +20,8 @@ import {
   SnapshotListResponseDto,
   MetricDetailResponseDto,
   ValidMetric,
+  SimulationInputDto,
+  SimulationResponseDto,
 } from './dto';
 import { getScoreLabel, getScoreColor } from './interfaces';
 
@@ -305,6 +308,142 @@ export class FinanceController {
         date: h.date,
         value: h.value,
       })),
+    };
+  }
+
+  // ==========================================
+  // SIMULATION ENDPOINTS
+  // ==========================================
+
+  /**
+   * Run Monte Carlo simulation with user's default financial data
+   *
+   * Automatically builds simulation input from user's financial profile
+   * and first active goal. Compares current path vs optimized path.
+   *
+   * Rate limited to 3 requests per minute due to computational cost.
+   */
+  @Get('simulation')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
+  @ApiOperation({
+    summary: 'Run Financial Simulation (Default)',
+    description:
+      'Runs a Monte Carlo simulation (10,000 iterations) using the user\'s current ' +
+      'financial profile and first active goal. Compares "Current Path" (current ' +
+      'savings behavior) vs "Optimized Path" (recommended strategy). ' +
+      'Projections are made at 6mo, 1yr, 5yr, 10yr, and 20yr horizons.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Simulation completed successfully',
+    type: SimulationResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'Insufficient data or no active goal found',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests - Rate limit exceeded (3/min)',
+  })
+  async runDefaultSimulation(
+    @CurrentUser('id') userId: string,
+  ): Promise<SimulationResponseDto> {
+    const result = await this.financeService.runDefaultSimulation(userId);
+
+    return {
+      currentPath: {
+        probability: result.currentPath.probability,
+        projectedNetWorth: result.currentPath.projectedNetWorth,
+        achieveGoalDate: result.currentPath.achieveGoalDate,
+        confidenceIntervals: result.currentPath.confidenceIntervals,
+      },
+      optimizedPath: {
+        probability: result.optimizedPath.probability,
+        projectedNetWorth: result.optimizedPath.projectedNetWorth,
+        achieveGoalDate: result.optimizedPath.achieveGoalDate,
+        confidenceIntervals: result.optimizedPath.confidenceIntervals,
+        requiredSavingsRate: result.optimizedPath.requiredSavingsRate,
+      },
+      wealthDifference: result.wealthDifference,
+      metadata: {
+        iterations: result.metadata.iterations,
+        durationMs: result.metadata.durationMs,
+        simulatedAt: result.metadata.simulatedAt,
+        currency: result.metadata.currency,
+      },
+    };
+  }
+
+  /**
+   * Run Monte Carlo simulation with custom parameters
+   *
+   * Allows users to run "what-if" scenarios by providing custom values
+   * instead of using their actual financial profile.
+   *
+   * Rate limited to 3 requests per minute due to computational cost.
+   */
+  @Post('simulation')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
+  @ApiOperation({
+    summary: 'Run Financial Simulation (Custom)',
+    description:
+      'Runs a Monte Carlo simulation (10,000 iterations) with custom parameters. ' +
+      'Use this for "what-if" scenarios to explore different savings rates, ' +
+      'income levels, or goals. Returns comparison of current vs optimized paths.',
+  })
+  @ApiBody({
+    type: SimulationInputDto,
+    description: 'Custom simulation parameters',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Simulation completed successfully',
+    type: SimulationResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid simulation parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests - Rate limit exceeded (3/min)',
+  })
+  async runCustomSimulation(
+    @CurrentUser('id') userId: string,
+    @Body() input: SimulationInputDto,
+  ): Promise<SimulationResponseDto> {
+    const result = await this.financeService.runCustomSimulation(userId, input);
+
+    return {
+      currentPath: {
+        probability: result.currentPath.probability,
+        projectedNetWorth: result.currentPath.projectedNetWorth,
+        achieveGoalDate: result.currentPath.achieveGoalDate,
+        confidenceIntervals: result.currentPath.confidenceIntervals,
+      },
+      optimizedPath: {
+        probability: result.optimizedPath.probability,
+        projectedNetWorth: result.optimizedPath.projectedNetWorth,
+        achieveGoalDate: result.optimizedPath.achieveGoalDate,
+        confidenceIntervals: result.optimizedPath.confidenceIntervals,
+        requiredSavingsRate: result.optimizedPath.requiredSavingsRate,
+      },
+      wealthDifference: result.wealthDifference,
+      metadata: {
+        iterations: result.metadata.iterations,
+        durationMs: result.metadata.durationMs,
+        simulatedAt: result.metadata.simulatedAt,
+        currency: result.metadata.currency,
+      },
     };
   }
 }
