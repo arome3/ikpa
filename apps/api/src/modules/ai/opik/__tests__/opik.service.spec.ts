@@ -1778,8 +1778,8 @@ describe('OpikService', () => {
       // First retry: base delay * 2^0 = 100ms (+ jitter)
       // Second retry: base delay * 2^1 = 200ms (+ jitter)
       expect(delaySpy).toHaveBeenCalledTimes(2);
-      const firstDelay = delaySpy.mock.calls[0][0];
-      const secondDelay = delaySpy.mock.calls[1][0];
+      const firstDelay = delaySpy.mock.calls[0][0] as number;
+      const secondDelay = delaySpy.mock.calls[1][0] as number;
 
       // Second delay should be roughly double the first (accounting for jitter)
       expect(secondDelay).toBeGreaterThan(firstDelay);
@@ -1808,6 +1808,8 @@ describe('OpikService', () => {
       const backoff1 = (service as any).calculateExponentialBackoff(1);
       const backoff10 = (service as any).calculateExponentialBackoff(10);
 
+      // First attempt should be non-zero
+      expect(backoff1).toBeGreaterThan(0);
       // Very high attempt should be capped at 30000ms
       expect(backoff10).toBeLessThanOrEqual(30000);
     });

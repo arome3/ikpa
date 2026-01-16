@@ -401,12 +401,22 @@ model FinancialSnapshot {
   userId          String
   date            DateTime @default(now())
 
-  // Core metrics
-  cashFlowScore   Int // 0-100
-  savingsRate     Decimal  @db.Decimal(5, 2)
-  runwayMonths    Decimal  @db.Decimal(5, 2)
-  burnRate        Decimal  @db.Decimal(15, 2)
+  // Core metrics (values)
+  cashFlowScore   Int // 0-100 final weighted score
+  savingsRate     Decimal  @db.Decimal(5, 2) // percentage
+  runwayMonths    Decimal  @db.Decimal(5, 2) // months of emergency fund
+  burnRate        Decimal  @db.Decimal(15, 2) // monthly expenses + debt payments
   dependencyRatio Decimal  @db.Decimal(5, 2) // % of income supporting others
+  debtToIncome    Decimal  @db.Decimal(5, 2) @default(0) // % of income going to debt
+  incomeStability Decimal  @db.Decimal(5, 2) @default(0) // coefficient of variation
+
+  // Individual component scores (0-100 each)
+  // Stored to avoid data loss when reconstructing from cache
+  savingsRateScore     Int @default(0)
+  runwayMonthsScore    Int @default(0)
+  debtToIncomeScore    Int @default(0)
+  incomeStabilityScore Int @default(0)
+  dependencyRatioScore Int @default(0)
 
   // Totals
   netWorth      Decimal  @db.Decimal(15, 2)
@@ -422,8 +432,10 @@ model FinancialSnapshot {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, date]) // Prevent duplicate snapshots for same user/day
   @@index([userId])
   @@index([userId, date])
+  @@index([date]) // For cron job cleanup queries
   @@map("financial_snapshots")
 }
 

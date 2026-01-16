@@ -48,4 +48,14 @@ export class UserService {
       where: { appleId },
     });
   }
+
+  /**
+   * Get all active users (onboarding completed)
+   * Used by cron jobs for batch processing financial calculations
+   */
+  async getAllActiveUsers(): Promise<User[]> {
+    return this.prisma.user.findMany({
+      where: { onboardingCompleted: true },
+    });
+  }
 }

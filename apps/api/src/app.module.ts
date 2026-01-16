@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma';
+import { RedisModule } from './redis';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { OpikModule } from './modules/ai/opik';
 
@@ -48,8 +51,14 @@ import { OpikModule } from './modules/ai/opik';
       },
     ]),
 
+    // Task scheduling (for cron jobs)
+    ScheduleModule.forRoot(),
+
     // Database
     PrismaModule,
+
+    // Redis (caching, distributed locks)
+    RedisModule,
 
     // AI Observability
     OpikModule,
@@ -57,7 +66,7 @@ import { OpikModule } from './modules/ai/opik';
     // Feature modules
     AuthModule,
     UserModule,
-    // FinanceModule,
+    FinanceModule,
     // AIModule,
   ],
   controllers: [],
