@@ -42,6 +42,7 @@
     "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.4.2",
+    "opik": "^1.9.85",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",

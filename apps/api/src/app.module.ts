@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { OpikModule } from './modules/ai/opik';
 
 /**
  * Root Application Module
@@ -49,6 +50,9 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
     // Database
     PrismaModule,
+
+    // AI Observability
+    OpikModule,
 
     // Feature modules
     AuthModule,
