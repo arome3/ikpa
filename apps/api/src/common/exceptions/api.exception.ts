@@ -24,12 +24,23 @@ export class ApiException extends HttpException {
  * Use when a requested resource doesn't exist.
  */
 export class NotFoundException extends ApiException {
-  constructor(resource: string, id?: string) {
-    super(
-      ErrorCodes.RESOURCE_NOT_FOUND,
-      id ? `${resource} with id '${id}' not found` : `${resource} not found`,
-      HttpStatus.NOT_FOUND,
-    );
+  constructor(resource: string, codeOrId?: ErrorCode | string) {
+    // If codeOrId looks like an error code (has underscore), use it as code
+    const isErrorCode =
+      typeof codeOrId === 'string' &&
+      Object.values(ErrorCodes).includes(codeOrId as ErrorCode);
+
+    if (isErrorCode) {
+      super(codeOrId as ErrorCode, resource, HttpStatus.NOT_FOUND);
+    } else {
+      super(
+        ErrorCodes.RESOURCE_NOT_FOUND,
+        codeOrId
+          ? `${resource} with id '${codeOrId}' not found`
+          : `${resource} not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
   }
 }
 
@@ -40,8 +51,8 @@ export class NotFoundException extends ApiException {
  * Common for unique constraint violations.
  */
 export class ConflictException extends ApiException {
-  constructor(message: string) {
-    super(ErrorCodes.RESOURCE_CONFLICT, message, HttpStatus.CONFLICT);
+  constructor(message: string, code?: ErrorCode) {
+    super(code || ErrorCodes.RESOURCE_CONFLICT, message, HttpStatus.CONFLICT);
   }
 }
 
@@ -51,8 +62,23 @@ export class ConflictException extends ApiException {
  * Use when authentication is required but not provided or invalid.
  */
 export class UnauthorizedException extends ApiException {
-  constructor(message: string = 'Unauthorized') {
-    super(ErrorCodes.AUTH_UNAUTHORIZED, message, HttpStatus.UNAUTHORIZED);
+  constructor(message: string = 'Unauthorized', code?: ErrorCode) {
+    super(
+      code || ErrorCodes.AUTH_UNAUTHORIZED,
+      message,
+      HttpStatus.UNAUTHORIZED,
+    );
+  }
+}
+
+/**
+ * Bad Request Exception (400)
+ *
+ * Use for general bad request errors with custom error codes.
+ */
+export class BadRequestException extends ApiException {
+  constructor(message: string, code: ErrorCode = ErrorCodes.VALIDATION_ERROR) {
+    super(code, message, HttpStatus.BAD_REQUEST);
   }
 }
 

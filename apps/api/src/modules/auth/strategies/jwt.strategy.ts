@@ -45,7 +45,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    * Called by Passport after token verification succeeds.
    * The returned value is attached to request.user.
    */
-  async validate(payload: JwtPayload): Promise<SanitizedUser> {
+  async validate(payload: JwtPayload): Promise<SanitizedUser & { sessionId?: string }> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
@@ -54,9 +54,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('User not found');
     }
 
-    // Return user without sensitive fields
+    // Return user without sensitive fields, plus sessionId for tracking
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, passwordResetToken, passwordResetExpires, ...safeUser } = user;
-    return safeUser;
+    return {
+      ...safeUser,
+      sessionId: payload.sessionId,
+    };
   }
 }

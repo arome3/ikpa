@@ -2,10 +2,12 @@ import {
   Injectable,
   ExecutionContext,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { SKIP_EMAIL_VERIFICATION_KEY } from '../decorators/skip-email-verification.decorator';
 
 /**
  * JWT Authentication Guard
@@ -39,7 +41,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  canActivate(context: ExecutionContext) {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check if the route is marked as public
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -50,8 +52,35 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    // Delegate to Passport's JWT strategy
-    return super.canActivate(context);
+    // Delegate to Passport's JWT strategy for authentication
+    const isAuthenticated = await super.canActivate(context);
+
+    if (!isAuthenticated) {
+      return false;
+    }
+
+    // Check if email verification should be skipped for this route
+    const skipEmailVerification = this.reflector.getAllAndOverride<boolean>(
+      SKIP_EMAIL_VERIFICATION_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (skipEmailVerification) {
+      return true;
+    }
+
+    // Enforce email verification
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    if (user && !user.emailVerified) {
+      throw new ForbiddenException(
+        'Please verify your email address to access this resource. ' +
+          'Check your inbox or request a new verification email.',
+      );
+    }
+
+    return true;
   }
 
   /**

@@ -134,6 +134,63 @@ enum GoalStatus {
 }
 
 // ============================================
+// SHARK AUDITOR ENUMS
+// ============================================
+
+enum SubscriptionStatus {
+  ACTIVE
+  ZOMBIE
+  UNKNOWN
+  CANCELLED
+}
+
+enum SwipeAction {
+  KEEP
+  CANCEL
+  REVIEW_LATER
+}
+
+enum SubscriptionCategory {
+  STREAMING
+  TV_CABLE
+  FITNESS
+  CLOUD_STORAGE
+  SOFTWARE
+  VPN
+  LEARNING
+  OTHER
+}
+
+// ============================================
+// AUTHENTICATION ENUMS
+// ============================================
+
+enum MfaMethod {
+  TOTP // Time-based One-Time Password (Google Authenticator, etc.)
+}
+
+enum AuthEventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_COMPLETE
+  PASSWORD_CHANGE
+  MFA_ENABLED
+  MFA_DISABLED
+  MFA_VERIFIED
+  MFA_FAILED
+  ACCOUNT_LOCKED
+  ACCOUNT_UNLOCKED
+  EMAIL_VERIFICATION_SENT
+  EMAIL_VERIFIED
+  DEVICE_ADDED
+  DEVICE_REMOVED
+  SUSPICIOUS_ACTIVITY
+  OAUTH_LINKED
+}
+
+// ============================================
 // MODELS
 // ============================================
 
@@ -163,17 +220,28 @@ model User {
   passwordResetToken   String?
   passwordResetExpires DateTime?
 
+  // Email verification
+  emailVerified     Boolean   @default(false)
+  emailVerifiedAt   DateTime?
+
+  // Password security
+  passwordChangedAt DateTime?
+
   // Relations
-  incomeSources   IncomeSource[]
-  expenses        Expense[]
-  savingsAccounts SavingsAccount[]
-  investments     Investment[]
-  debts           Debt[]
-  familySupport   FamilySupport[]
-  goals           Goal[]
-  snapshots       FinancialSnapshot[]
-  refreshTokens   RefreshToken[]
-  aiConversations AIConversation[]
+  incomeSources      IncomeSource[]
+  expenses           Expense[]
+  savingsAccounts    SavingsAccount[]
+  investments        Investment[]
+  debts              Debt[]
+  familySupport      FamilySupport[]
+  goals              Goal[]
+  snapshots          FinancialSnapshot[]
+  refreshTokens      RefreshToken[]
+  aiConversations    AIConversation[]
+  subscriptions      Subscription[]
+  emailVerifications EmailVerification[]
+  mfaConfig          MfaConfig?
+  sessions           UserSession[]
 
   @@index([email])
   @@index([country])
@@ -188,10 +256,17 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Device tracking
+  deviceFingerprint String?
+  ipAddress         String?
+  userAgent         String?
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session UserSession?
 
   @@index([userId])
   @@index([token])
+  @@index([expiresAt])
   @@map("refresh_tokens")
 }
 
@@ -483,4 +558,170 @@ model WaitlistEntry {
   @@index([email])
   @@index([referralCode])
   @@map("waitlist_entries")
+}
+
+// ============================================
+// SHARK AUDITOR MODELS
+// ============================================
+
+/// Detected subscription from expense analysis
+model Subscription {
+  id              String               @id @default(uuid())
+  userId          String
+  name            String
+  merchantPattern String?              // Original merchant name that matched
+  category        SubscriptionCategory
+  monthlyCost     Decimal              @db.Decimal(15, 2)
+  annualCost      Decimal              @db.Decimal(15, 2)
+  currency        Currency             @default(NGN)
+  status          SubscriptionStatus   @default(UNKNOWN)
+  lastUsageDate   DateTime?
+  detectedAt      DateTime             @default(now())
+  firstChargeDate DateTime?
+  lastChargeDate  DateTime?
+  chargeCount     Int                  @default(0)
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  swipeDecisions SwipeDecision[]
+
+  @@unique([userId, merchantPattern], name: "unique_user_merchant")
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, isActive])
+  @@map("subscriptions")
+}
+
+/// User swipe decision on a subscription
+model SwipeDecision {
+  id             String      @id @default(uuid())
+  subscriptionId String
+  userId         String
+  action         SwipeAction
+  reason         String?     // Optional reason for the decision (e.g., cancellation reason)
+  decidedAt      DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([userId])
+  @@index([userId, action])
+  @@map("swipe_decisions")
+}
+
+// ============================================
+// AUTHENTICATION MODELS
+// ============================================
+
+/// Email verification tokens for new registrations
+model EmailVerification {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique // Hashed token (SHA256)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("email_verifications")
+}
+
+/// Multi-factor authentication configuration per user
+model MfaConfig {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  method      MfaMethod @default(TOTP)
+  secret      String    // Encrypted TOTP secret
+  isEnabled   Boolean   @default(false)
+  backupCodes String[]  // Hashed backup codes
+  verifiedAt  DateTime? // When MFA was first verified
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mfa_configs")
+}
+
+/// Track login attempts for account lockout protection
+model LoginAttempt {
+  id        String   @id @default(uuid())
+  email     String   // Email used (not userId - user may not exist)
+  ipAddress String
+  userAgent String?
+  success   Boolean
+  reason    String?  // Failure reason code
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([ipAddress])
+  @@index([email, createdAt])
+  @@index([createdAt])
+  @@map("login_attempts")
+}
+
+/// Account lockout tracking
+model AccountLockout {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  lockedAt    DateTime  @default(now())
+  lockedUntil DateTime
+  attempts    Int       @default(0)
+  reason      String    @default("FAILED_LOGIN_ATTEMPTS")
+  unlockedAt  DateTime?
+  unlockedBy  String?   // Admin user ID if manually unlocked
+
+  @@index([email])
+  @@index([lockedUntil])
+  @@map("account_lockouts")
+}
+
+/// Active user sessions with device info
+model UserSession {
+  id             String   @id @default(uuid())
+  userId         String
+  refreshTokenId String   @unique // Links to RefreshToken.id
+  deviceName     String?  // "iPhone 15 Pro", "Chrome on MacOS"
+  deviceType     String?  // "mobile", "desktop", "tablet"
+  browser        String?
+  os             String?
+  ipAddress      String
+  location       String?  // City, Country from IP geolocation
+  lastActiveAt   DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken RefreshToken @relation(fields: [refreshTokenId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshTokenId])
+  @@index([lastActiveAt])
+  @@map("user_sessions")
+}
+
+/// Security audit log for compliance and monitoring
+model AuthAuditLog {
+  id        String        @id @default(uuid())
+  userId    String?       // Nullable for failed logins with non-existent users
+  email     String?       // For tracking attempts on non-existent accounts
+  eventType AuthEventType
+  ipAddress String
+  userAgent String?
+  metadata  Json?         // Additional event-specific data
+  success   Boolean       @default(true)
+  createdAt DateTime      @default(now())
+
+  @@index([userId])
+  @@index([email])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([userId, eventType, createdAt])
+  @@map("auth_audit_logs")
 }

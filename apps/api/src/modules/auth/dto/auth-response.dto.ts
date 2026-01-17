@@ -46,6 +46,37 @@ export class UserResponseDto {
 }
 
 /**
+ * Password Expiry Warning DTO
+ *
+ * Included in auth response when password is nearing expiration
+ */
+export class PasswordExpiryWarningDto {
+  @ApiProperty({
+    description: 'Whether the password is in warning period',
+    example: true,
+  })
+  isExpiring!: boolean;
+
+  @ApiProperty({
+    description: 'Days until password expires',
+    example: 7,
+  })
+  daysRemaining!: number;
+
+  @ApiProperty({
+    description: 'Date when password will expire',
+    example: '2024-02-15T10:30:00.000Z',
+  })
+  expiresAt!: Date;
+
+  @ApiProperty({
+    description: 'Warning message for the user',
+    example: 'Your password will expire in 7 days. Please update it soon.',
+  })
+  message!: string;
+}
+
+/**
  * Auth Response DTO
  *
  * Response returned after successful authentication
@@ -66,6 +97,13 @@ export class AuthResponseDto {
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   refreshToken!: string;
+
+  @ApiProperty({
+    description: 'Password expiry warning (only present if password is expiring soon)',
+    type: PasswordExpiryWarningDto,
+    required: false,
+  })
+  passwordExpiryWarning?: PasswordExpiryWarningDto;
 }
 
 /**
@@ -97,6 +135,8 @@ export interface JwtPayload {
   sub: string;
   /** User email */
   email: string;
+  /** Session ID for tracking current session (optional for backward compat) */
+  sessionId?: string;
   /** Issued at timestamp */
   iat?: number;
   /** Expiration timestamp */

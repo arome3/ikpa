@@ -6,6 +6,13 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '../user/user.module';
+import { EmailService } from './email.service';
+import { AuditService } from './audit.service';
+import { LockoutService } from './lockout.service';
+import { MfaService } from './mfa.service';
+import { SessionService } from './session.service';
+import { AuthCronService } from './auth.cron';
+import { AppleAuthService } from './apple-auth.service';
 
 /**
  * Authentication Module
@@ -14,7 +21,13 @@ import { UserModule } from '../user/user.module';
  * - Email/password authentication
  * - JWT token management
  * - Google OAuth integration
+ * - Apple Sign-In integration
  * - Password reset flow
+ * - Email verification
+ * - MFA/2FA (TOTP)
+ * - Account lockout protection
+ * - Session management
+ * - Security audit logging
  *
  * Dependencies:
  * - PassportModule: For JWT strategy integration
@@ -45,7 +58,17 @@ import { UserModule } from '../user/user.module';
     UserModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    EmailService,
+    AuditService,
+    LockoutService,
+    MfaService,
+    SessionService,
+    AuthCronService,
+    AppleAuthService,
+  ],
+  exports: [AuthService, AuditService, LockoutService, MfaService, SessionService],
 })
 export class AuthModule {}
