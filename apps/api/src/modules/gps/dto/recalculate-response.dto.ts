@@ -1,0 +1,293 @@
+/**
+ * GPS Re-Router Recalculate Response DTO
+ *
+ * Response containing budget status, goal impact, and recovery paths.
+ */
+
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  BudgetTrigger,
+  EffortLevel,
+} from '../interfaces/gps-rerouter.interface';
+
+/**
+ * Budget status response DTO
+ */
+export class BudgetStatusDto {
+  @ApiProperty({
+    example: 'Entertainment',
+    description: 'Expense category name',
+  })
+  category!: string;
+
+  @ApiProperty({
+    example: 'cat-123-abc',
+    description: 'Category ID',
+  })
+  categoryId!: string;
+
+  @ApiProperty({
+    example: 50000,
+    description: 'Budgeted amount for the period',
+  })
+  budgeted!: number;
+
+  @ApiProperty({
+    example: 65000,
+    description: 'Amount spent so far',
+  })
+  spent!: number;
+
+  @ApiProperty({
+    example: -15000,
+    description: 'Amount remaining (negative if overspent)',
+  })
+  remaining!: number;
+
+  @ApiProperty({
+    example: 30,
+    description: 'Percentage over budget (0 if under, positive if over)',
+  })
+  overagePercent!: number;
+
+  @ApiProperty({
+    enum: ['BUDGET_WARNING', 'BUDGET_EXCEEDED', 'BUDGET_CRITICAL'],
+    example: 'BUDGET_EXCEEDED',
+    description: 'Which trigger threshold was hit',
+  })
+  trigger!: BudgetTrigger;
+
+  @ApiProperty({
+    example: 'MONTHLY',
+    description: 'Budget period',
+  })
+  period!: string;
+}
+
+/**
+ * Goal impact response DTO
+ */
+export class GoalImpactDto {
+  @ApiProperty({
+    example: 'goal-456-def',
+    description: 'Goal ID',
+  })
+  goalId!: string;
+
+  @ApiProperty({
+    example: 'Emergency Fund',
+    description: 'Goal name',
+  })
+  goalName!: string;
+
+  @ApiProperty({
+    example: 500000,
+    description: 'Goal target amount',
+  })
+  goalAmount!: number;
+
+  @ApiProperty({
+    example: '2026-06-30T00:00:00.000Z',
+    description: 'Goal deadline',
+  })
+  goalDeadline!: Date;
+
+  @ApiProperty({
+    example: 0.75,
+    description: 'Probability before the overspend (0-1)',
+  })
+  previousProbability!: number;
+
+  @ApiProperty({
+    example: 0.68,
+    description: 'Probability after the overspend (0-1)',
+  })
+  newProbability!: number;
+
+  @ApiProperty({
+    example: -0.07,
+    description: 'Difference in probability (negative means decreased)',
+  })
+  probabilityDrop!: number;
+
+  @ApiProperty({
+    example: 'Your goal probability decreased by 7 percentage points',
+    description: 'Human-readable impact message',
+  })
+  message!: string;
+}
+
+/**
+ * Recovery path response DTO
+ */
+export class RecoveryPathDto {
+  @ApiProperty({
+    example: 'time_adjustment',
+    description: 'Unique identifier for the path',
+  })
+  id!: string;
+
+  @ApiProperty({
+    example: 'Timeline Flex',
+    description: 'Path name',
+  })
+  name!: string;
+
+  @ApiProperty({
+    example: 'Extend your goal deadline by 2 weeks',
+    description: 'Human-readable description of what this path involves',
+  })
+  description!: string;
+
+  @ApiProperty({
+    example: 0.78,
+    description: 'Projected probability if this path is followed (0-1)',
+  })
+  newProbability!: number;
+
+  @ApiProperty({
+    enum: ['Low', 'Medium', 'High'],
+    example: 'Low',
+    description: 'Effort level required',
+  })
+  effort!: EffortLevel;
+
+  @ApiProperty({
+    example: '+2 weeks',
+    description: 'How the timeline changes',
+    required: false,
+  })
+  timelineImpact?: string;
+
+  @ApiProperty({
+    example: '+5% for 4 weeks',
+    description: 'How savings rate changes',
+    required: false,
+  })
+  savingsImpact?: string;
+
+  @ApiProperty({
+    example: 'Pause Entertainment for 4 weeks',
+    description: 'Category freeze duration if applicable',
+    required: false,
+  })
+  freezeDuration?: string;
+}
+
+/**
+ * Non-judgmental message response DTO
+ */
+export class NonJudgmentalMessageDto {
+  @ApiProperty({
+    example: 'Supportive',
+    description: 'Message tone (always Supportive)',
+  })
+  tone!: 'Supportive';
+
+  @ApiProperty({
+    example: "Let's recalculate your route",
+    description: 'Main headline',
+  })
+  headline!: string;
+
+  @ApiProperty({
+    example:
+      "Spending more than planned happens to everyone. Here are three ways to get back on track.",
+    description: 'Supporting text with context',
+  })
+  subtext!: string;
+}
+
+/**
+ * Multi-goal impact summary DTO
+ */
+export class MultiGoalImpactSummaryDto {
+  @ApiProperty({
+    example: 3,
+    description: 'Total number of goals affected',
+  })
+  totalGoalsAffected!: number;
+
+  @ApiProperty({
+    example: -0.05,
+    description: 'Average probability drop across all goals',
+  })
+  averageProbabilityDrop!: number;
+
+  @ApiProperty({
+    example: 'Emergency Fund',
+    description: 'Name of the most affected goal',
+  })
+  mostAffectedGoal!: string;
+
+  @ApiProperty({
+    example: 'Vacation Fund',
+    description: 'Name of the least affected goal',
+  })
+  leastAffectedGoal!: string;
+}
+
+/**
+ * Multi-goal impact response DTO
+ */
+export class MultiGoalImpactDto {
+  @ApiProperty({
+    type: GoalImpactDto,
+    description: 'Impact on the primary (most affected) goal',
+  })
+  primaryGoal!: GoalImpactDto;
+
+  @ApiProperty({
+    type: [GoalImpactDto],
+    description: 'Impact on all other active goals',
+  })
+  otherGoals!: GoalImpactDto[];
+
+  @ApiProperty({
+    type: MultiGoalImpactSummaryDto,
+    description: 'Summary statistics across all goals',
+  })
+  summary!: MultiGoalImpactSummaryDto;
+}
+
+/**
+ * Complete recalculate response DTO
+ */
+export class RecalculateResponseDto {
+  @ApiProperty({
+    example: 'session-789-ghi',
+    description: 'Session ID for tracking this recovery interaction',
+  })
+  sessionId!: string;
+
+  @ApiProperty({
+    type: BudgetStatusDto,
+    description: 'Current budget status',
+  })
+  budgetStatus!: BudgetStatusDto;
+
+  @ApiProperty({
+    type: GoalImpactDto,
+    description: 'Impact on the user primary goal (for backwards compatibility)',
+  })
+  goalImpact!: GoalImpactDto;
+
+  @ApiProperty({
+    type: MultiGoalImpactDto,
+    description: 'Impact on all active goals (multi-goal assessment)',
+    required: false,
+  })
+  multiGoalImpact?: MultiGoalImpactDto;
+
+  @ApiProperty({
+    type: [RecoveryPathDto],
+    description: 'Three recovery path options',
+  })
+  recoveryPaths!: RecoveryPathDto[];
+
+  @ApiProperty({
+    type: NonJudgmentalMessageDto,
+    description: 'Non-judgmental supportive message',
+  })
+  message!: NonJudgmentalMessageDto;
+}

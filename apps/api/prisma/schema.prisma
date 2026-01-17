@@ -242,6 +242,11 @@ model User {
   emailVerifications EmailVerification[]
   mfaConfig          MfaConfig?
   sessions           UserSession[]
+  budgets                Budget[]
+  recoverySessions       RecoverySession[]
+  savingsRateAdjustments SavingsRateAdjustment[]
+  categoryFreezes        CategoryFreeze[]
+  gpsAnalyticsEvents     GpsAnalyticsEvent[]
 
   @@index([email])
   @@index([country])
@@ -304,7 +309,9 @@ model ExpenseCategory {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  expenses Expense[]
+  expenses        Expense[]
+  budgets         Budget[]
+  categoryFreezes CategoryFreeze[]
 
   @@map("expense_categories")
 }
@@ -446,8 +453,9 @@ model Goal {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contributions GoalContribution[]
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contributions    GoalContribution[]
+  recoverySessions RecoverySession[]
 
   @@index([userId])
   @@index([userId, status])
@@ -724,4 +732,158 @@ model AuthAuditLog {
   @@index([createdAt])
   @@index([userId, eventType, createdAt])
   @@map("auth_audit_logs")
+}
+
+// ============================================
+// GPS RE-ROUTER ENUMS
+// ============================================
+
+enum BudgetPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+}
+
+enum RecoveryStatus {
+  PENDING
+  PATH_SELECTED
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+// ============================================
+// GPS RE-ROUTER MODELS
+// ============================================
+
+/// Budget tracking per category for GPS Re-Router
+/// Allows users to set spending limits and detect overspending
+model Budget {
+  id         String       @id @default(uuid())
+  userId     String
+  categoryId String
+  amount     Decimal      @db.Decimal(15, 2)
+  currency   Currency     @default(NGN)
+  period     BudgetPeriod @default(MONTHLY)
+  startDate  DateTime     @default(now())
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, categoryId, period])
+  @@index([userId])
+  @@index([userId, isActive])
+  @@map("budgets")
+}
+
+/// Recovery session tracking for GPS Re-Router
+/// Tracks when users exceed budgets and which recovery path they select
+model RecoverySession {
+  id                  String         @id @default(uuid())
+  userId              String
+  goalId              String?
+  budgetId            String?
+  category            String
+  overspendAmount     Decimal        @db.Decimal(15, 2)
+  previousProbability Decimal        @db.Decimal(5, 4)
+  newProbability      Decimal        @db.Decimal(5, 4)
+  selectedPathId      String?
+  selectedAt          DateTime?
+  actionExecutedAt    DateTime?      // When the recovery action was actually executed
+  status              RecoveryStatus @default(PENDING)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal            Goal?                @relation(fields: [goalId], references: [id])
+  analyticsEvents GpsAnalyticsEvent[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@map("recovery_sessions")
+}
+
+/// Temporary savings rate adjustment for GPS Re-Router
+/// Tracks when users commit to temporarily increasing their savings rate
+model SavingsRateAdjustment {
+  id               String   @id @default(uuid())
+  userId           String
+  sessionId        String
+  additionalRate   Decimal  @db.Decimal(5, 4) // e.g., 0.05 for 5%
+  durationWeeks    Int
+  startDate        DateTime @default(now())
+  endDate          DateTime
+  isActive         Boolean  @default(true)
+  originalRate     Decimal  @db.Decimal(5, 4)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([endDate])
+  @@map("savings_rate_adjustments")
+}
+
+/// Category spending freeze for GPS Re-Router
+/// Tracks when users commit to pausing spending in a category
+model CategoryFreeze {
+  id            String   @id @default(uuid())
+  userId        String
+  sessionId     String
+  categoryId    String
+  categoryName  String
+  durationWeeks Int
+  startDate     DateTime @default(now())
+  endDate       DateTime
+  isActive      Boolean  @default(true)
+  savedAmount   Decimal  @db.Decimal(15, 2) // Estimated savings
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([categoryId])
+  @@index([endDate])
+  @@map("category_freezes")
+}
+
+/// GPS Analytics Event for tracking metrics
+/// Tracks key metrics: path selections, goal survival, recovery times
+model GpsAnalyticsEvent {
+  id              String   @id @default(uuid())
+  userId          String
+  sessionId       String?
+  eventType       GpsEventType
+  eventData       Json?
+  previousValue   Decimal? @db.Decimal(15, 4)
+  newValue        Decimal? @db.Decimal(15, 4)
+  createdAt       DateTime @default(now())
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session RecoverySession? @relation(fields: [sessionId], references: [id])
+
+  @@index([userId])
+  @@index([userId, eventType])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("gps_analytics_events")
+}
+
+enum GpsEventType {
+  PATH_SELECTED
+  GOAL_SURVIVED       // User didn't abandon goal after slip
+  GOAL_ABANDONED      // User abandoned goal after slip
+  RECOVERY_STARTED
+  RECOVERY_COMPLETED
+  PROBABILITY_RESTORED
+  BUDGET_THRESHOLD_CROSSED
 }
