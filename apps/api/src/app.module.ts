@@ -11,6 +11,7 @@ import { UserModule } from './modules/user/user.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { SharkModule } from './modules/shark/shark.module';
 import { GpsModule } from './modules/gps/gps.module';
+import { CommitmentModule } from './modules/commitment/commitment.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { OpikModule } from './modules/ai/opik';
 
@@ -79,6 +80,7 @@ import { OpikModule } from './modules/ai/opik';
     FinanceModule,
     SharkModule,
     GpsModule,
+    CommitmentModule,
     // AIModule,
   ],
   controllers: [],

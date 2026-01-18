@@ -69,6 +69,14 @@ import { AppleAuthService } from './apple-auth.service';
     AuthCronService,
     AppleAuthService,
   ],
-  exports: [AuthService, AuditService, LockoutService, MfaService, SessionService],
+  exports: [
+    AuthService,
+    AuditService,
+    LockoutService,
+    MfaService,
+    SessionService,
+    EmailService,
+    JwtModule, // Export JwtModule for other modules that need JWT signing
+  ],
 })
 export class AuthModule {}

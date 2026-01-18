@@ -247,6 +247,8 @@ model User {
   savingsRateAdjustments SavingsRateAdjustment[]
   categoryFreezes        CategoryFreeze[]
   gpsAnalyticsEvents     GpsAnalyticsEvent[]
+  commitmentContracts    CommitmentContract[]
+  invitedReferees        CommitmentReferee[]
 
   @@index([email])
   @@index([country])
@@ -453,9 +455,10 @@ model Goal {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   contributions    GoalContribution[]
   recoverySessions RecoverySession[]
+  commitments      CommitmentContract[]
 
   @@index([userId])
   @@index([userId, status])
@@ -886,4 +889,190 @@ enum GpsEventType {
   RECOVERY_COMPLETED
   PROBABILITY_RESTORED
   BUDGET_THRESHOLD_CROSSED
+}
+
+// ============================================
+// COMMITMENT DEVICE ENGINE ENUMS
+// ============================================
+
+enum StakeType {
+  SOCIAL        // Social accountability with referee
+  ANTI_CHARITY  // Donate to opposing cause if failed
+  LOSS_POOL     // Funds locked until goal achieved
+}
+
+enum VerificationMethod {
+  SELF_REPORT    // User self-reports completion
+  REFEREE_VERIFY // Referee must verify completion
+  AUTO_DETECT    // Automatic detection (future feature)
+}
+
+enum CommitmentStatus {
+  ACTIVE               // Commitment is active
+  PENDING_VERIFICATION // Awaiting referee verification
+  SUCCEEDED            // Goal achieved, commitment fulfilled
+  FAILED               // Deadline passed without success
+  CANCELLED            // User cancelled before deadline
+}
+
+enum RefereeRelationship {
+  FRIEND
+  FAMILY
+  COLLEAGUE
+  COACH
+}
+
+enum FundLockStatus {
+  LOCKED     // Funds are currently locked
+  RELEASED   // Funds released on success
+  FORFEITED  // Funds forfeited on failure
+  REFUNDED   // Funds refunded on cancellation
+}
+
+enum CommitmentAuditAction {
+  CREATED              // Commitment created
+  UPDATED              // Commitment updated (deadline, stake, etc.)
+  CANCELLED            // Commitment cancelled
+  VERIFICATION_REQUESTED // Verification requested from referee
+  VERIFIED_SUCCESS     // Referee verified as success
+  VERIFIED_FAILED      // Referee verified as failure
+  DEADLINE_EXTENDED    // Deadline was extended
+  STAKE_INCREASED      // Stake amount increased
+  FUNDS_LOCKED         // Funds were locked
+  FUNDS_RELEASED       // Funds were released
+  FUNDS_FORFEITED      // Funds were forfeited
+  FUNDS_REFUNDED       // Funds were refunded (partial or full)
+  ENFORCEMENT_TRIGGERED // Cron job triggered enforcement
+}
+
+// ============================================
+// COMMITMENT DEVICE ENGINE MODELS
+// ============================================
+
+/// Commitment contract - the core commitment with stakes
+/// Users can commit to their goals with real consequences
+model CommitmentContract {
+  id                  String             @id @default(uuid())
+  userId              String
+  goalId              String
+  idempotencyKey      String?            @unique // Client-provided key to prevent duplicates
+  stakeType           StakeType
+  stakeAmount         Decimal?           @db.Decimal(15, 2)
+  antiCharityCause    String?            // Name of the opposing cause
+  antiCharityUrl      String?            // URL for the anti-charity
+  verificationMethod  VerificationMethod
+  deadline            DateTime
+  originalDeadline    DateTime?          // Original deadline before any extensions
+  maxDeadline         DateTime?          // Maximum allowed deadline (original + 90 days)
+  status              CommitmentStatus   @default(ACTIVE)
+  failedAt            DateTime?
+  succeededAt         DateTime?
+  verifiedById        String?            // Referee who verified (if any)
+  verifiedAt          DateTime?
+  lastReminderSentAt  DateTime?          // Track when last reminder was sent
+  refundedAmount      Decimal?           @db.Decimal(15, 2) // Amount refunded on cancellation
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal       Goal                    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  referee    CommitmentReferee?      @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
+  fundLocks  CommitmentFundLock[]
+  auditLogs  CommitmentAuditLog[]
+
+  @@index([userId])
+  @@index([goalId])
+  @@index([userId, status])
+  @@index([status, deadline])
+  @@index([verifiedById, status])
+  @@map("commitment_contracts")
+}
+
+/// Commitment referee - accountability partner who can verify goals
+model CommitmentReferee {
+  id                String              @id @default(uuid())
+  email             String
+  name              String
+  relationship      RefereeRelationship
+  invitedById       String
+  inviteToken       String?             @unique
+  inviteExpires     DateTime?
+  acceptedAt        DateTime?
+  isActive          Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  invitedBy        User                   @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  contracts        CommitmentContract[]
+  verifications    CommitmentVerification[]
+
+  @@unique([email, invitedById])
+  @@index([email])
+  @@index([invitedById])
+  @@map("commitment_referees")
+}
+
+/// Verification record - tracks referee verification decisions
+model CommitmentVerification {
+  id          String   @id @default(uuid())
+  contractId  String
+  refereeId   String
+  decision    Boolean  // true = succeeded, false = failed
+  notes       String?
+  verifiedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  referee  CommitmentReferee @relation(fields: [refereeId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([refereeId])
+  @@map("commitment_verifications")
+}
+
+/// Fund lock record - persistent storage for locked funds (replaces in-memory Map)
+model CommitmentFundLock {
+  id              String          @id @default(uuid())
+  contractId      String
+  paymentLockId   String          // External payment provider lock ID
+  amount          Decimal         @db.Decimal(15, 2)
+  currency        String          @default("NGN")
+  status          FundLockStatus  @default(LOCKED)
+  lockedAt        DateTime        @default(now())
+  releasedAt      DateTime?
+  forfeitedAt     DateTime?
+  refundedAt      DateTime?
+  refundAmount    Decimal?        @db.Decimal(15, 2) // For partial refunds
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  contract CommitmentContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, status]) // Only one active lock per contract
+  @@index([contractId])
+  @@index([status])
+  @@map("commitment_fund_locks")
+}
+
+/// Audit log - tracks all commitment lifecycle events for compliance
+model CommitmentAuditLog {
+  id              String                @id @default(uuid())
+  contractId      String
+  action          CommitmentAuditAction
+  performedBy     String?               // User ID or "system" for cron jobs
+  previousStatus  CommitmentStatus?
+  newStatus       CommitmentStatus?
+  previousAmount  Decimal?              @db.Decimal(15, 2)
+  newAmount       Decimal?              @db.Decimal(15, 2)
+  metadata        Json?                 // Additional context (e.g., reason, notes)
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime              @default(now())
+
+  contract CommitmentContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([action])
+  @@index([performedBy])
+  @@index([createdAt])
+  @@map("commitment_audit_logs")
 }

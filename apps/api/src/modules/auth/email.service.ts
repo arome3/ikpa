@@ -578,6 +578,412 @@ Let's build wealth together!
     `.trim();
   }
 
+  // ============================================
+  // Commitment Device Engine Email Templates
+  // ============================================
+
+  /**
+   * Send referee invitation email
+   *
+   * @param to - Referee email address
+   * @param refereeName - Name of the referee
+   * @param userName - Name of the user inviting them
+   * @param acceptUrl - URL to accept the invitation
+   * @returns Send result
+   */
+  async sendRefereeInviteEmail(
+    to: string,
+    refereeName: string,
+    userName: string,
+    acceptUrl: string,
+  ): Promise<EmailResult> {
+    const html = this.generateRefereeInviteEmailHtml(refereeName, userName, acceptUrl);
+    const text = this.generateRefereeInviteEmailText(refereeName, userName, acceptUrl);
+
+    return this.sendEmail({
+      to,
+      subject: `${userName} wants you to be their accountability partner`,
+      html,
+      text,
+    });
+  }
+
+  /**
+   * Send commitment verification request email
+   *
+   * @param to - Referee email address
+   * @param refereeName - Name of the referee
+   * @param userName - Name of the user
+   * @param goalName - Name of the goal
+   * @param verifyUrl - URL to verify the commitment
+   * @returns Send result
+   */
+  async sendVerificationRequestEmail(
+    to: string,
+    refereeName: string,
+    userName: string,
+    goalName: string,
+    verifyUrl: string,
+  ): Promise<EmailResult> {
+    const html = this.generateVerificationRequestEmailHtml(refereeName, userName, goalName, verifyUrl);
+    const text = this.generateVerificationRequestEmailText(refereeName, userName, goalName, verifyUrl);
+
+    return this.sendEmail({
+      to,
+      subject: `${userName} needs your verification for their goal`,
+      html,
+      text,
+    });
+  }
+
+  /**
+   * Send commitment deadline reminder email
+   *
+   * @param to - User email address
+   * @param userName - Name of the user
+   * @param goalName - Name of the goal
+   * @param hoursRemaining - Hours until deadline
+   * @param dashboardUrl - URL to the dashboard
+   * @returns Send result
+   */
+  async sendDeadlineReminderEmail(
+    to: string,
+    userName: string,
+    goalName: string,
+    hoursRemaining: number,
+    dashboardUrl: string,
+  ): Promise<EmailResult> {
+    const html = this.generateDeadlineReminderEmailHtml(userName, goalName, hoursRemaining, dashboardUrl);
+    const text = this.generateDeadlineReminderEmailText(userName, goalName, hoursRemaining, dashboardUrl);
+
+    const timeText = hoursRemaining >= 24 ? `${Math.floor(hoursRemaining / 24)} days` : `${hoursRemaining} hours`;
+
+    return this.sendEmail({
+      to,
+      subject: `Reminder: ${timeText} left for your "${goalName}" commitment`,
+      html,
+      text,
+    });
+  }
+
+  /**
+   * Send commitment outcome email (success/failure)
+   *
+   * @param to - User email address
+   * @param userName - Name of the user
+   * @param goalName - Name of the goal
+   * @param success - Whether the goal was achieved
+   * @param stakeAmount - Amount of stake (if any)
+   * @returns Send result
+   */
+  async sendCommitmentOutcomeEmail(
+    to: string,
+    userName: string,
+    goalName: string,
+    success: boolean,
+    stakeAmount?: number,
+  ): Promise<EmailResult> {
+    const html = this.generateCommitmentOutcomeEmailHtml(userName, goalName, success, stakeAmount);
+    const text = this.generateCommitmentOutcomeEmailText(userName, goalName, success, stakeAmount);
+
+    return this.sendEmail({
+      to,
+      subject: success ? `Congratulations! You achieved your "${goalName}" goal!` : `Update on your "${goalName}" commitment`,
+      html,
+      text,
+    });
+  }
+
+  private generateRefereeInviteEmailHtml(refereeName: string, userName: string, acceptUrl: string): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Be an Accountability Partner</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">${this.appName}</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Accountability Partner Invitation</p>
+  </div>
+
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
+    <h2 style="color: #333; margin-top: 0;">Hi ${this.escapeHtml(refereeName)}!</h2>
+
+    <p><strong>${this.escapeHtml(userName)}</strong> has invited you to be their accountability partner on ${this.appName}.</p>
+
+    <p>As an accountability partner, you'll help ${this.escapeHtml(userName)} stay committed to their financial goals by:</p>
+    <ul style="padding-left: 20px;">
+      <li>Verifying when they achieve their goals</li>
+      <li>Providing encouragement and support</li>
+      <li>Being part of their journey to financial freedom</li>
+    </ul>
+
+    <p>Research shows that having an accountability partner increases goal success by <strong>78%</strong>!</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${acceptUrl}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 14px 30px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        Accept Invitation
+      </a>
+    </div>
+
+    <p style="color: #666; font-size: 14px;">This invitation expires in 7 days.</p>
+
+    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      If the button doesn't work, copy and paste this link into your browser:<br>
+      <a href="${acceptUrl}" style="color: #10b981;">${acceptUrl}</a>
+    </p>
+  </div>
+
+  <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
+    © ${new Date().getFullYear()} ${this.appName}. All rights reserved.
+  </p>
+</body>
+</html>`;
+  }
+
+  private generateRefereeInviteEmailText(refereeName: string, userName: string, acceptUrl: string): string {
+    return `
+${this.appName} - Accountability Partner Invitation
+
+Hi ${refereeName}!
+
+${userName} has invited you to be their accountability partner on ${this.appName}.
+
+As an accountability partner, you'll help ${userName} stay committed to their financial goals by:
+- Verifying when they achieve their goals
+- Providing encouragement and support
+- Being part of their journey to financial freedom
+
+Research shows that having an accountability partner increases goal success by 78%!
+
+Accept the invitation: ${acceptUrl}
+
+This invitation expires in 7 days.
+
+---
+© ${new Date().getFullYear()} ${this.appName}. All rights reserved.
+    `.trim();
+  }
+
+  private generateVerificationRequestEmailHtml(refereeName: string, userName: string, goalName: string, verifyUrl: string): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification Request</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">Verification Needed</h1>
+  </div>
+
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
+    <p>Hi ${this.escapeHtml(refereeName)},</p>
+
+    <p><strong>${this.escapeHtml(userName)}</strong>'s commitment deadline has passed for their goal:</p>
+
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center;">
+      <strong style="font-size: 18px; color: #333;">"${this.escapeHtml(goalName)}"</strong>
+    </div>
+
+    <p>As their accountability partner, please verify whether they achieved their goal.</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; padding: 14px 30px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        Verify Now
+      </a>
+    </div>
+
+    <p style="color: #666; font-size: 14px;">Please verify within 72 hours.</p>
+  </div>
+
+  <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
+    © ${new Date().getFullYear()} ${this.appName}. All rights reserved.
+  </p>
+</body>
+</html>`;
+  }
+
+  private generateVerificationRequestEmailText(refereeName: string, userName: string, goalName: string, verifyUrl: string): string {
+    return `
+${this.appName} - Verification Request
+
+Hi ${refereeName},
+
+${userName}'s commitment deadline has passed for their goal:
+
+"${goalName}"
+
+As their accountability partner, please verify whether they achieved their goal.
+
+Verify now: ${verifyUrl}
+
+Please verify within 72 hours.
+
+---
+© ${new Date().getFullYear()} ${this.appName}. All rights reserved.
+    `.trim();
+  }
+
+  private generateDeadlineReminderEmailHtml(userName: string, goalName: string, hoursRemaining: number, dashboardUrl: string): string {
+    const timeText = hoursRemaining >= 24 ? `${Math.floor(hoursRemaining / 24)} days` : `${hoursRemaining} hours`;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deadline Reminder</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">Deadline Reminder</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">${timeText} remaining</p>
+  </div>
+
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
+    <p>Hi ${this.escapeHtml(userName)},</p>
+
+    <p>Just a friendly reminder that your commitment deadline is approaching:</p>
+
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center;">
+      <strong style="font-size: 18px; color: #333;">"${this.escapeHtml(goalName)}"</strong>
+      <p style="margin: 10px 0 0 0; color: #666;"><strong>${timeText}</strong> until deadline</p>
+    </div>
+
+    <p>You've got this! Keep pushing towards your goal.</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 14px 30px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        Check Progress
+      </a>
+    </div>
+  </div>
+
+  <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
+    © ${new Date().getFullYear()} ${this.appName}. All rights reserved.
+  </p>
+</body>
+</html>`;
+  }
+
+  private generateDeadlineReminderEmailText(userName: string, goalName: string, hoursRemaining: number, dashboardUrl: string): string {
+    const timeText = hoursRemaining >= 24 ? `${Math.floor(hoursRemaining / 24)} days` : `${hoursRemaining} hours`;
+
+    return `
+${this.appName} - Deadline Reminder
+
+Hi ${userName},
+
+Just a friendly reminder that your commitment deadline is approaching:
+
+"${goalName}"
+${timeText} until deadline
+
+You've got this! Keep pushing towards your goal.
+
+Check your progress: ${dashboardUrl}
+
+---
+© ${new Date().getFullYear()} ${this.appName}. All rights reserved.
+    `.trim();
+  }
+
+  private generateCommitmentOutcomeEmailHtml(userName: string, goalName: string, success: boolean, stakeAmount?: number): string {
+    const bgColor = success ? '#10b981' : '#f59e0b';
+    const title = success ? 'Goal Achieved!' : 'Commitment Update';
+    const emoji = success ? '🎉' : '📊';
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: ${bgColor}; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">${emoji} ${title}</h1>
+  </div>
+
+  <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
+    <p>Hi ${this.escapeHtml(userName)},</p>
+
+    ${success ? `
+    <p>Congratulations! Your commitment to <strong>"${this.escapeHtml(goalName)}"</strong> has been verified as <strong>achieved</strong>!</p>
+    <p>This is what discipline and commitment look like. You made a promise to yourself and kept it.</p>
+    ${stakeAmount ? `<p>Your stake of <strong>${stakeAmount}</strong> has been released back to you.</p>` : ''}
+    <p>Ready to set your next goal? The momentum is on your side!</p>
+    ` : `
+    <p>Your commitment to <strong>"${this.escapeHtml(goalName)}"</strong> has ended.</p>
+    <p>While this goal wasn't achieved this time, remember: every attempt is a learning opportunity. Many successful people try multiple times before reaching their goals.</p>
+    ${stakeAmount ? `<p>Your stake of <strong>${stakeAmount}</strong> has been processed according to your commitment terms.</p>` : ''}
+    <p>Consider what you might do differently next time, and remember: we're here to support your next attempt!</p>
+    `}
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${this.frontendUrl}/dashboard" style="display: inline-block; background: ${bgColor}; color: white; text-decoration: none; padding: 14px 30px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        ${success ? 'Set New Goal' : 'Try Again'}
+      </a>
+    </div>
+  </div>
+
+  <p style="color: #999; font-size: 12px; text-align: center; margin-top: 20px;">
+    © ${new Date().getFullYear()} ${this.appName}. All rights reserved.
+  </p>
+</body>
+</html>`;
+  }
+
+  private generateCommitmentOutcomeEmailText(userName: string, goalName: string, success: boolean, stakeAmount?: number): string {
+    if (success) {
+      return `
+${this.appName} - Goal Achieved!
+
+Hi ${userName},
+
+Congratulations! Your commitment to "${goalName}" has been verified as achieved!
+
+This is what discipline and commitment look like. You made a promise to yourself and kept it.
+${stakeAmount ? `Your stake of ${stakeAmount} has been released back to you.` : ''}
+
+Ready to set your next goal? The momentum is on your side!
+
+Go to dashboard: ${this.frontendUrl}/dashboard
+
+---
+© ${new Date().getFullYear()} ${this.appName}. All rights reserved.
+      `.trim();
+    }
+
+    return `
+${this.appName} - Commitment Update
+
+Hi ${userName},
+
+Your commitment to "${goalName}" has ended.
+
+While this goal wasn't achieved this time, remember: every attempt is a learning opportunity. Many successful people try multiple times before reaching their goals.
+${stakeAmount ? `Your stake of ${stakeAmount} has been processed according to your commitment terms.` : ''}
+
+Consider what you might do differently next time, and remember: we're here to support your next attempt!
+
+Go to dashboard: ${this.frontendUrl}/dashboard
+
+---
+© ${new Date().getFullYear()} ${this.appName}. All rights reserved.
+    `.trim();
+  }
+
   /**
    * Escape HTML special characters
    */
