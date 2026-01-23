@@ -249,6 +249,7 @@ model User {
   gpsAnalyticsEvents     GpsAnalyticsEvent[]
   commitmentContracts    CommitmentContract[]
   invitedReferees        CommitmentReferee[]
+  futureSelfLetters      FutureSelfLetter[]
 
   @@index([email])
   @@index([country])
@@ -1075,4 +1076,61 @@ model CommitmentAuditLog {
   @@index([performedBy])
   @@index([createdAt])
   @@map("commitment_audit_logs")
+}
+
+// ============================================
+// FUTURE SELF SIMULATOR ENUMS
+// ============================================
+
+enum LetterTrigger {
+  USER_REQUEST    // User manually requested a letter
+  WEEKLY_SCHEDULED // Weekly automated letter
+  POST_DECISION   // After major financial decision
+  GOAL_MILESTONE  // Goal progress milestone
+}
+
+// ============================================
+// FUTURE SELF SIMULATOR MODELS
+// ============================================
+
+/// Future Self Letter - Persists generated letters for history and analytics
+/// Stores personalized "Letters from 2045" with simulation data
+model FutureSelfLetter {
+  id                String        @id @default(uuid())
+  userId            String
+  content           String        @db.Text
+  trigger           LetterTrigger @default(USER_REQUEST)
+
+  // Simulation data at time of generation
+  currentSavingsRate    Decimal   @db.Decimal(5, 4)
+  optimizedSavingsRate  Decimal   @db.Decimal(5, 4)
+  currentNetWorth20yr   Decimal   @db.Decimal(15, 2)
+  optimizedNetWorth20yr Decimal   @db.Decimal(15, 2)
+  wealthDifference20yr  Decimal   @db.Decimal(15, 2)
+
+  // User context at time of generation
+  userAge           Int
+  futureAge         Int           @default(60)
+
+  // Quality metrics
+  toneEmpathyScore  Int?          // G-Eval score 1-5
+
+  // Token usage for cost tracking
+  promptTokens      Int           @default(0)
+  completionTokens  Int           @default(0)
+
+  // Engagement tracking (updated by frontend)
+  readAt            DateTime?     // When user first read the letter
+  readDurationMs    Int?          // Time spent reading
+
+  createdAt         DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([userId, readAt])  // For engagement analytics queries
+  @@index([trigger])
+  @@index([createdAt])
+  @@map("future_self_letters")
 }

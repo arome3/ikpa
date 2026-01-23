@@ -222,6 +222,34 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Set a value only if it doesn't exist (SETNX pattern)
+   *
+   * Useful for idempotency checks - returns true only for the first caller.
+   *
+   * @param key - The key to set
+   * @param value - The value to set
+   * @param ttlSeconds - TTL in seconds (required for idempotency to prevent stale keys)
+   * @returns true if key was set (first caller), false if already exists
+   */
+  async setNx<T>(key: string, value: T, ttlSeconds: number): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      // If Redis is unavailable, allow the operation (graceful degradation)
+      return true;
+    }
+
+    try {
+      const serialized = JSON.stringify(value);
+      // SET key value EX ttl NX - atomically set with TTL only if not exists
+      const result = await this.client.set(key, serialized, 'EX', ttlSeconds, 'NX');
+      return result === 'OK';
+    } catch (error) {
+      this.logger.error(`SetNx failed for ${key}: ${error instanceof Error ? error.message : 'Unknown'}`);
+      // On error, allow operation to proceed (graceful degradation)
+      return true;
+    }
+  }
+
+  /**
    * Set a cached value with optional TTL
    */
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<boolean> {
@@ -257,6 +285,70 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.error(`Cache delete failed for ${key}: ${error instanceof Error ? error.message : 'Unknown'}`);
       return false;
+    }
+  }
+
+  /**
+   * Find keys matching a pattern
+   *
+   * WARNING: This uses KEYS command which is O(N) and can block Redis.
+   * Only use for small, bounded keyspaces like retry queues.
+   * For large datasets, consider using SCAN with scanKeys() instead.
+   *
+   * @param pattern - Redis glob-style pattern (e.g., "prefix:*")
+   * @returns Array of matching keys, empty array on error
+   */
+  async keys(pattern: string): Promise<string[]> {
+    if (!this.client || !this.isConnected) {
+      return [];
+    }
+
+    try {
+      return await this.client.keys(pattern);
+    } catch (error) {
+      this.logger.error(
+        `Keys lookup failed for pattern ${pattern}: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Safely iterate over keys matching a pattern using SCAN
+   *
+   * Preferred over keys() for large datasets as SCAN is non-blocking.
+   *
+   * @param pattern - Redis glob-style pattern
+   * @param count - Hint for how many keys to return per iteration (default: 100)
+   * @returns Array of matching keys
+   */
+  async scanKeys(pattern: string, count = 100): Promise<string[]> {
+    if (!this.client || !this.isConnected) {
+      return [];
+    }
+
+    try {
+      const results: string[] = [];
+      let cursor = '0';
+
+      do {
+        const [nextCursor, keys] = await this.client.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          count,
+        );
+        cursor = nextCursor;
+        results.push(...keys);
+      } while (cursor !== '0');
+
+      return results;
+    } catch (error) {
+      this.logger.error(
+        `Scan keys failed for pattern ${pattern}: ${error instanceof Error ? error.message : 'Unknown'}`,
+      );
+      return [];
     }
   }
 }
