@@ -6,6 +6,7 @@
  */
 
 import { TimeHorizon } from '../../finance/interfaces';
+import type { TokenUsage } from '../../ai/anthropic/interfaces';
 
 /**
  * Projected net worth at each time horizon
@@ -110,15 +111,9 @@ export interface TimelineProjection {
 
 /**
  * Token usage statistics from LLM calls
+ * Re-exported from shared anthropic module for convenience
  */
-export interface TokenUsage {
-  /** Tokens in the prompt */
-  promptTokens: number;
-  /** Tokens in the response */
-  completionTokens: number;
-  /** Total tokens used */
-  totalTokens: number;
-}
+export type { TokenUsage } from '../../ai/anthropic/interfaces';
 
 /**
  * Result of tone empathy evaluation

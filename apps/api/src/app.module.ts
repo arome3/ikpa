@@ -16,6 +16,7 @@ import { FutureSelfModule } from './modules/future-self/future-self.module';
 import { UbuntuModule } from './modules/ubuntu/ubuntu.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { OpikModule } from './modules/ai/opik';
+import { AnthropicModule } from './modules/ai/anthropic';
 
 /**
  * Root Application Module
@@ -73,8 +74,9 @@ import { OpikModule } from './modules/ai/opik';
     // Redis (caching, distributed locks)
     RedisModule,
 
-    // AI Observability
-    OpikModule,
+    // AI Services
+    AnthropicModule, // Claude API (Global)
+    OpikModule,      // Distributed tracing + G-Eval metrics (Global)
 
     // Feature modules
     AuthModule,

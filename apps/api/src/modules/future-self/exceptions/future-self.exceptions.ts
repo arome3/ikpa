@@ -3,11 +3,17 @@
  *
  * Custom exceptions for the Future Self feature.
  * All exceptions extend ApiException for consistent error handling.
+ *
+ * Note: AnthropicServiceUnavailableException has been moved to the shared
+ * anthropic module at apps/api/src/modules/ai/anthropic/exceptions/
  */
 
 import { HttpStatus } from '@nestjs/common';
 import { ApiException } from '../../../common/exceptions/api.exception';
 import { ErrorCodes } from '../../../common/constants/error-codes';
+
+// Re-export from shared module for backwards compatibility
+export { AnthropicServiceUnavailableException } from '../../ai/anthropic/exceptions';
 
 /**
  * Thrown when letter generation fails
@@ -19,19 +25,6 @@ export class LetterGenerationException extends ApiException {
       `Failed to generate future self letter: ${reason}`,
       HttpStatus.INTERNAL_SERVER_ERROR,
       details,
-    );
-  }
-}
-
-/**
- * Thrown when Anthropic service is unavailable
- */
-export class AnthropicServiceUnavailableException extends ApiException {
-  constructor() {
-    super(
-      ErrorCodes.FUTURE_SELF_ANTHROPIC_UNAVAILABLE,
-      'AI service is temporarily unavailable. Please try again later.',
-      HttpStatus.SERVICE_UNAVAILABLE,
     );
   }
 }

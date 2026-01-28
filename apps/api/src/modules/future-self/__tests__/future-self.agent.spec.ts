@@ -3,8 +3,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { FutureSelfAgent } from '../agents/future-self.agent';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { OpikService } from '../../ai/opik/opik.service';
+import { MetricsService } from '../../ai/opik/metrics';
 import { SimulationEngineCalculator } from '../../finance/calculators';
-import { AnthropicService } from '../services/anthropic.service';
+import { AnthropicService } from '../../ai/anthropic';
+import { ContentModerationService } from '../services/content-moderation.service';
 import {
   FutureSelfUserNotFoundException,
   InsufficientUserDataException,
@@ -156,6 +158,20 @@ describe('FutureSelfAgent', () => {
       addFeedback: vi.fn(),
     };
 
+    const mockContentModeration = {
+      moderateContent: vi.fn().mockResolvedValue({ isApproved: true, flags: [] }),
+    };
+
+    const mockMetricsService = {
+      evaluateTone: vi.fn().mockResolvedValue({ score: 4, reason: 'Good empathy' }),
+      checkSafety: vi.fn().mockResolvedValue({ score: 1, reason: 'Safe' }),
+      evaluate: vi.fn().mockResolvedValue({
+        success: true,
+        results: {},
+        aggregated: { averageScore: 0.8, passCount: 5, failCount: 0, totalCount: 5 },
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FutureSelfAgent,
@@ -163,6 +179,8 @@ describe('FutureSelfAgent', () => {
         { provide: SimulationEngineCalculator, useValue: mockSimulationEngine },
         { provide: AnthropicService, useValue: mockAnthropic },
         { provide: OpikService, useValue: mockOpik },
+        { provide: ContentModerationService, useValue: mockContentModeration },
+        { provide: MetricsService, useValue: mockMetricsService },
       ],
     }).compile();
 

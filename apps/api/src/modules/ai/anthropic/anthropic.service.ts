@@ -1,73 +1,53 @@
 /**
  * Anthropic Service
  *
- * Reusable wrapper for Claude API interactions.
+ * Shared wrapper for Claude API interactions.
  * Features:
  * - Graceful degradation when API key is not configured
  * - Exponential backoff retry for transient failures
  * - Circuit breaker pattern for sustained failures
+ * - Configurable timeouts for different use cases
+ *
+ * @example
+ * ```typescript
+ * // Simple generation
+ * const response = await anthropicService.generate(
+ *   'Evaluate this text for empathy',
+ *   500,
+ *   'You are an empathy evaluator'
+ * );
+ *
+ * // With custom timeout for evaluations
+ * const response = await anthropicService.generateMessage(
+ *   [{ role: 'user', content: prompt }],
+ *   { maxTokens: 500, timeoutMs: 30000 }
+ * );
+ * ```
  */
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
-import { DEFAULT_ANTHROPIC_MODEL } from '../constants';
-import { AnthropicServiceUnavailableException } from '../exceptions';
-import { TokenUsage } from '../interfaces';
-
-// ==========================================
-// RETRY CONFIGURATION
-// ==========================================
-
-/** Maximum number of retry attempts */
-const MAX_RETRIES = 3;
-
-/** Base delay for exponential backoff (ms) */
-const RETRY_BASE_DELAY_MS = 1000;
-
-/** Maximum delay between retries (ms) */
-const MAX_RETRY_DELAY_MS = 10000;
-
-/** Circuit breaker: failures before opening circuit */
-const CIRCUIT_BREAKER_THRESHOLD = 5;
-
-/** Circuit breaker: time to wait before half-open (ms) */
-const CIRCUIT_BREAKER_RESET_MS = 60000;
-
-/** Default timeout for API calls (ms) - 90 seconds for letter generation */
-const DEFAULT_API_TIMEOUT_MS = 90000;
-
-// ==========================================
-// TYPES
-// ==========================================
-
-/**
- * Message role for Anthropic API
- */
-export type MessageRole = 'user' | 'assistant';
-
-/**
- * Input message for Anthropic API
- */
-export interface AnthropicMessage {
-  role: MessageRole;
-  content: string;
-}
-
-/**
- * Response from Anthropic API
- */
-export interface AnthropicResponse {
-  content: string;
-  usage: TokenUsage;
-  model: string;
-  stopReason: string | null;
-}
-
-/**
- * Circuit breaker state
- */
-type CircuitState = 'closed' | 'open' | 'half-open';
+import {
+  DEFAULT_ANTHROPIC_MODEL,
+  MAX_RETRIES,
+  RETRY_BASE_DELAY_MS,
+  MAX_RETRY_DELAY_MS,
+  CIRCUIT_BREAKER_THRESHOLD,
+  CIRCUIT_BREAKER_RESET_MS,
+  DEFAULT_API_TIMEOUT_MS,
+} from './anthropic.constants';
+import {
+  AnthropicServiceUnavailableException,
+  AnthropicRateLimitException,
+} from './exceptions';
+import {
+  AnthropicMessage,
+  AnthropicResponse,
+  CircuitState,
+  CircuitBreakerStatus,
+  GenerateMessageOptions,
+} from './interfaces';
 
 @Injectable()
 export class AnthropicService implements OnModuleInit {
@@ -91,7 +71,7 @@ export class AnthropicService implements OnModuleInit {
 
     if (!apiKey) {
       this.logger.warn(
-        'ANTHROPIC_API_KEY not configured. Future Self letter generation will be unavailable.',
+        'ANTHROPIC_API_KEY not configured. AI features requiring Claude will be unavailable.',
       );
       return;
     }
@@ -123,6 +103,16 @@ export class AnthropicService implements OnModuleInit {
    */
   getModel(): string {
     return this.model;
+  }
+
+  /**
+   * Get circuit breaker status (for health checks)
+   */
+  getCircuitStatus(): CircuitBreakerStatus {
+    return {
+      state: this.circuitState,
+      failureCount: this.failureCount,
+    };
   }
 
   // ==========================================
@@ -236,11 +226,6 @@ export class AnthropicService implements OnModuleInit {
 
   /**
    * Wrap a promise with a timeout
-   *
-   * @param promise - The promise to wrap
-   * @param timeoutMs - Timeout in milliseconds
-   * @param operation - Name of the operation for error messages
-   * @returns The promise result or throws on timeout
    */
   private async withTimeout<T>(
     promise: Promise<T>,
@@ -273,26 +258,25 @@ export class AnthropicService implements OnModuleInit {
    * Generate a message using Claude with retry and circuit breaker
    *
    * @param messages - Array of messages for the conversation
-   * @param maxTokens - Maximum tokens in the response
-   * @param systemPrompt - Optional system prompt
+   * @param options - Generation options (maxTokens, systemPrompt, timeoutMs)
    * @returns The response from Claude
    * @throws AnthropicServiceUnavailableException if service is not available
    */
   async generateMessage(
     messages: AnthropicMessage[],
-    maxTokens: number,
-    systemPrompt?: string,
+    options: GenerateMessageOptions,
   ): Promise<AnthropicResponse> {
     if (!this.isAvailable()) {
-      throw new AnthropicServiceUnavailableException();
+      throw new AnthropicServiceUnavailableException('API key not configured');
     }
 
     // Check circuit breaker
     if (this.isCircuitOpen()) {
       this.logger.warn('Circuit breaker is open, rejecting request');
-      throw new AnthropicServiceUnavailableException();
+      throw new AnthropicServiceUnavailableException('Circuit breaker is open');
     }
 
+    const { maxTokens, systemPrompt, timeoutMs = DEFAULT_API_TIMEOUT_MS } = options;
     let lastError: unknown;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -308,7 +292,7 @@ export class AnthropicService implements OnModuleInit {
             })),
             ...(systemPrompt && { system: systemPrompt }),
           }),
-          DEFAULT_API_TIMEOUT_MS,
+          timeoutMs,
           'Anthropic API call',
         );
 
@@ -355,7 +339,7 @@ export class AnthropicService implements OnModuleInit {
     // All retries exhausted
     if (lastError instanceof Anthropic.APIError) {
       if (lastError.status === 429) {
-        throw new AnthropicServiceUnavailableException();
+        throw new AnthropicRateLimitException();
       }
     }
 
@@ -364,26 +348,21 @@ export class AnthropicService implements OnModuleInit {
 
   /**
    * Simple helper for single-turn generation
+   *
+   * @param prompt - User prompt
+   * @param maxTokens - Maximum tokens in response
+   * @param systemPrompt - Optional system prompt
+   * @param timeoutMs - Optional custom timeout
    */
   async generate(
     prompt: string,
     maxTokens: number,
     systemPrompt?: string,
+    timeoutMs?: number,
   ): Promise<AnthropicResponse> {
     return this.generateMessage(
       [{ role: 'user', content: prompt }],
-      maxTokens,
-      systemPrompt,
+      { maxTokens, systemPrompt, timeoutMs },
     );
-  }
-
-  /**
-   * Get circuit breaker status (for health checks)
-   */
-  getCircuitStatus(): { state: CircuitState; failureCount: number } {
-    return {
-      state: this.circuitState,
-      failureCount: this.failureCount,
-    };
   }
 }

@@ -12,6 +12,7 @@
  * - PrismaModule: Database access for user data (Global - auto-injected)
  * - FinanceModule: SimulationEngineCalculator for Monte Carlo simulations
  * - OpikModule: Distributed tracing (Global - auto-injected)
+ * - AnthropicModule: Claude API access (Global - auto-injected)
  *
  * Exports:
  * - FutureSelfService: For use in other modules (e.g., scheduled letters)
@@ -23,7 +24,6 @@ import { FinanceModule } from '../finance/finance.module';
 import { FutureSelfController } from './future-self.controller';
 import { FutureSelfService } from './future-self.service';
 import { FutureSelfAgent } from './agents/future-self.agent';
-import { AnthropicService } from './services/anthropic.service';
 import { ContentModerationService } from './services/content-moderation.service';
 import { FutureSelfCronService } from './future-self.cron';
 import { FutureSelfCacheListener } from './future-self-cache.listener';
@@ -37,7 +37,7 @@ import { FutureSelfCacheListener } from './future-self-cache.listener';
   providers: [
     FutureSelfService,
     FutureSelfAgent,
-    AnthropicService,
+    // AnthropicService is now provided by global AnthropicModule
     ContentModerationService,
     FutureSelfCronService,
     FutureSelfCacheListener,

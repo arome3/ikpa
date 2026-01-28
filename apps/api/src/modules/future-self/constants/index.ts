@@ -33,12 +33,8 @@ export const SIMULATION_CACHE_TTL_MS = 5 * 60 * 1000;
 export const LETTER_CACHE_TTL_MS = 30 * 60 * 1000;
 
 /**
- * Default Claude model for letter generation
- */
-export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
-
-/**
  * Maximum tokens for letter generation
+ * Note: DEFAULT_ANTHROPIC_MODEL is now in shared anthropic module
  */
 export const LETTER_MAX_TOKENS = 1000;
 

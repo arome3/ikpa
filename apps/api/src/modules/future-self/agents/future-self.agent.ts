@@ -10,11 +10,10 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { createHash } from 'crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { RedisService } from '../../../redis';
 import { OpikService } from '../../ai/opik/opik.service';
 import { TrackedTrace, TrackedSpan } from '../../ai/opik/interfaces';
+import { MetricsService } from '../../ai/opik/metrics';
 import { SimulationEngineCalculator } from '../../finance/calculators';
 import {
   SimulationInput,
@@ -22,7 +21,7 @@ import {
   TimeHorizon,
 } from '../../finance/interfaces';
 import { GoalStatus } from '@prisma/client';
-import { AnthropicService } from '../services/anthropic.service';
+import { AnthropicService } from '../../ai/anthropic';
 import { ContentModerationService } from '../services/content-moderation.service';
 import {
   FutureSimulation,
@@ -40,14 +39,11 @@ import {
 } from '../exceptions';
 import {
   buildLetterPrompt,
-  buildToneEvaluationPrompt,
   LETTER_SYSTEM_PROMPT,
-  TONE_EVAL_SYSTEM_PROMPT,
 } from '../prompts/future-self.prompt';
 import {
   FUTURE_AGE,
   LETTER_MAX_TOKENS,
-  TONE_EVAL_MAX_TOKENS,
   TRACE_FUTURE_SELF_SIMULATION,
   TRACE_FUTURE_SELF_LETTER,
   SPAN_GET_USER_CONTEXT,
@@ -58,23 +54,17 @@ import {
   FEEDBACK_TONE_EMPATHY,
 } from '../constants';
 
-/** Cache key prefix for tone evaluation scores */
-const TONE_EVAL_CACHE_KEY = 'future_self:tone_eval';
-
-/** Tone evaluation cache TTL: 7 days (letters don't change) */
-const TONE_EVAL_CACHE_TTL_SEC = 7 * 24 * 60 * 60;
-
 @Injectable()
 export class FutureSelfAgent {
   private readonly logger = new Logger(FutureSelfAgent.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redisService: RedisService,
     private readonly opikService: OpikService,
     private readonly simulationEngine: SimulationEngineCalculator,
     private readonly anthropicService: AnthropicService,
     private readonly contentModeration: ContentModerationService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   // ==========================================
@@ -353,6 +343,48 @@ export class FutureSelfAgent {
         );
       }
 
+      // Span 4.5: Financial safety guardrail check (with error protection)
+      const safetySpan = this.safeCreateToolSpan(trace, 'eval_financial_safety', {
+        letterLength: response.content.length,
+      });
+
+      try {
+        const safetyResult = await this.metricsService.checkSafety(response.content);
+
+        this.safeEndSpan(safetySpan, {
+          output: {
+            score: safetyResult.score,
+            reason: safetyResult.reason,
+            blocked: safetyResult.score === 0,
+          },
+          metadata: safetyResult.metadata ?? {},
+        });
+
+        // If financial safety check fails (score 0), block the response
+        if (safetyResult.score === 0) {
+          this.logger.error(
+            `Financial safety check failed for user ${userId}: ${safetyResult.reason}`,
+          );
+          throw new LetterGenerationException(
+            'Generated content contains potentially unsafe financial advice. Please try again.',
+            { userId, reason: safetyResult.reason },
+          );
+        }
+      } catch (safetyError) {
+        // If it's our own LetterGenerationException, rethrow it
+        if (safetyError instanceof LetterGenerationException) {
+          throw safetyError;
+        }
+        // Otherwise log and continue - don't block on safety check errors
+        this.logger.warn(
+          `Financial safety check failed: ${safetyError instanceof Error ? safetyError.message : 'Unknown error'}`,
+        );
+        this.safeEndSpan(safetySpan, {
+          output: { error: 'Safety check error' },
+          metadata: {},
+        });
+      }
+
       // Span 5: Evaluate tone empathy (with error protection)
       const toneSpan = this.safeCreateLLMSpan(trace, SPAN_EVALUATE_TONE, {
         evaluationType: 'tone_empathy',
@@ -471,61 +503,21 @@ export class FutureSelfAgent {
   // ==========================================
 
   /**
-   * Evaluate tone empathy using G-Eval with caching
+   * Evaluate tone empathy using MetricsService G-Eval
    *
-   * Caches results by letter content hash to avoid redundant LLM calls.
-   * Cache TTL is 7 days since letters don't change once generated.
+   * Delegates to MetricsService which handles caching, LLM calls,
+   * and graceful degradation.
    */
   private async evaluateToneEmpathy(letter: string): Promise<ToneEvaluationResult> {
-    // Create hash of letter content for cache key
-    const contentHash = createHash('sha256').update(letter).digest('hex').slice(0, 16);
-    const cacheKey = `${TONE_EVAL_CACHE_KEY}:${contentHash}`;
-
-    // Check cache first
-    try {
-      const cached = await this.redisService.get<ToneEvaluationResult>(cacheKey);
-      if (cached) {
-        this.logger.debug(`Tone evaluation cache hit for hash ${contentHash}`);
-        return cached;
-      }
-    } catch (cacheError) {
-      this.logger.warn(
-        `Failed to read tone evaluation cache: ${cacheError instanceof Error ? cacheError.message : 'Unknown error'}`,
-      );
-      // Continue to evaluate - cache miss doesn't block
-    }
-
-    // Cache miss - evaluate using LLM
-    const prompt = buildToneEvaluationPrompt(letter);
-    const response = await this.anthropicService.generate(
-      prompt,
-      TONE_EVAL_MAX_TOKENS,
-      TONE_EVAL_SYSTEM_PROMPT,
+    const result = await this.metricsService.evaluateTone(
+      { input: '', output: '' }, // Context not needed for letter evaluation
+      letter,
     );
 
-    let result: ToneEvaluationResult;
-    try {
-      // Parse JSON response
-      const parsed = JSON.parse(response.content);
-      result = {
-        score: Math.max(1, Math.min(5, Number(parsed.score) || 3)),
-        reasoning: parsed.reasoning || 'No reasoning provided',
-      };
-    } catch {
-      this.logger.warn(`Failed to parse tone evaluation response: ${response.content}`);
-      result = { score: 3, reasoning: 'Parse error - using default score' };
-    }
-
-    // Cache the result (fire-and-forget, don't block on cache write)
-    this.redisService
-      .set(cacheKey, result, TONE_EVAL_CACHE_TTL_SEC)
-      .catch((err) =>
-        this.logger.warn(
-          `Failed to cache tone evaluation: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        ),
-      );
-
-    return result;
+    return {
+      score: result.score,
+      reasoning: result.reason,
+    };
   }
 
   /**
