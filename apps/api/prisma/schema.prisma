@@ -252,6 +252,7 @@ model User {
   futureSelfLetters      FutureSelfLetter[]
   dependencyRatioHistory DependencyRatioHistory[]
   familyEmergencies      FamilyEmergency[]
+  storyCards             StoryCard[]
 
   @@index([email])
   @@index([country])
@@ -1125,6 +1126,24 @@ enum AdjustmentType {
 }
 
 // ============================================
+// STORY CARDS ENUMS
+// ============================================
+
+enum StoryCardType {
+  FUTURE_SELF    // After reading letter from 2045
+  COMMITMENT     // When user creates a commitment with stakes
+  MILESTONE      // When goal is verified as achieved
+  RECOVERY       // When user completes a recovery path
+}
+
+enum SharePlatform {
+  TWITTER
+  LINKEDIN
+  WHATSAPP
+  INSTAGRAM
+}
+
+// ============================================
 // FUTURE SELF SIMULATOR MODELS
 // ============================================
 
@@ -1227,4 +1246,78 @@ model FamilyEmergency {
   @@index([userId])
   @@index([userId, status])
   @@map("family_emergencies")
+}
+
+// ============================================
+// STORY CARDS MODELS
+// ============================================
+
+/// Story Card for shareable social media content
+/// Generates beautiful cards capturing the user's financial journey
+model StoryCard {
+  id                  String         @id @default(uuid())
+  userId              String
+  idempotencyKey      String?        @unique // Client-provided key to prevent duplicate cards
+  type                StoryCardType
+  headline            String
+  subheadline         String
+  keyMetricLabel      String
+  keyMetricValue      String
+  quote               String?        @db.Text
+  shareUrl            String         @unique
+  gradient            String[]       // Two hex colors [start, end]
+  gradientIndex       Int?           // Index of selected gradient for A/B testing
+  hashtags            String[]
+  platforms           String[]       // Available platforms
+
+  // Privacy settings
+  anonymizeAmounts    Boolean        @default(true)
+  revealActualNumbers Boolean        @default(false)
+  includePersonalData Boolean        @default(false)
+
+  // Source reference
+  sourceId            String?        // Letter/Commitment/Goal/Recovery ID
+
+  // Analytics
+  isPublic            Boolean        @default(false)
+  viewCount           Int            @default(0)
+  referralCode        String         @unique
+
+  // Soft delete for GDPR compliance
+  isActive            Boolean        @default(true)
+
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  expiresAt           DateTime?
+
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shareEvents         ShareEvent[]
+
+  @@index([userId])
+  @@index([userId, type])
+  @@index([userId, isActive])
+  @@index([shareUrl])
+  @@index([referralCode])
+  @@map("story_cards")
+}
+
+/// Share Event tracking for viral analytics
+/// Tracks when users share cards and conversion metrics
+model ShareEvent {
+  id           String        @id @default(uuid())
+  cardId       String
+  platform     SharePlatform
+  sharedAt     DateTime      @default(now())
+  referralCode String?
+  signupUserId String?       // User who signed up from this share
+  ipAddress    String?
+  userAgent    String?
+
+  card         StoryCard     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+  @@index([cardId, platform])
+  @@index([referralCode])
+  @@index([sharedAt])
+  @@map("share_events")
 }

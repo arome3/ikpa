@@ -14,6 +14,7 @@ import { GpsModule } from './modules/gps/gps.module';
 import { CommitmentModule } from './modules/commitment/commitment.module';
 import { FutureSelfModule } from './modules/future-self/future-self.module';
 import { UbuntuModule } from './modules/ubuntu/ubuntu.module';
+import { StoryCardsModule } from './modules/story-cards/story-cards.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { OpikModule } from './modules/ai/opik';
 import { AnthropicModule } from './modules/ai/anthropic';
@@ -87,6 +88,7 @@ import { AnthropicModule } from './modules/ai/anthropic';
     CommitmentModule,
     FutureSelfModule,
     UbuntuModule,
+    StoryCardsModule,
     // AIModule,
   ],
   controllers: [],
