@@ -36,3 +36,6 @@ export * from './exceptions';
 
 // Metrics (re-exported from submodule)
 export * from './metrics';
+
+// Optimizer (re-exported from submodule)
+export * from './optimizer';

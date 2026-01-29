@@ -7,7 +7,7 @@ Use this prompt template when asking Claude Code to implement a feature from the
 ## Prompt Template
 
 ```
-Implement the feature described in: docs/implementation/06-commitment-device.md
+Implement the feature described in: docs/implementation/11-opik-optimizer.md
 
 ## Context
 This is part of the IKPA (Intelligent Knowledge-Powered Assistant) hackathon project - an AI-powered financial coaching app targeting the "Commit to Change" hackathon with a maximum prize of $10,000.
@@ -158,7 +158,7 @@ Before implementing, read these for context:
 - `packages/shared/src/types/` - Shared type definitions
 - `docs/HACKATHON_STRATEGY.md` - Full context on the project
 
-Now implement the feature from docs/implementation/06-commitment-device.md following all requirements above.
+Now implement the feature from docs/implementation/11-opik-optimizer.md following all requirements above.
 ```
 
 ---

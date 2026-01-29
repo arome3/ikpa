@@ -221,27 +221,27 @@ model User {
   passwordResetExpires DateTime?
 
   // Email verification
-  emailVerified     Boolean   @default(false)
-  emailVerifiedAt   DateTime?
+  emailVerified   Boolean   @default(false)
+  emailVerifiedAt DateTime?
 
   // Password security
   passwordChangedAt DateTime?
 
   // Relations
-  incomeSources      IncomeSource[]
-  expenses           Expense[]
-  savingsAccounts    SavingsAccount[]
-  investments        Investment[]
-  debts              Debt[]
-  familySupport      FamilySupport[]
-  goals              Goal[]
-  snapshots          FinancialSnapshot[]
-  refreshTokens      RefreshToken[]
-  aiConversations    AIConversation[]
-  subscriptions      Subscription[]
-  emailVerifications EmailVerification[]
-  mfaConfig          MfaConfig?
-  sessions           UserSession[]
+  incomeSources          IncomeSource[]
+  expenses               Expense[]
+  savingsAccounts        SavingsAccount[]
+  investments            Investment[]
+  debts                  Debt[]
+  familySupport          FamilySupport[]
+  goals                  Goal[]
+  snapshots              FinancialSnapshot[]
+  refreshTokens          RefreshToken[]
+  aiConversations        AIConversation[]
+  subscriptions          Subscription[]
+  emailVerifications     EmailVerification[]
+  mfaConfig              MfaConfig?
+  sessions               UserSession[]
   budgets                Budget[]
   recoverySessions       RecoverySession[]
   savingsRateAdjustments SavingsRateAdjustment[]
@@ -395,23 +395,23 @@ model Investment {
 
 /// Debt obligations - loans, credit cards, BNPL
 model Debt {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   userId           String
   name             String
   type             DebtType
-  originalAmount   Decimal  @db.Decimal(15, 2)
-  remainingBalance Decimal  @db.Decimal(15, 2)
-  currency         Currency @default(NGN)
-  interestRate     Decimal  @db.Decimal(5, 2)
-  minimumPayment   Decimal  @db.Decimal(15, 2)
+  originalAmount   Decimal   @db.Decimal(15, 2)
+  remainingBalance Decimal   @db.Decimal(15, 2)
+  currency         Currency  @default(NGN)
+  interestRate     Decimal   @db.Decimal(5, 2)
+  minimumPayment   Decimal   @db.Decimal(15, 2)
   dueDate          Int? // Day of month (1-31)
   institution      String?
   notes            String?
-  isActive         Boolean  @default(true)
+  isActive         Boolean   @default(true)
   startDate        DateTime
   targetPayoffDate DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -451,7 +451,7 @@ model Goal {
   description   String?
   category      GoalCategory
   targetAmount  Decimal      @db.Decimal(15, 2)
-  currentAmount Decimal      @db.Decimal(15, 2) @default(0)
+  currentAmount Decimal      @default(0) @db.Decimal(15, 2)
   currency      Currency     @default(NGN)
   targetDate    DateTime?
   priority      Int          @default(0)
@@ -487,18 +487,18 @@ model GoalContribution {
 
 /// Point-in-time financial metrics snapshot
 model FinancialSnapshot {
-  id              String   @id @default(uuid())
-  userId          String
-  date            DateTime @default(now())
+  id     String   @id @default(uuid())
+  userId String
+  date   DateTime @default(now())
 
   // Core metrics (values)
   cashFlowScore   Int // 0-100 final weighted score
-  savingsRate     Decimal  @db.Decimal(5, 2) // percentage
-  runwayMonths    Decimal  @db.Decimal(5, 2) // months of emergency fund
-  burnRate        Decimal  @db.Decimal(15, 2) // monthly expenses + debt payments
-  dependencyRatio Decimal  @db.Decimal(5, 2) // % of income supporting others
-  debtToIncome    Decimal  @db.Decimal(5, 2) @default(0) // % of income going to debt
-  incomeStability Decimal  @db.Decimal(5, 2) @default(0) // coefficient of variation
+  savingsRate     Decimal @db.Decimal(5, 2) // percentage
+  runwayMonths    Decimal @db.Decimal(5, 2) // months of emergency fund
+  burnRate        Decimal @db.Decimal(15, 2) // monthly expenses + debt payments
+  dependencyRatio Decimal @db.Decimal(5, 2) // % of income supporting others
+  debtToIncome    Decimal @default(0) @db.Decimal(5, 2) // % of income going to debt
+  incomeStability Decimal @default(0) @db.Decimal(5, 2) // coefficient of variation
 
   // Individual component scores (0-100 each)
   // Stored to avoid data loss when reconstructing from cache
@@ -509,13 +509,13 @@ model FinancialSnapshot {
   dependencyRatioScore Int @default(0)
 
   // Totals
-  netWorth      Decimal  @db.Decimal(15, 2)
-  totalIncome   Decimal  @db.Decimal(15, 2)
-  totalExpenses Decimal  @db.Decimal(15, 2)
-  totalSavings  Decimal  @db.Decimal(15, 2)
-  totalDebt     Decimal  @db.Decimal(15, 2)
-  totalAssets   Decimal  @db.Decimal(15, 2)
-  totalSupport  Decimal  @db.Decimal(15, 2)
+  netWorth      Decimal @db.Decimal(15, 2)
+  totalIncome   Decimal @db.Decimal(15, 2)
+  totalExpenses Decimal @db.Decimal(15, 2)
+  totalSavings  Decimal @db.Decimal(15, 2)
+  totalDebt     Decimal @db.Decimal(15, 2)
+  totalAssets   Decimal @db.Decimal(15, 2)
+  totalSupport  Decimal @db.Decimal(15, 2)
 
   currency  Currency @default(NGN)
   createdAt DateTime @default(now())
@@ -584,7 +584,7 @@ model Subscription {
   id              String               @id @default(uuid())
   userId          String
   name            String
-  merchantPattern String?              // Original merchant name that matched
+  merchantPattern String? // Original merchant name that matched
   category        SubscriptionCategory
   monthlyCost     Decimal              @db.Decimal(15, 2)
   annualCost      Decimal              @db.Decimal(15, 2)
@@ -599,7 +599,7 @@ model Subscription {
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   swipeDecisions SwipeDecision[]
 
   @@unique([userId, merchantPattern], name: "unique_user_merchant")
@@ -615,7 +615,7 @@ model SwipeDecision {
   subscriptionId String
   userId         String
   action         SwipeAction
-  reason         String?     // Optional reason for the decision (e.g., cancellation reason)
+  reason         String? // Optional reason for the decision (e.g., cancellation reason)
   decidedAt      DateTime    @default(now())
   createdAt      DateTime    @default(now())
 
@@ -652,9 +652,9 @@ model MfaConfig {
   id          String    @id @default(uuid())
   userId      String    @unique
   method      MfaMethod @default(TOTP)
-  secret      String    // Encrypted TOTP secret
+  secret      String // Encrypted TOTP secret
   isEnabled   Boolean   @default(false)
-  backupCodes String[]  // Hashed backup codes
+  backupCodes String[] // Hashed backup codes
   verifiedAt  DateTime? // When MFA was first verified
   lastUsedAt  DateTime?
   createdAt   DateTime  @default(now())
@@ -668,11 +668,11 @@ model MfaConfig {
 /// Track login attempts for account lockout protection
 model LoginAttempt {
   id        String   @id @default(uuid())
-  email     String   // Email used (not userId - user may not exist)
+  email     String // Email used (not userId - user may not exist)
   ipAddress String
   userAgent String?
   success   Boolean
-  reason    String?  // Failure reason code
+  reason    String? // Failure reason code
   createdAt DateTime @default(now())
 
   @@index([email])
@@ -691,7 +691,7 @@ model AccountLockout {
   attempts    Int       @default(0)
   reason      String    @default("FAILED_LOGIN_ATTEMPTS")
   unlockedAt  DateTime?
-  unlockedBy  String?   // Admin user ID if manually unlocked
+  unlockedBy  String? // Admin user ID if manually unlocked
 
   @@index([email])
   @@index([lockedUntil])
@@ -703,12 +703,12 @@ model UserSession {
   id             String   @id @default(uuid())
   userId         String
   refreshTokenId String   @unique // Links to RefreshToken.id
-  deviceName     String?  // "iPhone 15 Pro", "Chrome on MacOS"
-  deviceType     String?  // "mobile", "desktop", "tablet"
+  deviceName     String? // "iPhone 15 Pro", "Chrome on MacOS"
+  deviceType     String? // "mobile", "desktop", "tablet"
   browser        String?
   os             String?
   ipAddress      String
-  location       String?  // City, Country from IP geolocation
+  location       String? // City, Country from IP geolocation
   lastActiveAt   DateTime @default(now())
   createdAt      DateTime @default(now())
 
@@ -724,12 +724,12 @@ model UserSession {
 /// Security audit log for compliance and monitoring
 model AuthAuditLog {
   id        String        @id @default(uuid())
-  userId    String?       // Nullable for failed logins with non-existent users
-  email     String?       // For tracking attempts on non-existent accounts
+  userId    String? // Nullable for failed logins with non-existent users
+  email     String? // For tracking attempts on non-existent accounts
   eventType AuthEventType
   ipAddress String
   userAgent String?
-  metadata  Json?         // Additional event-specific data
+  metadata  Json? // Additional event-specific data
   success   Boolean       @default(true)
   createdAt DateTime      @default(now())
 
@@ -800,13 +800,13 @@ model RecoverySession {
   newProbability      Decimal        @db.Decimal(5, 4)
   selectedPathId      String?
   selectedAt          DateTime?
-  actionExecutedAt    DateTime?      // When the recovery action was actually executed
+  actionExecutedAt    DateTime? // When the recovery action was actually executed
   status              RecoveryStatus @default(PENDING)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
-  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goal            Goal?                @relation(fields: [goalId], references: [id])
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal            Goal?               @relation(fields: [goalId], references: [id])
   analyticsEvents GpsAnalyticsEvent[]
 
   @@index([userId])
@@ -817,17 +817,17 @@ model RecoverySession {
 /// Temporary savings rate adjustment for GPS Re-Router
 /// Tracks when users commit to temporarily increasing their savings rate
 model SavingsRateAdjustment {
-  id               String   @id @default(uuid())
-  userId           String
-  sessionId        String
-  additionalRate   Decimal  @db.Decimal(5, 4) // e.g., 0.05 for 5%
-  durationWeeks    Int
-  startDate        DateTime @default(now())
-  endDate          DateTime
-  isActive         Boolean  @default(true)
-  originalRate     Decimal  @db.Decimal(5, 4)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String   @id @default(uuid())
+  userId         String
+  sessionId      String
+  additionalRate Decimal  @db.Decimal(5, 4) // e.g., 0.05 for 5%
+  durationWeeks  Int
+  startDate      DateTime @default(now())
+  endDate        DateTime
+  isActive       Boolean  @default(true)
+  originalRate   Decimal  @db.Decimal(5, 4)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -866,14 +866,14 @@ model CategoryFreeze {
 /// GPS Analytics Event for tracking metrics
 /// Tracks key metrics: path selections, goal survival, recovery times
 model GpsAnalyticsEvent {
-  id              String   @id @default(uuid())
-  userId          String
-  sessionId       String?
-  eventType       GpsEventType
-  eventData       Json?
-  previousValue   Decimal? @db.Decimal(15, 4)
-  newValue        Decimal? @db.Decimal(15, 4)
-  createdAt       DateTime @default(now())
+  id            String       @id @default(uuid())
+  userId        String
+  sessionId     String?
+  eventType     GpsEventType
+  eventData     Json?
+  previousValue Decimal?     @db.Decimal(15, 4)
+  newValue      Decimal?     @db.Decimal(15, 4)
+  createdAt     DateTime     @default(now())
 
   user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   session RecoverySession? @relation(fields: [sessionId], references: [id])
@@ -887,8 +887,8 @@ model GpsAnalyticsEvent {
 
 enum GpsEventType {
   PATH_SELECTED
-  GOAL_SURVIVED       // User didn't abandon goal after slip
-  GOAL_ABANDONED      // User abandoned goal after slip
+  GOAL_SURVIVED // User didn't abandon goal after slip
+  GOAL_ABANDONED // User abandoned goal after slip
   RECOVERY_STARTED
   RECOVERY_COMPLETED
   PROBABILITY_RESTORED
@@ -900,23 +900,23 @@ enum GpsEventType {
 // ============================================
 
 enum StakeType {
-  SOCIAL        // Social accountability with referee
-  ANTI_CHARITY  // Donate to opposing cause if failed
-  LOSS_POOL     // Funds locked until goal achieved
+  SOCIAL // Social accountability with referee
+  ANTI_CHARITY // Donate to opposing cause if failed
+  LOSS_POOL // Funds locked until goal achieved
 }
 
 enum VerificationMethod {
-  SELF_REPORT    // User self-reports completion
+  SELF_REPORT // User self-reports completion
   REFEREE_VERIFY // Referee must verify completion
-  AUTO_DETECT    // Automatic detection (future feature)
+  AUTO_DETECT // Automatic detection (future feature)
 }
 
 enum CommitmentStatus {
-  ACTIVE               // Commitment is active
+  ACTIVE // Commitment is active
   PENDING_VERIFICATION // Awaiting referee verification
-  SUCCEEDED            // Goal achieved, commitment fulfilled
-  FAILED               // Deadline passed without success
-  CANCELLED            // User cancelled before deadline
+  SUCCEEDED // Goal achieved, commitment fulfilled
+  FAILED // Deadline passed without success
+  CANCELLED // User cancelled before deadline
 }
 
 enum RefereeRelationship {
@@ -927,25 +927,25 @@ enum RefereeRelationship {
 }
 
 enum FundLockStatus {
-  LOCKED     // Funds are currently locked
-  RELEASED   // Funds released on success
-  FORFEITED  // Funds forfeited on failure
-  REFUNDED   // Funds refunded on cancellation
+  LOCKED // Funds are currently locked
+  RELEASED // Funds released on success
+  FORFEITED // Funds forfeited on failure
+  REFUNDED // Funds refunded on cancellation
 }
 
 enum CommitmentAuditAction {
-  CREATED              // Commitment created
-  UPDATED              // Commitment updated (deadline, stake, etc.)
-  CANCELLED            // Commitment cancelled
+  CREATED // Commitment created
+  UPDATED // Commitment updated (deadline, stake, etc.)
+  CANCELLED // Commitment cancelled
   VERIFICATION_REQUESTED // Verification requested from referee
-  VERIFIED_SUCCESS     // Referee verified as success
-  VERIFIED_FAILED      // Referee verified as failure
-  DEADLINE_EXTENDED    // Deadline was extended
-  STAKE_INCREASED      // Stake amount increased
-  FUNDS_LOCKED         // Funds were locked
-  FUNDS_RELEASED       // Funds were released
-  FUNDS_FORFEITED      // Funds were forfeited
-  FUNDS_REFUNDED       // Funds were refunded (partial or full)
+  VERIFIED_SUCCESS // Referee verified as success
+  VERIFIED_FAILED // Referee verified as failure
+  DEADLINE_EXTENDED // Deadline was extended
+  STAKE_INCREASED // Stake amount increased
+  FUNDS_LOCKED // Funds were locked
+  FUNDS_RELEASED // Funds were released
+  FUNDS_FORFEITED // Funds were forfeited
+  FUNDS_REFUNDED // Funds were refunded (partial or full)
   ENFORCEMENT_TRIGGERED // Cron job triggered enforcement
 }
 
@@ -956,33 +956,33 @@ enum CommitmentAuditAction {
 /// Commitment contract - the core commitment with stakes
 /// Users can commit to their goals with real consequences
 model CommitmentContract {
-  id                  String             @id @default(uuid())
-  userId              String
-  goalId              String
-  idempotencyKey      String?            @unique // Client-provided key to prevent duplicates
-  stakeType           StakeType
-  stakeAmount         Decimal?           @db.Decimal(15, 2)
-  antiCharityCause    String?            // Name of the opposing cause
-  antiCharityUrl      String?            // URL for the anti-charity
-  verificationMethod  VerificationMethod
-  deadline            DateTime
-  originalDeadline    DateTime?          // Original deadline before any extensions
-  maxDeadline         DateTime?          // Maximum allowed deadline (original + 90 days)
-  status              CommitmentStatus   @default(ACTIVE)
-  failedAt            DateTime?
-  succeededAt         DateTime?
-  verifiedById        String?            // Referee who verified (if any)
-  verifiedAt          DateTime?
-  lastReminderSentAt  DateTime?          // Track when last reminder was sent
-  refundedAmount      Decimal?           @db.Decimal(15, 2) // Amount refunded on cancellation
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  id                 String             @id @default(uuid())
+  userId             String
+  goalId             String
+  idempotencyKey     String?            @unique // Client-provided key to prevent duplicates
+  stakeType          StakeType
+  stakeAmount        Decimal?           @db.Decimal(15, 2)
+  antiCharityCause   String? // Name of the opposing cause
+  antiCharityUrl     String? // URL for the anti-charity
+  verificationMethod VerificationMethod
+  deadline           DateTime
+  originalDeadline   DateTime? // Original deadline before any extensions
+  maxDeadline        DateTime? // Maximum allowed deadline (original + 90 days)
+  status             CommitmentStatus   @default(ACTIVE)
+  failedAt           DateTime?
+  succeededAt        DateTime?
+  verifiedById       String? // Referee who verified (if any)
+  verifiedAt         DateTime?
+  lastReminderSentAt DateTime? // Track when last reminder was sent
+  refundedAmount     Decimal?           @db.Decimal(15, 2) // Amount refunded on cancellation
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
-  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goal       Goal                    @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  referee    CommitmentReferee?      @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
-  fundLocks  CommitmentFundLock[]
-  auditLogs  CommitmentAuditLog[]
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal      Goal                 @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  referee   CommitmentReferee?   @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
+  fundLocks CommitmentFundLock[]
+  auditLogs CommitmentAuditLog[]
 
   @@index([userId])
   @@index([goalId])
@@ -994,21 +994,21 @@ model CommitmentContract {
 
 /// Commitment referee - accountability partner who can verify goals
 model CommitmentReferee {
-  id                String              @id @default(uuid())
-  email             String
-  name              String
-  relationship      RefereeRelationship
-  invitedById       String
-  inviteToken       String?             @unique
-  inviteExpires     DateTime?
-  acceptedAt        DateTime?
-  isActive          Boolean             @default(false)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  id            String              @id @default(uuid())
+  email         String
+  name          String
+  relationship  RefereeRelationship
+  invitedById   String
+  inviteToken   String?             @unique
+  inviteExpires DateTime?
+  acceptedAt    DateTime?
+  isActive      Boolean             @default(false)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
-  invitedBy        User                   @relation(fields: [invitedById], references: [id], onDelete: Cascade)
-  contracts        CommitmentContract[]
-  verifications    CommitmentVerification[]
+  invitedBy     User                     @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  contracts     CommitmentContract[]
+  verifications CommitmentVerification[]
 
   @@unique([email, invitedById])
   @@index([email])
@@ -1018,15 +1018,15 @@ model CommitmentReferee {
 
 /// Verification record - tracks referee verification decisions
 model CommitmentVerification {
-  id          String   @id @default(uuid())
-  contractId  String
-  refereeId   String
-  decision    Boolean  // true = succeeded, false = failed
-  notes       String?
-  verifiedAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  contractId String
+  refereeId  String
+  decision   Boolean // true = succeeded, false = failed
+  notes      String?
+  verifiedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 
-  referee  CommitmentReferee @relation(fields: [refereeId], references: [id], onDelete: Cascade)
+  referee CommitmentReferee @relation(fields: [refereeId], references: [id], onDelete: Cascade)
 
   @@index([contractId])
   @@index([refereeId])
@@ -1035,19 +1035,19 @@ model CommitmentVerification {
 
 /// Fund lock record - persistent storage for locked funds (replaces in-memory Map)
 model CommitmentFundLock {
-  id              String          @id @default(uuid())
-  contractId      String
-  paymentLockId   String          // External payment provider lock ID
-  amount          Decimal         @db.Decimal(15, 2)
-  currency        String          @default("NGN")
-  status          FundLockStatus  @default(LOCKED)
-  lockedAt        DateTime        @default(now())
-  releasedAt      DateTime?
-  forfeitedAt     DateTime?
-  refundedAt      DateTime?
-  refundAmount    Decimal?        @db.Decimal(15, 2) // For partial refunds
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id            String         @id @default(uuid())
+  contractId    String
+  paymentLockId String // External payment provider lock ID
+  amount        Decimal        @db.Decimal(15, 2)
+  currency      String         @default("NGN")
+  status        FundLockStatus @default(LOCKED)
+  lockedAt      DateTime       @default(now())
+  releasedAt    DateTime?
+  forfeitedAt   DateTime?
+  refundedAt    DateTime?
+  refundAmount  Decimal?       @db.Decimal(15, 2) // For partial refunds
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   contract CommitmentContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
@@ -1059,18 +1059,18 @@ model CommitmentFundLock {
 
 /// Audit log - tracks all commitment lifecycle events for compliance
 model CommitmentAuditLog {
-  id              String                @id @default(uuid())
-  contractId      String
-  action          CommitmentAuditAction
-  performedBy     String?               // User ID or "system" for cron jobs
-  previousStatus  CommitmentStatus?
-  newStatus       CommitmentStatus?
-  previousAmount  Decimal?              @db.Decimal(15, 2)
-  newAmount       Decimal?              @db.Decimal(15, 2)
-  metadata        Json?                 // Additional context (e.g., reason, notes)
-  ipAddress       String?
-  userAgent       String?
-  createdAt       DateTime              @default(now())
+  id             String                @id @default(uuid())
+  contractId     String
+  action         CommitmentAuditAction
+  performedBy    String? // User ID or "system" for cron jobs
+  previousStatus CommitmentStatus?
+  newStatus      CommitmentStatus?
+  previousAmount Decimal?              @db.Decimal(15, 2)
+  newAmount      Decimal?              @db.Decimal(15, 2)
+  metadata       Json? // Additional context (e.g., reason, notes)
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime              @default(now())
 
   contract CommitmentContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
@@ -1086,10 +1086,10 @@ model CommitmentAuditLog {
 // ============================================
 
 enum LetterTrigger {
-  USER_REQUEST    // User manually requested a letter
+  USER_REQUEST // User manually requested a letter
   WEEKLY_SCHEDULED // Weekly automated letter
-  POST_DECISION   // After major financial decision
-  GOAL_MILESTONE  // Goal progress milestone
+  POST_DECISION // After major financial decision
+  GOAL_MILESTONE // Goal progress milestone
 }
 
 // ============================================
@@ -1097,9 +1097,9 @@ enum LetterTrigger {
 // ============================================
 
 enum RiskLevel {
-  GREEN      // 0-10% dependency ratio - Sustainable
-  ORANGE     // 10-35% dependency ratio - Moderate (healthy in African context)
-  RED        // 35%+ dependency ratio - Review Needed
+  GREEN // 0-10% dependency ratio - Sustainable
+  ORANGE // 10-35% dependency ratio - Moderate (healthy in African context)
+  RED // 35%+ dependency ratio - Review Needed
 }
 
 enum EmergencyType {
@@ -1113,16 +1113,16 @@ enum EmergencyType {
 }
 
 enum EmergencyStatus {
-  PENDING           // Emergency reported, awaiting adjustment selection
-  ADJUSTING         // User selected adjustment, processing
-  RESOLVED          // Emergency handled
-  CANCELLED         // User cancelled
+  PENDING // Emergency reported, awaiting adjustment selection
+  ADJUSTING // User selected adjustment, processing
+  RESOLVED // Emergency handled
+  CANCELLED // User cancelled
 }
 
 enum AdjustmentType {
-  EMERGENCY_FUND_TAP     // Use emergency fund
-  GOAL_TIMELINE_EXTEND   // Extend goal deadline
-  SAVINGS_RATE_REDUCE    // Temporarily reduce savings
+  EMERGENCY_FUND_TAP // Use emergency fund
+  GOAL_TIMELINE_EXTEND // Extend goal deadline
+  SAVINGS_RATE_REDUCE // Temporarily reduce savings
 }
 
 // ============================================
@@ -1130,10 +1130,10 @@ enum AdjustmentType {
 // ============================================
 
 enum StoryCardType {
-  FUTURE_SELF    // After reading letter from 2045
-  COMMITMENT     // When user creates a commitment with stakes
-  MILESTONE      // When goal is verified as achieved
-  RECOVERY       // When user completes a recovery path
+  FUTURE_SELF // After reading letter from 2045
+  COMMITMENT // When user creates a commitment with stakes
+  MILESTONE // When goal is verified as achieved
+  RECOVERY // When user completes a recovery path
 }
 
 enum SharePlatform {
@@ -1150,40 +1150,40 @@ enum SharePlatform {
 /// Future Self Letter - Persists generated letters for history and analytics
 /// Stores personalized "Letters from 2045" with simulation data
 model FutureSelfLetter {
-  id                String        @id @default(uuid())
-  userId            String
-  content           String        @db.Text
-  trigger           LetterTrigger @default(USER_REQUEST)
+  id      String        @id @default(uuid())
+  userId  String
+  content String        @db.Text
+  trigger LetterTrigger @default(USER_REQUEST)
 
   // Simulation data at time of generation
-  currentSavingsRate    Decimal   @db.Decimal(5, 4)
-  optimizedSavingsRate  Decimal   @db.Decimal(5, 4)
-  currentNetWorth20yr   Decimal   @db.Decimal(15, 2)
-  optimizedNetWorth20yr Decimal   @db.Decimal(15, 2)
-  wealthDifference20yr  Decimal   @db.Decimal(15, 2)
+  currentSavingsRate    Decimal @db.Decimal(5, 4)
+  optimizedSavingsRate  Decimal @db.Decimal(5, 4)
+  currentNetWorth20yr   Decimal @db.Decimal(15, 2)
+  optimizedNetWorth20yr Decimal @db.Decimal(15, 2)
+  wealthDifference20yr  Decimal @db.Decimal(15, 2)
 
   // User context at time of generation
-  userAge           Int
-  futureAge         Int           @default(60)
+  userAge   Int
+  futureAge Int @default(60)
 
   // Quality metrics
-  toneEmpathyScore  Int?          // G-Eval score 1-5
+  toneEmpathyScore Int? // G-Eval score 1-5
 
   // Token usage for cost tracking
-  promptTokens      Int           @default(0)
-  completionTokens  Int           @default(0)
+  promptTokens     Int @default(0)
+  completionTokens Int @default(0)
 
   // Engagement tracking (updated by frontend)
-  readAt            DateTime?     // When user first read the letter
-  readDurationMs    Int?          // Time spent reading
+  readAt         DateTime? // When user first read the letter
+  readDurationMs Int? // Time spent reading
 
-  createdAt         DateTime      @default(now())
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, createdAt])
-  @@index([userId, readAt])  // For engagement analytics queries
+  @@index([userId, readAt]) // For engagement analytics queries
   @@index([trigger])
   @@index([createdAt])
   @@map("future_self_letters")
@@ -1196,19 +1196,19 @@ model FutureSelfLetter {
 /// Dependency ratio history for trend analysis
 /// Tracks the ratio of income supporting family over time
 model DependencyRatioHistory {
-  id                    String      @id @default(uuid())
+  id                    String    @id @default(uuid())
   userId                String
-  date                  DateTime    @default(now())
-  totalRatio            Decimal     @db.Decimal(5, 4)
+  date                  DateTime  @default(now())
+  totalRatio            Decimal   @db.Decimal(5, 4)
   riskLevel             RiskLevel
-  parentSupport         Decimal     @db.Decimal(15, 2)
-  siblingEducation      Decimal     @db.Decimal(15, 2)
-  extendedFamily        Decimal     @db.Decimal(15, 2)
-  communityContribution Decimal     @db.Decimal(15, 2)
-  monthlyTotal          Decimal     @db.Decimal(15, 2)
-  monthlyIncome         Decimal     @db.Decimal(15, 2)
-  currency              Currency    @default(NGN)
-  createdAt             DateTime    @default(now())
+  parentSupport         Decimal   @db.Decimal(15, 2)
+  siblingEducation      Decimal   @db.Decimal(15, 2)
+  extendedFamily        Decimal   @db.Decimal(15, 2)
+  communityContribution Decimal   @db.Decimal(15, 2)
+  monthlyTotal          Decimal   @db.Decimal(15, 2)
+  monthlyIncome         Decimal   @db.Decimal(15, 2)
+  currency              Currency  @default(NGN)
+  createdAt             DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1255,43 +1255,43 @@ model FamilyEmergency {
 /// Story Card for shareable social media content
 /// Generates beautiful cards capturing the user's financial journey
 model StoryCard {
-  id                  String         @id @default(uuid())
-  userId              String
-  idempotencyKey      String?        @unique // Client-provided key to prevent duplicate cards
-  type                StoryCardType
-  headline            String
-  subheadline         String
-  keyMetricLabel      String
-  keyMetricValue      String
-  quote               String?        @db.Text
-  shareUrl            String         @unique
-  gradient            String[]       // Two hex colors [start, end]
-  gradientIndex       Int?           // Index of selected gradient for A/B testing
-  hashtags            String[]
-  platforms           String[]       // Available platforms
+  id             String        @id @default(uuid())
+  userId         String
+  idempotencyKey String?       @unique // Client-provided key to prevent duplicate cards
+  type           StoryCardType
+  headline       String
+  subheadline    String
+  keyMetricLabel String
+  keyMetricValue String
+  quote          String?       @db.Text
+  shareUrl       String        @unique
+  gradient       String[] // Two hex colors [start, end]
+  gradientIndex  Int? // Index of selected gradient for A/B testing
+  hashtags       String[]
+  platforms      String[] // Available platforms
 
   // Privacy settings
-  anonymizeAmounts    Boolean        @default(true)
-  revealActualNumbers Boolean        @default(false)
-  includePersonalData Boolean        @default(false)
+  anonymizeAmounts    Boolean @default(true)
+  revealActualNumbers Boolean @default(false)
+  includePersonalData Boolean @default(false)
 
   // Source reference
-  sourceId            String?        // Letter/Commitment/Goal/Recovery ID
+  sourceId String? // Letter/Commitment/Goal/Recovery ID
 
   // Analytics
-  isPublic            Boolean        @default(false)
-  viewCount           Int            @default(0)
-  referralCode        String         @unique
+  isPublic     Boolean @default(false)
+  viewCount    Int     @default(0)
+  referralCode String  @unique
 
   // Soft delete for GDPR compliance
-  isActive            Boolean        @default(true)
+  isActive Boolean @default(true)
 
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  expiresAt           DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime?
 
-  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shareEvents         ShareEvent[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shareEvents ShareEvent[]
 
   @@index([userId])
   @@index([userId, type])
@@ -1309,15 +1309,155 @@ model ShareEvent {
   platform     SharePlatform
   sharedAt     DateTime      @default(now())
   referralCode String?
-  signupUserId String?       // User who signed up from this share
+  signupUserId String? // User who signed up from this share
   ipAddress    String?
   userAgent    String?
 
-  card         StoryCard     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  card StoryCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
   @@index([cardId])
   @@index([cardId, platform])
   @@index([referralCode])
   @@index([sharedAt])
   @@map("share_events")
+}
+
+// ============================================
+// OPTIMIZER ENUMS
+// ============================================
+
+enum OptimizerExperimentStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum OptimizerType {
+  FRAMING // A/B test
+  EVOLUTIONARY // Prompt evolution
+  GEPA // Tool selection
+}
+
+// ============================================
+// OPTIMIZER MODELS
+// ============================================
+
+/// Optimizer experiment tracking
+/// Tracks A/B tests, evolutionary optimization runs, and GEPA learning
+model OptimizerExperiment {
+  id          String                    @id @default(uuid())
+  type        OptimizerType
+  name        String
+  description String?
+  config      Json
+  status      OptimizerExperimentStatus @default(PENDING)
+  startedAt   DateTime?
+  completedAt DateTime?
+  result      Json?
+  error       String?
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+
+  generations PromptGeneration[]
+  toolRules   ToolSelectionRuleRecord[]
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("optimizer_experiments")
+}
+
+/// Prompt generation tracking for evolutionary optimizer
+/// Stores each individual in the prompt population with fitness scores
+model PromptGeneration {
+  id              String   @id @default(uuid())
+  experimentId    String
+  generation      Int
+  prompt          String   @db.Text
+  fitness         Float
+  parentIds       String[]
+  isElite         Boolean  @default(false)
+  evaluationCount Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  experiment OptimizerExperiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  @@index([experimentId])
+  @@index([experimentId, generation])
+  @@index([experimentId, fitness])
+  @@map("prompt_generations")
+}
+
+/// Tool selection rule storage for GEPA
+/// Stores learned rules mapping user profiles to optimal recovery tools
+model ToolSelectionRuleRecord {
+  id              String   @id @default(uuid())
+  experimentId    String?
+  version         String
+  condition       Json
+  recommendedTool String
+  confidence      Float
+  sampleSize      Int
+  successRate     Float
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  experiment OptimizerExperiment? @relation(fields: [experimentId], references: [id])
+
+  @@index([version])
+  @@index([isActive])
+  @@index([recommendedTool])
+  @@map("tool_selection_rules")
+}
+
+/// Tool selection history for GEPA training data
+/// Tracks which tools users selected and outcomes for learning
+model ToolSelectionHistory {
+  id           String   @id @default(uuid())
+  userId       String
+  sessionId    String
+  selectedTool String
+  userProfile  Json
+  outcome      Json
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([selectedTool])
+  @@index([createdAt])
+  @@map("tool_selection_history")
+}
+
+// ============================================
+// EVALUATION DATASET ENUMS
+// ============================================
+
+enum EvaluationDatasetType {
+  FRAMING // Shark Auditor subscription framing experiments
+  LETTER // Future Self letter optimization
+  TOOL // GPS Re-Router tool selection training
+}
+
+// ============================================
+// EVALUATION DATASET MODELS
+// ============================================
+
+/// Evaluation datasets for optimizer cron jobs
+/// Stores datasets for A/B testing, evolutionary optimization, and GEPA
+model EvaluationDataset {
+  id          String                @id @default(uuid())
+  name        String                @unique
+  type        EvaluationDatasetType
+  description String?
+  data        Json // Array of dataset items
+  isActive    Boolean               @default(true)
+  version     Int                   @default(1)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([type, isActive])
+  @@index([type])
+  @@map("evaluation_datasets")
 }
