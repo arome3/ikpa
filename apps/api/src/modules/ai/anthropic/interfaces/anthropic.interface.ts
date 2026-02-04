@@ -63,3 +63,49 @@ export interface GenerateMessageOptions {
   /** Custom timeout in ms (overrides default) */
   timeoutMs?: number;
 }
+
+/**
+ * Image input for Vision API
+ */
+export interface VisionImage {
+  /** Image data as Buffer */
+  data: Buffer;
+  /** MIME type (e.g., 'image/png', 'image/jpeg') */
+  mimeType: 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp';
+}
+
+/**
+ * Options for generateWithVision calls
+ */
+export interface GenerateVisionOptions {
+  /** Maximum tokens in response */
+  maxTokens: number;
+  /** System prompt */
+  systemPrompt?: string;
+  /** Custom timeout in ms (overrides default) */
+  timeoutMs?: number;
+}
+
+/**
+ * Content block types for multi-modal messages
+ */
+export type ContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; source: ImageSource };
+
+/**
+ * Image source for Anthropic API
+ */
+export interface ImageSource {
+  type: 'base64';
+  media_type: 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp';
+  data: string; // Base64 encoded
+}
+
+/**
+ * Multi-modal message with text and images
+ */
+export interface AnthropicVisionMessage {
+  role: MessageRole;
+  content: ContentBlock[];
+}

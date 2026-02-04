@@ -47,6 +47,9 @@ import {
   CircuitState,
   CircuitBreakerStatus,
   GenerateMessageOptions,
+  VisionImage,
+  GenerateVisionOptions,
+  ContentBlock,
 } from './interfaces';
 
 @Injectable()
@@ -364,5 +367,123 @@ export class AnthropicService implements OnModuleInit {
       [{ role: 'user', content: prompt }],
       { maxTokens, systemPrompt, timeoutMs },
     );
+  }
+
+  /**
+   * Generate a message using Claude Vision API with images
+   *
+   * @param prompt - Text prompt to accompany the images
+   * @param images - Array of images to analyze
+   * @param options - Generation options (maxTokens, systemPrompt, timeoutMs)
+   * @returns The response from Claude
+   * @throws AnthropicServiceUnavailableException if service is not available
+   */
+  async generateWithVision(
+    prompt: string,
+    images: VisionImage[],
+    options: GenerateVisionOptions,
+  ): Promise<AnthropicResponse> {
+    if (!this.isAvailable()) {
+      throw new AnthropicServiceUnavailableException('API key not configured');
+    }
+
+    // Check circuit breaker
+    if (this.isCircuitOpen()) {
+      this.logger.warn('Circuit breaker is open, rejecting vision request');
+      throw new AnthropicServiceUnavailableException('Circuit breaker is open');
+    }
+
+    const { maxTokens, systemPrompt, timeoutMs = DEFAULT_API_TIMEOUT_MS } = options;
+
+    // Build multi-modal content blocks
+    const contentBlocks: ContentBlock[] = [];
+
+    // Add images first
+    for (const image of images) {
+      contentBlocks.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: image.mimeType,
+          data: image.data.toString('base64'),
+        },
+      });
+    }
+
+    // Add text prompt
+    contentBlocks.push({
+      type: 'text',
+      text: prompt,
+    });
+
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        // Wrap API call with timeout
+        const response = await this.withTimeout(
+          this.client!.messages.create({
+            model: this.model,
+            max_tokens: maxTokens,
+            messages: [
+              {
+                role: 'user',
+                content: contentBlocks,
+              },
+            ],
+            ...(systemPrompt && { system: systemPrompt }),
+          }),
+          timeoutMs,
+          'Anthropic Vision API call',
+        );
+
+        // Extract text content from response
+        const textContent = response.content.find((c) => c.type === 'text');
+        const content = textContent?.type === 'text' ? textContent.text : '';
+
+        // Record success for circuit breaker
+        this.recordSuccess();
+
+        return {
+          content,
+          usage: {
+            promptTokens: response.usage.input_tokens,
+            completionTokens: response.usage.output_tokens,
+            totalTokens: response.usage.input_tokens + response.usage.output_tokens,
+          },
+          model: response.model,
+          stopReason: response.stop_reason,
+        };
+      } catch (error) {
+        lastError = error;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Check if error is retryable
+        if (!this.isRetryableError(error) || attempt === MAX_RETRIES) {
+          this.logger.error(
+            `Anthropic Vision API error (attempt ${attempt}/${MAX_RETRIES}, non-retryable): ${errorMessage}`,
+          );
+          this.recordFailure();
+          break;
+        }
+
+        // Calculate backoff delay
+        const delay = this.getRetryDelay(attempt);
+        this.logger.warn(
+          `Anthropic Vision API error (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay}ms: ${errorMessage}`,
+        );
+
+        await this.sleep(delay);
+      }
+    }
+
+    // All retries exhausted
+    if (lastError instanceof Anthropic.APIError) {
+      if (lastError.status === 429) {
+        throw new AnthropicRateLimitException();
+      }
+    }
+
+    throw lastError;
   }
 }

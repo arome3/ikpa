@@ -37,5 +37,28 @@ export * from './exceptions';
 // Metrics (re-exported from submodule)
 export * from './metrics';
 
-// Optimizer (re-exported from submodule)
-export * from './optimizer';
+// Optimizer (temporarily disabled due to TypeScript errors)
+// TODO: Fix TypeScript errors in optimizer module
+// export {
+//   OptimizerModule,
+//   OPTIMIZER_CONSTANTS,
+//   FramingOptimizerService,
+//   FramingOptimizerCronService,
+//   CancellationRateMetric,
+//   LetterOptimizerService,
+//   LetterOptimizerCronService,
+//   PopulationManager,
+//   CrossoverMutationService,
+//   ToolOptimizerService,
+//   ToolOptimizerCronService,
+//   PatternAnalyzer,
+//   RuleGenerator,
+//   AlertService,
+//   AlertLevel,
+//   AlertCategory,
+//   MetricsRegistryService,
+//   CircuitBreakerService,
+//   CircuitState,
+//   OpikDatasetService,
+//   OpikExperimentService,
+// } from './optimizer';

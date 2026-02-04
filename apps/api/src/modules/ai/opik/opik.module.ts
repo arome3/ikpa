@@ -60,12 +60,12 @@
 import { Global, Module } from '@nestjs/common';
 import { OpikService } from './opik.service';
 import { MetricsModule } from './metrics';
-import { OptimizerModule } from './optimizer';
+// import { OptimizerModule } from './optimizer'; // Temporarily disabled
 
 @Global()
 @Module({
-  imports: [MetricsModule, OptimizerModule],
+  imports: [MetricsModule], // OptimizerModule temporarily disabled
   providers: [OpikService],
-  exports: [OpikService, MetricsModule, OptimizerModule],
+  exports: [OpikService, MetricsModule],
 })
 export class OpikModule {}
