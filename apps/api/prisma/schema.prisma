@@ -253,6 +253,12 @@ model User {
   dependencyRatioHistory DependencyRatioHistory[]
   familyEmergencies      FamilyEmergency[]
   storyCards             StoryCard[]
+  gpsStreak              GpsStreak?
+  gpsAchievements        GpsAchievement[]
+  gpsNotifications       GpsNotification[]
+  importJobs             ImportJob[]
+  importEmailAddress     ImportEmailAddress?
+  onboardingProgress     OnboardingProgress?
 
   @@index([email])
   @@index([country])
@@ -808,6 +814,7 @@ model RecoverySession {
   user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   goal            Goal?               @relation(fields: [goalId], references: [id])
   analyticsEvents GpsAnalyticsEvent[]
+  milestones      RecoveryMilestone[]
 
   @@index([userId])
   @@index([userId, status])
@@ -893,6 +900,22 @@ enum GpsEventType {
   RECOVERY_COMPLETED
   PROBABILITY_RESTORED
   BUDGET_THRESHOLD_CROSSED
+  MILESTONE_ACHIEVED // Recovery milestone (25%, 50%, 75%, 100%)
+  STREAK_UPDATED // Daily streak updated
+  ACHIEVEMENT_AWARDED // User earned an achievement
+}
+
+// ============================================
+// GPS ACHIEVEMENT ENUMS
+// ============================================
+
+enum AchievementType {
+  FIRST_RECOVERY // Completed first recovery path
+  STREAK_7_DAYS // 7-day streak staying under budget
+  STREAK_30_DAYS // 30-day streak staying under budget
+  FREEZE_CHAMPION // Successfully completed a category freeze
+  COMEBACK_KID // Recovered from 3+ slips
+  MILESTONE_MASTER // Reached all recovery milestones
 }
 
 // ============================================
@@ -1460,4 +1483,218 @@ model EvaluationDataset {
   @@index([type, isActive])
   @@index([type])
   @@map("evaluation_datasets")
+}
+
+// ============================================
+// GPS RE-ROUTER ENGAGEMENT FEATURES
+// ============================================
+
+/// Recovery Milestone - Tracks progress milestones during recovery
+/// Answers the user need: "How far along am I?"
+model RecoveryMilestone {
+  id         String   @id @default(uuid())
+  sessionId  String
+  milestone  Int // 25, 50, 75, 100 percent
+  achievedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  session RecoverySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, milestone])
+  @@index([sessionId])
+  @@map("recovery_milestones")
+}
+
+/// GPS Streak - Tracks consecutive days staying under budget
+/// Answers the user need: "Am I doing well?"
+model GpsStreak {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  lastDate      DateTime? // Last date streak was updated
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("gps_streaks")
+}
+
+/// GPS Achievement - Awards for reaching milestones
+/// Encourages positive financial behaviors with non-judgmental language
+model GpsAchievement {
+  id        String          @id @default(uuid())
+  userId    String
+  type      AchievementType
+  awardedAt DateTime        @default(now())
+  metadata  Json? // Additional context (e.g., streak count, recovery details)
+  createdAt DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@index([type])
+  @@map("gps_achievements")
+}
+
+/// GPS Notification - Proactive alerts for budget events
+/// Addresses the user need: "Tell me when I overspend"
+model GpsNotification {
+  id          String        @id @default(uuid())
+  userId      String
+  triggerType BudgetTrigger
+  categoryId  String
+  categoryName String
+  message     String
+  title       String
+  readAt      DateTime?
+  actionUrl   String? // Deep link to recovery action
+  metadata    Json? // Additional context
+  createdAt   DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@index([createdAt])
+  @@map("gps_notifications")
+}
+
+/// Budget trigger levels for notifications
+enum BudgetTrigger {
+  BUDGET_WARNING // 80-99% spent
+  BUDGET_EXCEEDED // 100-119% spent
+  BUDGET_CRITICAL // 120%+ spent
+}
+
+// ============================================
+// IMPORT MODULE ENUMS
+// ============================================
+
+enum ImportSource {
+  BANK_STATEMENT_PDF
+  BANK_STATEMENT_CSV
+  EMAIL_FORWARD
+  SCREENSHOT
+}
+
+enum ImportJobStatus {
+  PENDING
+  PROCESSING
+  AWAITING_REVIEW
+  COMPLETED
+  FAILED
+}
+
+enum ParsedTransactionStatus {
+  PENDING // Awaiting user review
+  CONFIRMED // User confirmed, ready to create expense
+  REJECTED // User rejected this transaction
+  CREATED // Expense created from this transaction
+  DUPLICATE // Detected as duplicate
+}
+
+// ============================================
+// IMPORT MODULE MODELS
+// ============================================
+
+/// Import job tracking for bank statement, screenshot, and email imports
+/// Tracks the lifecycle of each import: upload → parse → review → create expenses
+model ImportJob {
+  id              String          @id @default(uuid())
+  userId          String
+  source          ImportSource
+  status          ImportJobStatus @default(PENDING)
+  fileName        String?
+  fileSize        Int?
+  storagePath     String?
+  rawContent      String?         @db.Text
+  errorMessage    String?
+  bankName        String?         // Bank name for better parsing
+  totalParsed     Int             @default(0)
+  created         Int             @default(0)
+  duplicates      Int             @default(0)
+  rejected        Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    ParsedTransaction[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([status])
+  @@map("import_jobs")
+}
+
+/// Parsed transaction from import job before user confirmation
+/// Stores transactions extracted from bank statements/screenshots for review
+model ParsedTransaction {
+  id                String                   @id @default(uuid())
+  jobId             String
+  amount            Decimal                  @db.Decimal(15, 2)
+  currency          Currency                 @default(NGN)
+  date              DateTime
+  description       String?
+  merchant          String?
+  normalizedMerchant String?                 // Standardized merchant name
+  isRecurringGuess  Boolean                  @default(false)
+  deduplicationHash String?
+  status            ParsedTransactionStatus  @default(PENDING)
+  duplicateOfId     String?                  // ID of existing expense if duplicate
+  createdExpenseId  String?                  // ID of created expense after confirmation
+  confidence        Decimal?                 @db.Decimal(3, 2) // 0.00 to 1.00
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  job               ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, deduplicationHash])
+  @@index([jobId])
+  @@index([jobId, status])
+  @@map("parsed_transactions")
+}
+
+/// User's dedicated import email address for forwarding bank alerts
+/// Each user gets a unique email address like ikpa-{hash}@import.ikpa.app
+model ImportEmailAddress {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  emailAddress String    @unique
+  secretToken  String    // Token embedded in email for validation
+  isActive     Boolean   @default(true)
+  lastUsedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([emailAddress])
+  @@map("import_email_addresses")
+}
+
+// ============================================
+// ONBOARDING MODULE MODELS
+// ============================================
+
+/// Onboarding progress tracking
+/// Tracks user's progress through the 6-step onboarding flow
+model OnboardingProgress {
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  currentStep    String    @default("profile")
+  completedSteps String[]  @default([])
+  skippedSteps   String[]  @default([])
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("onboarding_progress")
 }
