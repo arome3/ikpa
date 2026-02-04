@@ -1,10 +1,48 @@
+import {
+  Navigation,
+  Hero,
+  ProblemScroller,
+  AgentShowcase,
+  FutureSelfEngine,
+  SimulatorBento,
+  LetterFrom2034,
+  Features,
+  Pricing,
+  FAQ,
+  FinalCTA,
+  Footer,
+} from '@/components/sections';
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-primary-500">
-      <h1 className="text-4xl font-bold text-white mb-4">Ikpa</h1>
-      <p className="text-xl text-primary-100">
-        See your money clearly. Understand it deeply. Plan it wisely.
-      </p>
-    </main>
+    <>
+      <Navigation />
+      <main>
+        {/* The Fog Lifting */}
+        <Hero />
+
+        {/* Anxiety Scroller - Pain points transformed to clarity */}
+        <ProblemScroller />
+
+        {/* Agent Showcase - Meet the 5 AI agents */}
+        <AgentShowcase />
+
+        {/* Time-Travel Slider - Interactive financial projections */}
+        <FutureSelfEngine />
+
+        {/* What-If Bento - Scenario simulations */}
+        <SimulatorBento />
+
+        {/* Letter from Future Self - Emotional testimonial */}
+        <LetterFrom2034 />
+
+        {/* Features, Pricing, FAQ, CTA - Kept from original */}
+        <Features />
+        <Pricing />
+        <FAQ />
+        <FinalCTA />
+      </main>
+      <Footer />
+    </>
   );
 }
