@@ -11,6 +11,8 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 import { FinanceService } from './finance.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { ExpenseCategory } from '@prisma/client';
 import {
   CashFlowScoreResponseDto,
   ScoreHistoryQueryDto,
@@ -40,9 +42,49 @@ import { getScoreLabel, getScoreColor } from './interfaces';
 @ApiTags('Finance')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('v1/finance')
+@Controller('finance')
 export class FinanceController {
-  constructor(private readonly financeService: FinanceService) {}
+  constructor(
+    private readonly financeService: FinanceService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  // ==========================================
+  // EXPENSE CATEGORIES
+  // ==========================================
+
+  /**
+   * Get all expense categories
+   *
+   * Returns the list of available expense categories for budgeting.
+   */
+  @Get('categories')
+  @ApiOperation({
+    summary: 'Get Expense Categories',
+    description:
+      'Returns all available expense categories that can be used when creating budgets.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getCategories() {
+    const categories = await this.prisma.expenseCategory.findMany({
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    return categories.map((cat: ExpenseCategory) => ({
+      id: cat.id,
+      name: cat.name,
+      icon: cat.icon,
+      color: cat.color,
+      isDefault: cat.isDefault,
+    }));
+  }
 
   // ==========================================
   // CASH FLOW SCORE ENDPOINTS

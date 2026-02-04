@@ -5,6 +5,22 @@ import { FinanceService } from './finance.service';
 import { FinanceController } from './finance.controller';
 import { FinanceCronService } from './finance.cron';
 import { CashFlowScoreCalculator, SimulationEngineCalculator } from './calculators';
+import {
+  IncomeController,
+  SavingsController,
+  InvestmentController,
+  DebtController,
+  GoalController,
+  BudgetController,
+} from './controllers';
+import {
+  IncomeService,
+  SavingsService,
+  InvestmentService,
+  DebtService,
+  GoalCrudService,
+  BudgetCrudService,
+} from './services';
 
 /**
  * Finance Module
@@ -32,13 +48,38 @@ import { CashFlowScoreCalculator, SimulationEngineCalculator } from './calculato
     PrismaModule,
     UserModule,
   ],
-  controllers: [FinanceController],
+  controllers: [
+    FinanceController,
+    IncomeController,
+    SavingsController,
+    InvestmentController,
+    DebtController,
+    GoalController,
+    BudgetController,
+  ],
   providers: [
     FinanceService,
     FinanceCronService,
     CashFlowScoreCalculator,
     SimulationEngineCalculator,
+    // CRUD Services
+    IncomeService,
+    SavingsService,
+    InvestmentService,
+    DebtService,
+    GoalCrudService,
+    BudgetCrudService,
   ],
-  exports: [FinanceService, SimulationEngineCalculator],
+  exports: [
+    FinanceService,
+    SimulationEngineCalculator,
+    // Export CRUD services for use in other modules
+    IncomeService,
+    SavingsService,
+    InvestmentService,
+    DebtService,
+    GoalCrudService,
+    BudgetCrudService,
+  ],
 })
 export class FinanceModule {}
