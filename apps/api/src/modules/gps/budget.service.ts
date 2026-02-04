@@ -8,11 +8,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Decimal } from '@prisma/client/runtime/library';
-import { Budget, BudgetPeriod } from '@prisma/client';
+import { Budget, BudgetPeriod, Currency } from '@prisma/client';
 import { startOfWeek, startOfMonth, startOfQuarter, startOfYear, subMonths } from 'date-fns';
 import { BudgetStatus, BudgetTrigger } from './interfaces';
 import { GPS_CONSTANTS } from './constants';
 import { NoBudgetFoundException } from './exceptions';
+import { createMonetaryValue } from '../../common/utils';
 
 /**
  * Budget with category relation included
@@ -22,6 +23,7 @@ interface BudgetWithCategory extends Budget {
     id: string;
     name: string;
   };
+  currency: Currency;
 }
 
 @Injectable()
@@ -137,19 +139,37 @@ export class BudgetService {
   /**
    * Check budget status for a specific category
    *
+   * Accepts either category name (e.g., "Food & Dining") or category ID (e.g., "food-dining").
    * Returns the budget status with trigger level based on spending thresholds.
+   * All monetary values include formatted currency strings (e.g., "₦50,000").
    */
-  async checkBudgetStatus(userId: string, categoryName: string): Promise<BudgetStatus> {
-    const budget = await this.getBudget(userId, categoryName);
+  async checkBudgetStatus(userId: string, categoryNameOrId: string): Promise<BudgetStatus> {
+    // Try to find budget by category ID first, then by name
+    let budget = await this.getBudgetByCategoryId(userId, categoryNameOrId);
 
     if (!budget) {
-      throw new NoBudgetFoundException(categoryName, userId);
+      // Fall back to searching by category name
+      budget = await this.getBudget(userId, categoryNameOrId);
     }
 
-    const spent = await this.getSpent(userId, budget.categoryId, budget.period);
-    const budgeted = Number(budget.amount);
-    const remaining = budgeted - spent;
-    const spentPercentage = budgeted > 0 ? spent / budgeted : 0;
+    if (!budget) {
+      // Provide helpful error with available categories
+      const availableBudgets = await this.getAllBudgets(userId);
+      const availableCategories = availableBudgets.map((b) => ({
+        id: b.category.id,
+        name: b.category.name,
+      }));
+
+      throw new NoBudgetFoundException(categoryNameOrId, userId, availableCategories);
+    }
+
+    const spentAmount = await this.getSpent(userId, budget.categoryId, budget.period);
+    const budgetedAmount = Number(budget.amount);
+    const remainingAmount = budgetedAmount - spentAmount;
+    const spentPercentage = budgetedAmount > 0 ? spentAmount / budgetedAmount : 0;
+
+    // Get currency from budget (defaults to NGN)
+    const currency = budget.currency || 'NGN';
 
     // Determine trigger level
     let trigger: BudgetTrigger;
@@ -167,16 +187,17 @@ export class BudgetService {
     const overagePercent = Math.max(0, (spentPercentage - 1) * 100);
 
     this.logger.debug(
-      `[checkBudgetStatus] User ${userId}, category ${categoryName}: ` +
-        `budgeted=${budgeted}, spent=${spent}, trigger=${trigger}`,
+      `[checkBudgetStatus] User ${userId}, category ${budget.category.name} (${categoryNameOrId}): ` +
+        `budgeted=${budgetedAmount}, spent=${spentAmount}, trigger=${trigger}`,
     );
 
+    // Create MonetaryValue objects with formatted currency strings
     return {
       category: budget.category.name,
       categoryId: budget.categoryId,
-      budgeted,
-      spent,
-      remaining,
+      budgeted: createMonetaryValue(budgetedAmount, currency),
+      spent: createMonetaryValue(spentAmount, currency),
+      remaining: createMonetaryValue(remainingAmount, currency),
       overagePercent,
       trigger,
       period: budget.period,
@@ -205,7 +226,9 @@ export class BudgetService {
 
     // Return only those at warning level or higher
     return statuses.filter((status) => {
-      const spentPercentage = status.budgeted > 0 ? status.spent / status.budgeted : 0;
+      const budgetedAmount = status.budgeted.amount;
+      const spentAmount = status.spent.amount;
+      const spentPercentage = budgetedAmount > 0 ? spentAmount / budgetedAmount : 0;
       return spentPercentage >= GPS_CONSTANTS.BUDGET_WARNING_THRESHOLD;
     });
   }
@@ -271,7 +294,7 @@ export class BudgetService {
    */
   async calculateOverspend(userId: string, categoryName: string): Promise<number> {
     const status = await this.checkBudgetStatus(userId, categoryName);
-    return Math.max(0, status.spent - status.budgeted);
+    return Math.max(0, status.spent.amount - status.budgeted.amount);
   }
 
   /**

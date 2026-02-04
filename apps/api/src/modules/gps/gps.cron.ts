@@ -16,6 +16,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { OpikService } from '../ai/opik/opik.service';
 import { RedisService } from '../../redis';
 import { RecoveryActionService } from './recovery-action.service';
+import { ProgressService } from './progress';
+import { GpsNotificationService } from './notification';
 import { RecoveryStatus } from '@prisma/client';
 import { subDays } from 'date-fns';
 
@@ -47,6 +49,8 @@ export class GpsCronService {
     private readonly opikService: OpikService,
     private readonly redisService: RedisService,
     private readonly recoveryActionService: RecoveryActionService,
+    private readonly progressService: ProgressService,
+    private readonly notificationService: GpsNotificationService,
   ) {}
 
   /**
@@ -96,6 +100,8 @@ export class GpsCronService {
     let deactivatedAdjustments = 0;
     let deactivatedFreezes = 0;
     let abandonedSessions = 0;
+    let milestonesChecked = 0;
+    let deletedNotifications = 0;
 
     try {
       // 1. Deactivate expired adjustments and freezes
@@ -106,6 +112,12 @@ export class GpsCronService {
       // 2. Mark stale PENDING sessions as ABANDONED
       abandonedSessions = await this.abandonStaleSessions();
 
+      // 3. Check milestones for active recovery sessions
+      milestonesChecked = await this.checkActiveMilestones();
+
+      // 4. Clean up old notifications
+      deletedNotifications = await this.notificationService.deleteOldNotifications(30);
+
       const duration = Date.now() - startTime;
 
       // End trace with success
@@ -115,14 +127,17 @@ export class GpsCronService {
           deactivatedAdjustments,
           deactivatedFreezes,
           abandonedSessions,
+          milestonesChecked,
+          deletedNotifications,
           durationMs: duration,
         },
       });
 
-      if (deactivatedAdjustments > 0 || deactivatedFreezes > 0 || abandonedSessions > 0) {
+      if (deactivatedAdjustments > 0 || deactivatedFreezes > 0 || abandonedSessions > 0 || deletedNotifications > 0) {
         this.logger.log(
           `GPS cleanup completed: ${deactivatedAdjustments} adjustments, ` +
-            `${deactivatedFreezes} freezes deactivated, ${abandonedSessions} sessions abandoned (${duration}ms)`,
+            `${deactivatedFreezes} freezes deactivated, ${abandonedSessions} sessions abandoned, ` +
+            `${milestonesChecked} milestones checked, ${deletedNotifications} notifications deleted (${duration}ms)`,
         );
       } else {
         this.logger.debug(`GPS cleanup completed: nothing to clean up (${duration}ms)`);
@@ -170,6 +185,47 @@ export class GpsCronService {
     });
 
     return result.count;
+  }
+
+  /**
+   * Check and record milestones for all active recovery sessions
+   *
+   * This ensures milestones are tracked even if users don't actively
+   * check their session status.
+   */
+  private async checkActiveMilestones(): Promise<number> {
+    // Find active sessions (PATH_SELECTED or IN_PROGRESS)
+    const activeSessions = await this.prisma.recoverySession.findMany({
+      where: {
+        status: { in: [RecoveryStatus.PATH_SELECTED, RecoveryStatus.IN_PROGRESS] },
+        selectedPathId: { not: null },
+        selectedAt: { not: null },
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+      take: 100, // Process in batches
+    });
+
+    let totalMilestones = 0;
+
+    for (const session of activeSessions) {
+      try {
+        const newMilestones = await this.progressService.checkAndRecordMilestones(
+          session.userId,
+          session.id,
+        );
+        totalMilestones += newMilestones.length;
+      } catch (error) {
+        // Don't let individual session failures break the batch
+        this.logger.warn(
+          `[checkActiveMilestones] Failed for session ${session.id}: ${error}`,
+        );
+      }
+    }
+
+    return totalMilestones;
   }
 
   /**

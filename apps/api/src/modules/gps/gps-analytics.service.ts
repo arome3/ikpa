@@ -16,7 +16,42 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GpsEventType, RecoveryStatus } from '@prisma/client';
 import { subDays, differenceInHours, differenceInMinutes } from 'date-fns';
-import { GPS_CONSTANTS } from './constants';
+import { GPS_CONSTANTS, RECOVERY_PATHS } from './constants';
+
+/**
+ * Helper function to round a number to 2 decimal places
+ */
+function roundTo2Decimals(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Format hours to human-readable string
+ */
+function formatHours(hours: number): string {
+  if (hours < 1) {
+    return 'Under 1 hour';
+  } else if (hours < 2) {
+    return 'Under 2 hours';
+  } else if (hours < 6) {
+    return `About ${Math.round(hours)} hours`;
+  } else if (hours < 24) {
+    return `About ${Math.round(hours)} hours`;
+  } else if (hours < 48) {
+    return '1 day';
+  } else {
+    const days = Math.round(hours / 24);
+    return `${days} days`;
+  }
+}
+
+/**
+ * Get path name from RECOVERY_PATHS constant
+ */
+function getPathName(pathId: string): string {
+  const path = RECOVERY_PATHS[pathId as keyof typeof RECOVERY_PATHS];
+  return path?.name || pathId;
+}
 
 /**
  * Path selection distribution
@@ -111,12 +146,40 @@ export class GpsAnalyticsService {
       this.getTotalThresholdsCrossed(start, end),
     ]);
 
+    // Round all percentages to 2 decimal places
+    const roundedPathSelection = pathSelection.map((p) => ({
+      ...p,
+      percentage: roundTo2Decimals(p.percentage),
+    }));
+
+    const roundedGoalSurvival = {
+      ...goalSurvival,
+      // survivalRate is a decimal (0-1), convert to percentage and round
+      survivalRate: roundTo2Decimals(goalSurvival.survivalRate * 100),
+    };
+
+    const roundedProbabilityRestoration = {
+      ...probabilityRestoration,
+      averageDropPercent: roundTo2Decimals(probabilityRestoration.averageDropPercent),
+      averageRestoredPercent: roundTo2Decimals(probabilityRestoration.averageRestoredPercent),
+      // restorationRate is a decimal (0-1), convert to percentage and round
+      restorationRate: roundTo2Decimals(probabilityRestoration.restorationRate * 100),
+    };
+
+    const roundedTimeToRecovery = {
+      ...timeToRecovery,
+      averageHours: roundTo2Decimals(timeToRecovery.averageHours),
+      medianHours: roundTo2Decimals(timeToRecovery.medianHours),
+      minHours: roundTo2Decimals(timeToRecovery.minHours),
+      maxHours: roundTo2Decimals(timeToRecovery.maxHours),
+    };
+
     return {
       period: { start, end },
-      pathSelection,
-      goalSurvival,
-      timeToRecovery,
-      probabilityRestoration,
+      pathSelection: roundedPathSelection,
+      goalSurvival: roundedGoalSurvival,
+      timeToRecovery: roundedTimeToRecovery,
+      probabilityRestoration: roundedProbabilityRestoration,
       totalSessions,
       totalBudgetThresholdsCrossed: totalThresholds,
     };
@@ -128,8 +191,16 @@ export class GpsAnalyticsService {
   async getUserAnalytics(userId: string, days: number = 30): Promise<{
     totalSlips: number;
     recoveryRate: number;
-    preferredPath: string | null;
-    averageTimeToRecovery: number;
+    recoveryRateFormatted: string;
+    preferredPath: {
+      id: string;
+      name: string;
+      usageCount: number;
+    } | null;
+    averageTimeToRecovery: {
+      hours: number;
+      formatted: string;
+    };
     totalProbabilityRestored: number;
   }> {
     const start = subDays(new Date(), days);
@@ -145,8 +216,12 @@ export class GpsAnalyticsService {
       return {
         totalSlips: 0,
         recoveryRate: 0,
+        recoveryRateFormatted: '0%',
         preferredPath: null,
-        averageTimeToRecovery: 0,
+        averageTimeToRecovery: {
+          hours: 0,
+          formatted: 'No data',
+        },
         totalProbabilityRestored: 0,
       };
     }
@@ -159,8 +234,9 @@ export class GpsAnalyticsService {
         s.status === RecoveryStatus.COMPLETED,
     ).length;
     const recoveryRate = recovered / sessions.length;
+    const recoveryRateFormatted = `${Math.round(recoveryRate * 100)}%`;
 
-    // Find preferred path
+    // Find preferred path with usage count
     const pathCounts = sessions
       .filter((s) => s.selectedPathId)
       .reduce(
@@ -171,18 +247,29 @@ export class GpsAnalyticsService {
         {} as Record<string, number>,
       );
 
-    const preferredPath =
-      Object.entries(pathCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    const preferredPathEntry = Object.entries(pathCounts).sort((a, b) => b[1] - a[1])[0];
+    const preferredPath = preferredPathEntry
+      ? {
+          id: preferredPathEntry[0],
+          name: getPathName(preferredPathEntry[0]),
+          usageCount: preferredPathEntry[1],
+        }
+      : null;
 
     // Calculate average time to recovery
     const sessionsWithSelection = sessions.filter((s) => s.selectedAt);
     const totalRecoveryMinutes = sessionsWithSelection.reduce((sum, s) => {
       return sum + differenceInMinutes(s.selectedAt!, s.createdAt);
     }, 0);
-    const averageTimeToRecovery =
+    const averageHours =
       sessionsWithSelection.length > 0
         ? totalRecoveryMinutes / sessionsWithSelection.length / 60 // Convert to hours
         : 0;
+
+    const averageTimeToRecovery = {
+      hours: roundTo2Decimals(averageHours),
+      formatted: sessionsWithSelection.length > 0 ? formatHours(averageHours) : 'No data',
+    };
 
     // Calculate total probability restored
     const totalProbabilityRestored = sessions.reduce((sum, s) => {
@@ -197,6 +284,7 @@ export class GpsAnalyticsService {
     return {
       totalSlips: sessions.length,
       recoveryRate,
+      recoveryRateFormatted,
       preferredPath,
       averageTimeToRecovery,
       totalProbabilityRestored,
@@ -486,9 +574,21 @@ export class GpsAnalyticsService {
   async getCategoryAnalytics(days: number = 30): Promise<
     Array<{
       category: string;
+      categoryId: string;
       totalSlips: number;
       recoveryRate: number;
-      mostSelectedPath: string | null;
+      recoveryRateFormatted: string;
+      mostSelectedPath: {
+        id: string;
+        name: string;
+        count: number;
+      } | null;
+      averageOverspendPercent: number;
+      totalOverspendAmount: {
+        amount: number;
+        currency: string;
+        formatted: string;
+      };
     }>
   > {
     const start = subDays(new Date(), days);
@@ -503,23 +603,39 @@ export class GpsAnalyticsService {
     const categoryData = sessions.reduce(
       (acc, s) => {
         if (!acc[s.category]) {
-          acc[s.category] = { slips: [], paths: [] as string[] };
+          acc[s.category] = {
+            slips: [],
+            paths: [] as string[],
+            overspendAmounts: [] as number[],
+          };
         }
         acc[s.category].slips.push(s);
         if (s.selectedPathId) {
           acc[s.category].paths.push(s.selectedPathId);
         }
+        // Track overspend amounts from session
+        const overspendAmount = Number(s.overspendAmount || 0);
+        if (overspendAmount > 0) {
+          acc[s.category].overspendAmounts.push(overspendAmount);
+        }
         return acc;
       },
-      {} as Record<string, { slips: typeof sessions; paths: string[] }>,
+      {} as Record<
+        string,
+        {
+          slips: typeof sessions;
+          paths: string[];
+          overspendAmounts: number[];
+        }
+      >,
     );
 
-    return Object.entries(categoryData).map(([category, data]) => {
+    const results = Object.entries(categoryData).map(([category, data]) => {
       const recovered = data.slips.filter(
         (s) => s.status !== RecoveryStatus.PENDING && s.status !== RecoveryStatus.ABANDONED,
       ).length;
 
-      // Find most selected path
+      // Find most selected path with count
       const pathCounts = data.paths.reduce(
         (acc, p) => {
           acc[p] = (acc[p] || 0) + 1;
@@ -527,15 +643,45 @@ export class GpsAnalyticsService {
         },
         {} as Record<string, number>,
       );
-      const mostSelectedPath =
-        Object.entries(pathCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+      const mostSelectedPathEntry = Object.entries(pathCounts).sort((a, b) => b[1] - a[1])[0];
+      const mostSelectedPath = mostSelectedPathEntry
+        ? {
+            id: mostSelectedPathEntry[0],
+            name: getPathName(mostSelectedPathEntry[0]),
+            count: mostSelectedPathEntry[1],
+          }
+        : null;
+
+      const recoveryRate = data.slips.length > 0 ? recovered / data.slips.length : 0;
+
+      // Calculate total overspend amount
+      const totalOverspend = data.overspendAmounts.reduce((a, b) => a + b, 0);
+
+      // For average overspend percent, we would need budget data to calculate the actual percentage
+      // Since RecoverySession only stores overspendAmount (not the budget), we return 0
+      // In a production system, this would query budget data to get the actual percentage
+      const averageOverspendPercent = 0;
+
+      // Generate category ID from name (slug-like)
+      const categoryId = category.toLowerCase().replace(/\s+/g, '_');
 
       return {
         category,
+        categoryId,
         totalSlips: data.slips.length,
-        recoveryRate: data.slips.length > 0 ? recovered / data.slips.length : 0,
+        recoveryRate: roundTo2Decimals(recoveryRate),
+        recoveryRateFormatted: `${Math.round(recoveryRate * 100)}%`,
         mostSelectedPath,
+        averageOverspendPercent,
+        totalOverspendAmount: {
+          amount: Math.round(totalOverspend),
+          currency: 'USD',
+          formatted: `$${(totalOverspend / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        },
       };
     });
+
+    // Sort by totalSlips in descending order
+    return results.sort((a, b) => b.totalSlips - a.totalSlips);
   }
 }

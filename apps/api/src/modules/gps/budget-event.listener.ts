@@ -17,8 +17,9 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GpsEventType } from '@prisma/client';
 import { BudgetService } from './budget.service';
+import { StreakService } from './streaks';
 import { GPS_CONSTANTS } from './constants';
-import { BudgetTrigger } from './interfaces';
+import { BudgetTrigger, BudgetStatus } from './interfaces';
 
 /**
  * Event payload for expense events
@@ -64,6 +65,7 @@ export class BudgetEventListener {
     private readonly prisma: PrismaService,
     private readonly budgetService: BudgetService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly streakService: StreakService,
   ) {}
 
   /**
@@ -163,18 +165,30 @@ export class BudgetEventListener {
    */
   private async processBudgetStatus(
     userId: string,
-    status: {
-      category: string;
-      categoryId: string;
-      budgeted: number;
-      spent: number;
-      overagePercent: number;
-      trigger: BudgetTrigger;
-    },
+    status: BudgetStatus,
   ): Promise<void> {
-    const spentPercentage = status.budgeted > 0 ? status.spent / status.budgeted : 0;
+    // Access the numeric amounts from MonetaryValue objects
+    const budgetedAmount = status.budgeted.amount;
+    const spentAmount = status.spent.amount;
+    const spentPercentage = budgetedAmount > 0 ? spentAmount / budgetedAmount : 0;
 
-    // Only emit events for warning threshold or higher
+    // If under budget, potentially increment streak
+    if (spentPercentage < GPS_CONSTANTS.BUDGET_EXCEEDED_THRESHOLD) {
+      // User is within budget - this could increment their streak
+      // (Streak is incremented at end of day by cron, not on each expense)
+      return;
+    }
+
+    // User exceeded budget - reset their streak
+    if (spentPercentage >= GPS_CONSTANTS.BUDGET_EXCEEDED_THRESHOLD) {
+      try {
+        await this.streakService.resetStreak(userId, `Exceeded ${status.category} budget`);
+      } catch (error) {
+        this.logger.warn(`[processBudgetStatus] Failed to reset streak for user ${userId}: ${error}`);
+      }
+    }
+
+    // Only emit notification events for warning threshold or higher
     if (spentPercentage < GPS_CONSTANTS.BUDGET_WARNING_THRESHOLD) {
       return;
     }
@@ -193,14 +207,14 @@ export class BudgetEventListener {
       return;
     }
 
-    // Emit threshold crossed event
+    // Emit threshold crossed event (using numeric amounts for the event payload)
     const thresholdEvent: BudgetThresholdCrossedEvent = {
       userId,
       categoryId: status.categoryId,
       categoryName: status.category,
       trigger: status.trigger,
-      budgeted: status.budgeted,
-      spent: status.spent,
+      budgeted: budgetedAmount,
+      spent: spentAmount,
       overagePercent: status.overagePercent,
     };
 

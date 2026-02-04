@@ -16,6 +16,22 @@ import { GoalService } from './goal.service';
 import { BudgetService } from './budget.service';
 import { GPS_CONSTANTS } from './constants';
 import { InvalidRecoveryPathException, RecoverySessionNotFoundException } from './exceptions';
+import { formatCurrency } from '../../common/utils';
+
+/**
+ * Detailed information about the executed recovery action
+ */
+export interface RecoveryActionDetails {
+  originalRate?: number; // for rate_adjustment
+  newRate?: number; // for rate_adjustment
+  boostAmount?: number; // additional savings rate as decimal
+  durationWeeks: number;
+  endDate: Date;
+  estimatedRecovery?: number; // estimated amount to recover
+  categoryFrozen?: string; // for freeze_protocol
+  previousDeadline?: Date; // for time_adjustment
+  newDeadline?: Date; // for time_adjustment
+}
 
 /**
  * Result of executing a recovery action
@@ -24,12 +40,7 @@ export interface RecoveryActionResult {
   success: boolean;
   pathId: string;
   action: string;
-  details: {
-    previousValue?: number | Date;
-    newValue?: number | Date;
-    duration?: string;
-    estimatedImpact?: string;
-  };
+  details: RecoveryActionDetails;
   message: string;
 }
 
@@ -45,6 +56,7 @@ interface ActionContext {
   overspendAmount: number;
   monthlyIncome: number;
   currentSavingsRate: number;
+  currency: string;
 }
 
 @Injectable()
@@ -137,6 +149,7 @@ export class RecoveryActionService {
 
     // Extend the deadline
     const updatedGoal = await this.goalService.extendDeadline(userId, goalId, weeksExtension);
+    const newDeadline = updatedGoal.targetDate || addWeeks(previousDeadline, weeksExtension);
 
     this.logger.log(
       `[executeTimelineExtension] User ${userId}: extended goal ${goalId} by ${weeksExtension} weeks`,
@@ -147,10 +160,10 @@ export class RecoveryActionService {
       pathId: GPS_CONSTANTS.RECOVERY_PATH_IDS.TIME_ADJUSTMENT,
       action: 'DEADLINE_EXTENDED',
       details: {
-        previousValue: previousDeadline,
-        newValue: updatedGoal.targetDate || undefined,
-        duration: `${weeksExtension} weeks`,
-        estimatedImpact: `Goal deadline extended by ${weeksExtension} weeks`,
+        durationWeeks: weeksExtension,
+        endDate: newDeadline,
+        previousDeadline,
+        newDeadline,
       },
       message: `Your goal deadline has been extended by ${weeksExtension} weeks to give you more time to recover.`,
     };
@@ -188,6 +201,9 @@ export class RecoveryActionService {
 
     const additionalRatePercent = (additionalRate * 100).toFixed(1);
 
+    // Estimate the total recovery amount over the duration
+    const estimatedRecovery = (additionalRate * monthlyIncome * durationWeeks) / 4;
+
     this.logger.log(
       `[executeSavingsBoost] User ${userId}: savings boost of ${additionalRatePercent}% for ${durationWeeks} weeks`,
     );
@@ -197,10 +213,12 @@ export class RecoveryActionService {
       pathId: GPS_CONSTANTS.RECOVERY_PATH_IDS.RATE_ADJUSTMENT,
       action: 'SAVINGS_RATE_INCREASED',
       details: {
-        previousValue: currentSavingsRate,
-        newValue: currentSavingsRate + additionalRate,
-        duration: `${durationWeeks} weeks`,
-        estimatedImpact: `Additional ${additionalRatePercent}% savings for ${durationWeeks} weeks`,
+        originalRate: currentSavingsRate,
+        newRate: currentSavingsRate + additionalRate,
+        boostAmount: additionalRate,
+        durationWeeks,
+        endDate,
+        estimatedRecovery,
       },
       message: `Your savings rate has been boosted by ${additionalRatePercent}% for the next ${durationWeeks} weeks.`,
     };
@@ -210,7 +228,8 @@ export class RecoveryActionService {
    * Execute Category Pause - freeze spending in the overspent category
    */
   private async executeCategoryFreeze(context: ActionContext): Promise<RecoveryActionResult> {
-    const { userId, sessionId, category, categoryId, overspendAmount, monthlyIncome } = context;
+    const { userId, sessionId, category, categoryId, overspendAmount, monthlyIncome, currency } =
+      context;
 
     // Calculate dynamic freeze duration
     const durationWeeks = this.calculateFreezeDuration(overspendAmount, monthlyIncome);
@@ -224,6 +243,7 @@ export class RecoveryActionService {
       categoryId,
     );
     const estimatedSavings = (averageMonthlySpending / 4) * durationWeeks; // Weekly savings * weeks
+    const formattedSavings = formatCurrency(estimatedSavings, currency);
 
     // Create category freeze record
     await this.prisma.categoryFreeze.create({
@@ -249,12 +269,12 @@ export class RecoveryActionService {
       pathId: GPS_CONSTANTS.RECOVERY_PATH_IDS.FREEZE_PROTOCOL,
       action: 'CATEGORY_FROZEN',
       details: {
-        previousValue: averageMonthlySpending,
-        newValue: 0,
-        duration: `${durationWeeks} weeks`,
-        estimatedImpact: `Estimated savings of ${estimatedSavings.toFixed(0)} by pausing ${category}`,
+        durationWeeks,
+        endDate,
+        estimatedRecovery: estimatedSavings,
+        categoryFrozen: category,
       },
-      message: `Spending in ${category} has been paused for ${durationWeeks} weeks. Estimated savings: ${estimatedSavings.toFixed(0)}.`,
+      message: `Spending in ${category} has been paused for ${durationWeeks} weeks. Estimated savings: ${formattedSavings}.`,
     };
   }
 
@@ -359,6 +379,12 @@ export class RecoveryActionService {
       throw new Error('No active goal found');
     }
 
+    // Get user for currency
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { currency: true },
+    });
+
     // Get budget status to get category ID
     const budgetStatus = await this.budgetService.checkBudgetStatus(userId, session.category);
 
@@ -374,6 +400,7 @@ export class RecoveryActionService {
       overspendAmount: Number(session.overspendAmount),
       monthlyIncome: simInput.monthlyIncome,
       currentSavingsRate: simInput.currentSavingsRate,
+      currency: user?.currency || 'NGN',
     };
   }
 
@@ -386,6 +413,25 @@ export class RecoveryActionService {
     pathId: string,
     result: RecoveryActionResult,
   ): Promise<void> {
+    // Convert Date objects to ISO strings for JSON storage
+    const serializableDetails = {
+      durationWeeks: result.details.durationWeeks,
+      endDate: result.details.endDate?.toISOString(),
+      ...(result.details.originalRate !== undefined && {
+        originalRate: result.details.originalRate,
+      }),
+      ...(result.details.newRate !== undefined && { newRate: result.details.newRate }),
+      ...(result.details.boostAmount !== undefined && { boostAmount: result.details.boostAmount }),
+      ...(result.details.estimatedRecovery !== undefined && {
+        estimatedRecovery: result.details.estimatedRecovery,
+      }),
+      ...(result.details.categoryFrozen && { categoryFrozen: result.details.categoryFrozen }),
+      ...(result.details.previousDeadline && {
+        previousDeadline: result.details.previousDeadline.toISOString(),
+      }),
+      ...(result.details.newDeadline && { newDeadline: result.details.newDeadline.toISOString() }),
+    };
+
     await this.prisma.gpsAnalyticsEvent.create({
       data: {
         userId,
@@ -394,7 +440,7 @@ export class RecoveryActionService {
         eventData: {
           pathId,
           action: result.action,
-          details: result.details,
+          details: serializableDetails,
         },
       },
     });
@@ -463,6 +509,52 @@ export class RecoveryActionService {
     });
 
     return freeze !== null;
+  }
+
+  /**
+   * Get freeze details for a category (by ID or name)
+   *
+   * Returns the freeze record if the category is frozen, or null if not.
+   * Supports lookup by either categoryId (UUID) or categoryName.
+   */
+  async getCategoryFreezeDetails(
+    userId: string,
+    categoryIdOrName: string,
+  ): Promise<{
+    id: string;
+    categoryId: string;
+    categoryName: string;
+    startDate: Date;
+    endDate: Date;
+    durationWeeks: number;
+    savedAmount: number;
+    sessionId: string;
+  } | null> {
+    // Try to find by categoryId first, then by categoryName
+    const freeze = await this.prisma.categoryFreeze.findFirst({
+      where: {
+        userId,
+        isActive: true,
+        endDate: { gte: new Date() },
+        OR: [{ categoryId: categoryIdOrName }, { categoryName: categoryIdOrName }],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!freeze) {
+      return null;
+    }
+
+    return {
+      id: freeze.id,
+      categoryId: freeze.categoryId,
+      categoryName: freeze.categoryName,
+      startDate: freeze.startDate,
+      endDate: freeze.endDate,
+      durationWeeks: freeze.durationWeeks,
+      savedAmount: Number(freeze.savedAmount),
+      sessionId: freeze.sessionId,
+    };
   }
 
   /**

@@ -1,22 +1,67 @@
 import { HttpStatus } from '@nestjs/common';
 import { ApiException } from '../../../common/exceptions';
 import { ErrorCodes } from '../../../common/constants/error-codes';
+import { findBestMatches, generateDidYouMeanMessage } from '../../../common/utils';
 
 /**
  * Thrown when no budget is found for the specified category
  *
  * This occurs when a user tries to check budget status for a category
  * where they haven't set up a budget.
+ *
+ * Features:
+ * - Fuzzy matching to suggest similar category names ("Did you mean?")
+ * - Lists available categories with their IDs for easy reference
+ * - Accepts both category names and IDs in suggestions
  */
 export class NoBudgetFoundException extends ApiException {
-  constructor(category?: string, userId?: string) {
-    const message = category
-      ? `No budget found for category '${category}'. Please set up a budget before tracking overspending.`
-      : 'No budget found. Please set up a budget before tracking overspending.';
+  constructor(
+    category?: string,
+    userId?: string,
+    availableCategories?: Array<{ id: string; name: string }>,
+  ) {
+    // Find best matches using fuzzy matching
+    const suggestions =
+      category && availableCategories
+        ? findBestMatches(category, availableCategories, {
+            maxResults: 5,
+            minSimilarity: 0.3,
+          })
+        : [];
+
+    // Generate "Did you mean?" message
+    const didYouMean = category ? generateDidYouMeanMessage(category, suggestions) : null;
+
+    // Build the error message
+    let message: string;
+    if (didYouMean) {
+      message = didYouMean;
+    } else if (category) {
+      message = `No budget found for category '${category}'. Please set up a budget before tracking overspending.`;
+      // Add hint about available categories if no fuzzy match found
+      if (availableCategories && availableCategories.length > 0) {
+        const categoryList = availableCategories
+          .slice(0, 5)
+          .map((c) => `"${c.name}" (id: ${c.id})`)
+          .join(', ');
+        message += ` Available categories with budgets: ${categoryList}`;
+      }
+    } else {
+      message = 'No budget found. Please set up a budget before tracking overspending.';
+    }
+
+    // Build suggestions array for the response
+    const suggestionNames = suggestions.map((s) => s.name);
 
     super(ErrorCodes.GPS_NO_BUDGET_FOUND, message, HttpStatus.NOT_FOUND, {
       category,
       userId,
+      suggestions: suggestionNames,
+      availableCategories: availableCategories?.map((c) => ({
+        id: c.id,
+        name: c.name,
+      })),
+      hint: 'You can use either the category name (e.g., "Food & Dining") or category ID (e.g., "food-dining")',
     });
   }
 }

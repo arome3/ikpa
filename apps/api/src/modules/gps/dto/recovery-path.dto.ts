@@ -33,8 +33,13 @@ export class GetRecoveryPathsResponseDto {
 
   @ApiProperty({
     example: 'session-789-ghi',
-    description: 'Session ID these paths are associated with',
-    required: false,
+    description: 'Session ID these paths are associated with (auto-detected or provided)',
   })
-  sessionId?: string;
+  sessionId!: string;
+
+  @ApiProperty({
+    example: 'Entertainment',
+    description: 'Category name these paths are for',
+  })
+  category!: string;
 }

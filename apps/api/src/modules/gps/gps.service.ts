@@ -23,7 +23,11 @@ import { SimulationEngineCalculator } from '../finance/calculators/simulation-en
 
 import { BudgetService } from './budget.service';
 import { GoalService } from './goal.service';
-import { RecoveryActionService, RecoveryActionResult } from './recovery-action.service';
+import {
+  RecoveryActionService,
+  RecoveryActionResult,
+  RecoveryActionDetails,
+} from './recovery-action.service';
 import {
   BudgetStatus,
   GoalImpact,
@@ -33,12 +37,8 @@ import {
   EffortLevel,
   MultiGoalImpact,
 } from './interfaces';
-import {
-  GPS_CONSTANTS,
-  RECOVERY_PATHS,
-  SUPPORTIVE_MESSAGES,
-  GPS_TRACE_NAMES,
-} from './constants';
+import { createMonetaryValue } from '../../common/utils';
+import { GPS_CONSTANTS, RECOVERY_PATHS, SUPPORTIVE_MESSAGES, GPS_TRACE_NAMES } from './constants';
 import {
   GpsCalculationException,
   GpsInsufficientDataException,
@@ -116,7 +116,7 @@ export class GpsService {
           userId,
           goalId: goalImpact.goalId,
           category,
-          overspendAmount: Math.max(0, budgetStatus.spent - budgetStatus.budgeted),
+          overspendAmount: Math.max(0, budgetStatus.spent.amount - budgetStatus.budgeted.amount),
           previousProbability: goalImpact.previousProbability,
           newProbability: goalImpact.newProbability,
           status: RecoveryStatus.PENDING,
@@ -213,7 +213,7 @@ export class GpsService {
 
     // Calculate previous probability (before overspend impact)
     // We assume the "previous" state had the overspend amount available for savings
-    const overspendAmount = Math.max(0, budgetStatus.spent - budgetStatus.budgeted);
+    const overspendAmount = Math.max(0, budgetStatus.spent.amount - budgetStatus.budgeted.amount);
     const adjustedSavingsRate =
       currentInput.monthlyIncome > 0
         ? Math.max(
@@ -229,16 +229,8 @@ export class GpsService {
 
     // Run simulations
     const [previousSimulation, currentSimulation] = await Promise.all([
-      this.simulationEngine.runDualPathSimulation(
-        userId,
-        previousInput,
-        user?.currency || 'NGN',
-      ),
-      this.simulationEngine.runDualPathSimulation(
-        userId,
-        currentInput,
-        user?.currency || 'NGN',
-      ),
+      this.simulationEngine.runDualPathSimulation(userId, previousInput, user?.currency || 'NGN'),
+      this.simulationEngine.runDualPathSimulation(userId, currentInput, user?.currency || 'NGN'),
     ]);
 
     const previousProbability = previousSimulation.currentPath.probability;
@@ -254,10 +246,14 @@ export class GpsService {
           ? `Your goal probability actually increased by ${dropPercent} percentage points`
           : 'Your goal probability remains unchanged';
 
+    // Create MonetaryValue for goal amount
+    const currency = user?.currency || 'NGN';
+    const goalAmountValue = createMonetaryValue(Number(goal.targetAmount), currency);
+
     return {
       goalId: goal.id,
       goalName: goal.name,
-      goalAmount: Number(goal.targetAmount),
+      goalAmount: goalAmountValue,
       goalDeadline: goal.targetDate || new Date(),
       previousProbability,
       newProbability,
@@ -423,8 +419,13 @@ export class GpsService {
 
   /**
    * Get recovery paths for an existing session or generate new ones
+   *
+   * Returns paths along with sessionId and category for context
    */
-  async getRecoveryPaths(userId: string, sessionId?: string): Promise<RecoveryPath[]> {
+  async getRecoveryPaths(
+    userId: string,
+    sessionId?: string,
+  ): Promise<{ paths: RecoveryPath[]; sessionId: string; category: string }> {
     if (sessionId) {
       // Verify session exists and belongs to user
       const session = await this.prisma.recoverySession.findFirst({
@@ -442,7 +443,8 @@ export class GpsService {
       const budgetStatus = await this.budgetService.checkBudgetStatus(userId, session.category);
       const goalImpact = await this.calculateGoalImpact(userId, budgetStatus);
 
-      return this.generateRecoveryPaths(userId, budgetStatus, goalImpact);
+      const paths = await this.generateRecoveryPaths(userId, budgetStatus, goalImpact);
+      return { paths, sessionId: session.id, category: session.category };
     }
 
     // No session specified - check for any exceeded budgets
@@ -453,12 +455,25 @@ export class GpsService {
     }
 
     // Use the most severely exceeded budget
-    const mostExceeded = exceededBudgets.sort(
-      (a, b) => b.overagePercent - a.overagePercent,
-    )[0];
+    const mostExceeded = exceededBudgets.sort((a, b) => b.overagePercent - a.overagePercent)[0];
     const goalImpact = await this.calculateGoalImpact(userId, mostExceeded);
 
-    return this.generateRecoveryPaths(userId, mostExceeded, goalImpact);
+    const paths = await this.generateRecoveryPaths(userId, mostExceeded, goalImpact);
+
+    // Create a new session for tracking when no sessionId was provided
+    const session = await this.prisma.recoverySession.create({
+      data: {
+        userId,
+        goalId: goalImpact.goalId,
+        category: mostExceeded.category,
+        overspendAmount: Math.max(0, mostExceeded.spent.amount - mostExceeded.budgeted.amount),
+        previousProbability: goalImpact.previousProbability,
+        newProbability: goalImpact.newProbability,
+        status: RecoveryStatus.PENDING,
+      },
+    });
+
+    return { paths, sessionId: session.id, category: mostExceeded.category };
   }
 
   /**
@@ -481,11 +496,13 @@ export class GpsService {
     message: string;
     selectedPathId: string;
     selectedAt: Date;
+    details: RecoveryActionDetails;
+    nextSteps: string[];
     actionResult?: RecoveryActionResult;
   }> {
     // Validate path ID (before transaction)
     const validPathIds = Object.values(GPS_CONSTANTS.RECOVERY_PATH_IDS);
-    if (!validPathIds.includes(pathId as typeof validPathIds[number])) {
+    if (!validPathIds.includes(pathId as (typeof validPathIds)[number])) {
       throw new InvalidRecoveryPathException(pathId, validPathIds);
     }
 
@@ -539,6 +556,9 @@ export class GpsService {
       const pathConfig = RECOVERY_PATHS[pathId as keyof typeof RECOVERY_PATHS];
       const pathName = pathConfig?.name || pathId;
 
+      // Generate helpful next steps based on the path selected
+      const nextSteps = this.generateNextSteps(pathId, actionResult.details);
+
       this.logger.log(
         `[selectRecoveryPath] User ${userId}: selected and executed ${pathId} for session ${sessionId}`,
       );
@@ -548,6 +568,8 @@ export class GpsService {
         message: actionResult.message || `Great choice! We've activated ${pathName}.`,
         selectedPathId: pathId,
         selectedAt: now,
+        details: actionResult.details,
+        nextSteps,
         actionResult,
       };
     } catch (error) {
@@ -568,6 +590,53 @@ export class GpsService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Generate helpful next steps based on the recovery path selected
+   */
+  private generateNextSteps(pathId: string, details: RecoveryActionDetails): string[] {
+    const steps: string[] = [];
+
+    switch (pathId) {
+      case GPS_CONSTANTS.RECOVERY_PATH_IDS.TIME_ADJUSTMENT:
+        steps.push('Your goal deadline has been automatically updated');
+        steps.push('Review your updated timeline in the Goals section');
+        steps.push('Consider adjusting your budget to stay on track');
+        if (details.newDeadline) {
+          steps.push(`New target date: ${details.newDeadline.toLocaleDateString()}`);
+        }
+        break;
+
+      case GPS_CONSTANTS.RECOVERY_PATH_IDS.RATE_ADJUSTMENT:
+        steps.push('Your savings rate boost is now active');
+        if (details.boostAmount) {
+          steps.push(`You are now saving an additional ${(details.boostAmount * 100).toFixed(1)}%`);
+        }
+        steps.push('Track your progress in the Dashboard');
+        if (details.endDate) {
+          steps.push(`Boost ends on ${details.endDate.toLocaleDateString()}`);
+        }
+        steps.push('Set up automatic transfers to make saving easier');
+        break;
+
+      case GPS_CONSTANTS.RECOVERY_PATH_IDS.FREEZE_PROTOCOL:
+        if (details.categoryFrozen) {
+          steps.push(`Spending in ${details.categoryFrozen} is now paused`);
+        }
+        steps.push('You will receive alerts if you try to spend in this category');
+        steps.push('Review your spending patterns to identify alternatives');
+        if (details.endDate) {
+          steps.push(`Freeze ends on ${details.endDate.toLocaleDateString()}`);
+        }
+        break;
+
+      default:
+        steps.push('Your recovery plan is now active');
+        steps.push('Check back regularly to track your progress');
+    }
+
+    return steps;
   }
 
   /**
@@ -606,8 +675,7 @@ export class GpsService {
     // Select random headline and subtext
     const headline =
       messageType.headlines[Math.floor(Math.random() * messageType.headlines.length)];
-    const subtext =
-      messageType.subtexts[Math.floor(Math.random() * messageType.subtexts.length)];
+    const subtext = messageType.subtexts[Math.floor(Math.random() * messageType.subtexts.length)];
 
     return {
       tone: 'Supportive',
@@ -705,6 +773,207 @@ export class GpsService {
   }
 
   // ==========================================
+  // WHAT-IF SIMULATION
+  // ==========================================
+
+  /**
+   * Simulate the impact of additional spending without modifying database
+   *
+   * This is a READ-ONLY operation that helps users preview the consequences
+   * of a purchase before committing. Answers: "What happens if I spend more?"
+   */
+  async simulateWhatIf(
+    userId: string,
+    category: string,
+    additionalSpend: number,
+    goalId?: string,
+  ): Promise<{
+    category: string;
+    simulatedAmount: number;
+    budgetImpact: {
+      budgetAmount: number;
+      currentSpending: number;
+      projectedSpending: number;
+      currentPercentUsed: number;
+      projectedPercentUsed: number;
+      remainingAfterSpend: number;
+    };
+    probabilityImpact: {
+      goalId: string;
+      goalName: string;
+      currentProbability: number;
+      projectedProbability: number;
+      probabilityChange: number;
+      changePercentPoints: number;
+    };
+    triggerPreview: {
+      wouldTrigger: boolean;
+      triggerLevel?: 'BUDGET_WARNING' | 'BUDGET_EXCEEDED' | 'BUDGET_CRITICAL';
+      description: string;
+    };
+    recoveryPreview?: RecoveryPath[];
+    recommendation: string;
+    severity: 'low' | 'medium' | 'high';
+  }> {
+    // Get current budget status (without the additional spend)
+    const currentStatus = await this.budgetService.checkBudgetStatus(userId, category);
+
+    // Calculate projected values
+    const budgetAmount = currentStatus.budgeted.amount;
+    const currentSpending = currentStatus.spent.amount;
+    const projectedSpending = currentSpending + additionalSpend;
+    const currentPercentUsed = budgetAmount > 0 ? (currentSpending / budgetAmount) * 100 : 0;
+    const projectedPercentUsed = budgetAmount > 0 ? (projectedSpending / budgetAmount) * 100 : 0;
+    const remainingAfterSpend = budgetAmount - projectedSpending;
+
+    // Get the goal for probability calculations
+    const goal = goalId
+      ? await this.goalService.getGoal(userId, goalId)
+      : await this.goalService.getPrimaryGoal(userId);
+
+    if (!goal) {
+      throw new GpsInsufficientDataException(['active goal']);
+    }
+
+    // Get user currency
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { currency: true },
+    });
+    const currency = user?.currency || 'NGN';
+
+    // Calculate current probability
+    const currentInput = await this.goalService.getSimulationInput(userId, goalId);
+    const currentSimulation = await this.simulationEngine.runDualPathSimulation(
+      userId,
+      currentInput,
+      currency,
+    );
+    const currentProbability = currentSimulation.currentPath.probability;
+
+    // Calculate projected probability (simulating the additional spend reducing savings)
+    // We model this as the additional spend coming from what would have been saved
+    const additionalSpendImpact = currentInput.monthlyIncome > 0
+      ? additionalSpend / currentInput.monthlyIncome
+      : 0;
+
+    const projectedInput = {
+      ...currentInput,
+      currentSavingsRate: Math.max(0, currentInput.currentSavingsRate - additionalSpendImpact),
+    };
+    const projectedSimulation = await this.simulationEngine.runDualPathSimulation(
+      userId,
+      projectedInput,
+      currency,
+    );
+    const projectedProbability = projectedSimulation.currentPath.probability;
+
+    const probabilityChange = projectedProbability - currentProbability;
+    const changePercentPoints = Math.round(probabilityChange * 100);
+
+    // Determine trigger level
+    let triggerLevel: 'BUDGET_WARNING' | 'BUDGET_EXCEEDED' | 'BUDGET_CRITICAL' | undefined;
+    let wouldTrigger = false;
+    let triggerDescription = 'This spend keeps you within safe limits.';
+
+    const projectedRatio = projectedSpending / budgetAmount;
+
+    if (projectedRatio >= GPS_CONSTANTS.BUDGET_CRITICAL_THRESHOLD) {
+      wouldTrigger = true;
+      triggerLevel = 'BUDGET_CRITICAL';
+      triggerDescription = `This would put you at ${Math.round(projectedPercentUsed)}% of your budget - well over the limit.`;
+    } else if (projectedRatio >= GPS_CONSTANTS.BUDGET_EXCEEDED_THRESHOLD) {
+      wouldTrigger = true;
+      triggerLevel = 'BUDGET_EXCEEDED';
+      triggerDescription = `This would put you at ${Math.round(projectedPercentUsed)}% of your budget - over the limit.`;
+    } else if (projectedRatio >= GPS_CONSTANTS.BUDGET_WARNING_THRESHOLD) {
+      wouldTrigger = true;
+      triggerLevel = 'BUDGET_WARNING';
+      triggerDescription = `This would put you at ${Math.round(projectedPercentUsed)}% of your budget - approaching the limit.`;
+    }
+
+    // Generate recovery preview only if would trigger
+    let recoveryPreview: RecoveryPath[] | undefined;
+    if (wouldTrigger) {
+      // Create a simulated budget status for path generation
+      const simulatedStatus = {
+        ...currentStatus,
+        spent: createMonetaryValue(projectedSpending, currency),
+        remaining: createMonetaryValue(remainingAfterSpend, currency),
+        overagePercent: Math.max(0, (projectedSpending - budgetAmount) / budgetAmount * 100),
+        trigger: triggerLevel as 'BUDGET_WARNING' | 'BUDGET_EXCEEDED' | 'BUDGET_CRITICAL',
+      };
+
+      const simulatedImpact = {
+        goalId: goal.id,
+        goalName: goal.name,
+        goalAmount: createMonetaryValue(Number(goal.targetAmount), currency),
+        goalDeadline: goal.targetDate || new Date(),
+        previousProbability: currentProbability,
+        newProbability: projectedProbability,
+        probabilityDrop: probabilityChange,
+        message: `Simulated probability drop of ${Math.abs(changePercentPoints)} percentage points`,
+      };
+
+      recoveryPreview = await this.generateRecoveryPaths(
+        userId,
+        simulatedStatus,
+        simulatedImpact,
+        goalId,
+      );
+    }
+
+    // Determine severity and recommendation
+    let severity: 'low' | 'medium' | 'high';
+    let recommendation: string;
+
+    if (!wouldTrigger && probabilityChange > -0.05) {
+      severity = 'low';
+      recommendation = `This purchase fits within your ${category} budget. Your goal remains on track.`;
+    } else if (triggerLevel === 'BUDGET_WARNING' || probabilityChange >= -0.1) {
+      severity = 'medium';
+      recommendation = `This purchase would use ${Math.round(projectedPercentUsed)}% of your ${category} budget. Consider if it's essential.`;
+    } else {
+      severity = 'high';
+      recommendation = `This purchase would significantly impact your budget and goal probability. Consider alternatives or delaying.`;
+    }
+
+    this.logger.log(
+      `[simulateWhatIf] User ${userId}: simulated ₦${additionalSpend} in ${category}, ` +
+      `probability impact: ${(probabilityChange * 100).toFixed(1)}pp, trigger: ${triggerLevel || 'none'}`,
+    );
+
+    return {
+      category,
+      simulatedAmount: additionalSpend,
+      budgetImpact: {
+        budgetAmount,
+        currentSpending,
+        projectedSpending,
+        currentPercentUsed: Math.round(currentPercentUsed),
+        projectedPercentUsed: Math.round(projectedPercentUsed),
+        remainingAfterSpend,
+      },
+      probabilityImpact: {
+        goalId: goal.id,
+        goalName: goal.name,
+        currentProbability,
+        projectedProbability,
+        probabilityChange,
+        changePercentPoints,
+      },
+      triggerPreview: {
+        wouldTrigger,
+        triggerLevel,
+        description: triggerDescription,
+      },
+      recoveryPreview,
+      recommendation,
+      severity,
+    };
+  }
+
+  // ==========================================
   // ACTIVE ADJUSTMENTS HELPERS
   // ==========================================
 
@@ -734,5 +1003,113 @@ export class GpsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  /**
+   * Get timeline extensions from time_adjustment recovery paths
+   *
+   * Queries RecoverySession records where selectedPathId = 'time_adjustment',
+   * then fetches the associated goal and analytics event to get extension details.
+   */
+  async getTimelineExtensions(userId: string): Promise<
+    Array<{
+      goalId: string;
+      goalName: string;
+      originalDeadline: Date;
+      newDeadline: Date;
+      extensionDays: number;
+      sessionId: string;
+    }>
+  > {
+    // Find all sessions where time_adjustment was selected
+    const sessions = await this.prisma.recoverySession.findMany({
+      where: {
+        userId,
+        selectedPathId: GPS_CONSTANTS.RECOVERY_PATH_IDS.TIME_ADJUSTMENT,
+        status: { in: ['PATH_SELECTED', 'IN_PROGRESS', 'COMPLETED'] },
+      },
+      include: {
+        goal: {
+          select: {
+            id: true,
+            name: true,
+            targetDate: true,
+          },
+        },
+      },
+      orderBy: { selectedAt: 'desc' },
+    });
+
+    const extensions: Array<{
+      goalId: string;
+      goalName: string;
+      originalDeadline: Date;
+      newDeadline: Date;
+      extensionDays: number;
+      sessionId: string;
+    }> = [];
+
+    for (const session of sessions) {
+      if (!session.goal || !session.goalId) continue;
+
+      // Get the analytics event that recorded the extension details
+      const analyticsEvent = await this.prisma.gpsAnalyticsEvent.findFirst({
+        where: {
+          sessionId: session.id,
+          eventType: GpsEventType.RECOVERY_STARTED,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!analyticsEvent?.eventData) continue;
+
+      // Extract deadline details from eventData
+      const eventData = analyticsEvent.eventData as {
+        pathId?: string;
+        action?: string;
+        details?: {
+          previousValue?: string | Date;
+          newValue?: string | Date;
+          duration?: string;
+        };
+      };
+
+      if (eventData.action !== 'DEADLINE_EXTENDED' || !eventData.details) continue;
+
+      const { previousValue, newValue, duration } = eventData.details;
+
+      // Parse the dates
+      const originalDeadline = previousValue ? new Date(previousValue) : null;
+      const newDeadline = newValue ? new Date(newValue) : session.goal.targetDate;
+
+      if (!originalDeadline || !newDeadline) continue;
+
+      // Calculate extension days (or extract from duration string like "2 weeks")
+      let extensionDays = 0;
+      if (duration) {
+        const weeksMatch = duration.match(/(\d+)\s*weeks?/i);
+        if (weeksMatch) {
+          extensionDays = parseInt(weeksMatch[1], 10) * 7;
+        }
+      }
+
+      // Fallback: calculate from date difference
+      if (extensionDays === 0) {
+        extensionDays = Math.round(
+          (newDeadline.getTime() - originalDeadline.getTime()) / (1000 * 60 * 60 * 24),
+        );
+      }
+
+      extensions.push({
+        goalId: session.goal.id,
+        goalName: session.goal.name,
+        originalDeadline,
+        newDeadline,
+        extensionDays,
+        sessionId: session.id,
+      });
+    }
+
+    return extensions;
   }
 }

@@ -22,6 +22,19 @@ export type BudgetTrigger = 'BUDGET_WARNING' | 'BUDGET_EXCEEDED' | 'BUDGET_CRITI
 export type EffortLevel = 'Low' | 'Medium' | 'High';
 
 /**
+ * Monetary value with both raw amount and formatted string
+ * Provides human-readable currency display (e.g., "₦50,000")
+ */
+export interface MonetaryValue {
+  /** Raw numeric amount */
+  amount: number;
+  /** Formatted string with currency symbol (e.g., "₦50,000") */
+  formatted: string;
+  /** Currency code (e.g., "NGN", "USD") */
+  currency: string;
+}
+
+/**
  * Status of a user's budget for a specific category
  */
 export interface BudgetStatus {
@@ -29,12 +42,12 @@ export interface BudgetStatus {
   category: string;
   /** Category ID for database reference */
   categoryId: string;
-  /** Budgeted amount for the period */
-  budgeted: number;
-  /** Amount spent so far */
-  spent: number;
-  /** Amount remaining (can be negative if overspent) */
-  remaining: number;
+  /** Budgeted amount for the period with formatted currency */
+  budgeted: MonetaryValue;
+  /** Amount spent so far with formatted currency */
+  spent: MonetaryValue;
+  /** Amount remaining (can be negative if overspent) with formatted currency */
+  remaining: MonetaryValue;
   /** Percentage over budget (0 if under, positive if over) */
   overagePercent: number;
   /** Which trigger threshold was hit */
@@ -51,8 +64,8 @@ export interface GoalImpact {
   goalId: string;
   /** Goal name */
   goalName: string;
-  /** Goal target amount */
-  goalAmount: number;
+  /** Goal target amount with formatted currency */
+  goalAmount: MonetaryValue;
   /** Goal deadline */
   goalDeadline: Date;
   /** Probability before the overspend */

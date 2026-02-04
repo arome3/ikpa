@@ -28,6 +28,9 @@ import { Throttle } from '@nestjs/throttler';
 import { differenceInDays } from 'date-fns';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
+import { findBestMatches, generateDidYouMeanMessage } from '../../common/utils';
+import { PrismaService } from '../../prisma/prisma.service';
+import { createMonetaryValue } from '../../common/utils';
 import { GpsService } from './gps.service';
 import { GpsAnalyticsService } from './gps-analytics.service';
 import { RecoveryActionService } from './recovery-action.service';
@@ -49,7 +52,22 @@ import {
   ActiveAdjustmentsResponseDto,
   ActiveSavingsAdjustmentDto,
   ActiveCategoryFreezeDto,
+  TimelineExtensionDto,
+  ActiveAdjustmentsSummaryDto,
+  MonetaryValueDto,
+  StreakStatusDto,
+  AchievementsResponseDto,
+  WhatIfRequestDto,
+  WhatIfResponseDto,
+  NotificationsQueryDto,
+  NotificationsResponseDto,
+  UnreadCountResponseDto,
+  MarkReadResponseDto,
 } from './dto';
+import { BudgetStatus, GoalImpact } from './interfaces';
+import { StreakService } from './streaks';
+import { ProgressService } from './progress';
+import { GpsNotificationService } from './notification';
 
 /**
  * Controller for GPS Re-Router budget recovery system
@@ -65,12 +83,16 @@ import {
 @ApiTags('GPS Re-Router')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('v1/gps')
+@Controller('gps')
 export class GpsController {
   constructor(
     private readonly gpsService: GpsService,
     private readonly analyticsService: GpsAnalyticsService,
     private readonly recoveryActionService: RecoveryActionService,
+    private readonly prisma: PrismaService,
+    private readonly streakService: StreakService,
+    private readonly progressService: ProgressService,
+    private readonly notificationService: GpsNotificationService,
   ) {}
 
   // ==========================================
@@ -183,11 +205,12 @@ export class GpsController {
     @CurrentUser('id') userId: string,
     @Query() query: GetRecoveryPathsQueryDto,
   ): Promise<GetRecoveryPathsResponseDto> {
-    const paths = await this.gpsService.getRecoveryPaths(userId, query.sessionId);
+    const result = await this.gpsService.getRecoveryPaths(userId, query.sessionId);
 
     return {
-      paths: paths.map((path) => this.toRecoveryPathDto(path)),
-      sessionId: query.sessionId,
+      paths: result.paths.map((path) => this.toRecoveryPathDto(path)),
+      sessionId: result.sessionId,
+      category: result.category,
     };
   }
 
@@ -247,7 +270,61 @@ export class GpsController {
       message: result.message,
       selectedPathId: result.selectedPathId,
       selectedAt: result.selectedAt,
+      details: result.details,
+      nextSteps: result.nextSteps,
     };
+  }
+
+  // ==========================================
+  // WHAT-IF SIMULATION ENDPOINTS
+  // ==========================================
+
+  /**
+   * Simulate spending impact before committing
+   *
+   * READ-ONLY operation that previews budget and goal impact.
+   * Answers the user need: "What happens if I spend more?"
+   */
+  @Post('what-if')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 per minute
+  @ApiOperation({
+    summary: 'Simulate spending impact',
+    description:
+      'Preview the impact of additional spending before committing. ' +
+      'Shows budget impact, goal probability change, and potential triggers. ' +
+      'This is a READ-ONLY operation - no database changes are made.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Simulation completed successfully',
+    type: WhatIfResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Budget not found for the specified category',
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'No active goal found',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Rate limit exceeded - Max 10 requests per minute',
+  })
+  async simulateWhatIf(
+    @CurrentUser('id') userId: string,
+    @Body() dto: WhatIfRequestDto,
+  ): Promise<WhatIfResponseDto> {
+    return this.gpsService.simulateWhatIf(
+      userId,
+      dto.category,
+      dto.additionalSpend,
+      dto.goalId,
+    );
   }
 
   // ==========================================
@@ -256,11 +333,17 @@ export class GpsController {
 
   /**
    * Get a recovery session by ID
+   *
+   * Includes enhanced recovery progress with milestones when a path has been selected.
+   * Progress tracking answers the user need: "How far along am I?"
    */
   @Get('sessions/:sessionId')
   @ApiOperation({
     summary: 'Get recovery session details',
-    description: 'Returns details of a specific recovery session including status and selected path.',
+    description:
+      'Returns details of a specific recovery session including status, selected path, ' +
+      'enhanced recovery progress with milestones (25%, 50%, 75%, 100%), ' +
+      'and encouraging messages. Progress tracking helps users see their journey.',
   })
   @ApiParam({
     name: 'sessionId',
@@ -285,7 +368,8 @@ export class GpsController {
   ) {
     const session = await this.gpsService.getRecoverySession(userId, sessionId);
 
-    return {
+    // Build the base response
+    const baseResponse = {
       id: session.id,
       category: session.category,
       overspendAmount: Number(session.overspendAmount),
@@ -296,6 +380,70 @@ export class GpsController {
       status: session.status,
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
+    };
+
+    // If no path selected yet, return base response without progress
+    if (!session.selectedPathId || !session.selectedAt) {
+      return baseResponse;
+    }
+
+    // Check and record any new milestones
+    await this.progressService.checkAndRecordMilestones(userId, sessionId);
+
+    // Get enhanced recovery progress with milestones
+    const recoveryProgress = await this.progressService.getRecoveryProgress(userId, sessionId);
+
+    // Get selected path details
+    const selectedPath = await this.getSelectedPathDetails(userId, session);
+
+    return {
+      ...baseResponse,
+      recoveryProgress,
+      selectedPath,
+    };
+  }
+
+  /**
+   * Get selected path details for a session
+   */
+  private async getSelectedPathDetails(
+    userId: string,
+    session: { selectedPathId: string | null; selectedAt: Date | null },
+  ): Promise<{
+    id: string;
+    name: string;
+    expectedCompletion: Date;
+  } | undefined> {
+    if (!session.selectedPathId || !session.selectedAt) {
+      return undefined;
+    }
+
+    // Get path name from constants
+    const pathNames: Record<string, string> = {
+      time_adjustment: 'Timeline Flex',
+      rate_adjustment: 'Savings Boost',
+      freeze_protocol: 'Category Pause',
+    };
+
+    const pathName = pathNames[session.selectedPathId] || session.selectedPathId;
+    let expectedCompletion: Date;
+
+    // Calculate expected completion based on path type and active adjustments
+    if (session.selectedPathId === 'rate_adjustment') {
+      const adjustment = await this.recoveryActionService.getActiveSavingsAdjustment(userId);
+      expectedCompletion = adjustment?.endDate || new Date(session.selectedAt.getTime() + 28 * 24 * 60 * 60 * 1000);
+    } else if (session.selectedPathId === 'freeze_protocol') {
+      const freezes = await this.recoveryActionService.getActiveCategoryFreezes(userId);
+      expectedCompletion = freezes.length > 0 ? freezes[0].endDate : new Date(session.selectedAt.getTime() + 28 * 24 * 60 * 60 * 1000);
+    } else {
+      // For time_adjustment, use 2 weeks as default
+      expectedCompletion = new Date(session.selectedAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+    }
+
+    return {
+      id: session.selectedPathId,
+      name: pathName,
+      expectedCompletion,
     };
   }
 
@@ -384,6 +532,176 @@ export class GpsController {
   }
 
   // ==========================================
+  // STREAK ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get current streak status
+   *
+   * Returns the user's current streak of consecutive days staying under budget.
+   * Answers the user need: "Am I doing well?"
+   */
+  @Get('streaks')
+  @ApiOperation({
+    summary: 'Get your current streak status',
+    description:
+      'Returns your streak of consecutive days staying under budget. ' +
+      'Includes current streak, longest streak, and encouragement messages.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Streak status retrieved successfully',
+    type: StreakStatusDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getStreakStatus(
+    @CurrentUser('id') userId: string,
+  ): Promise<StreakStatusDto> {
+    return this.streakService.getStreakStatus(userId);
+  }
+
+  /**
+   * Get user's achievements
+   *
+   * Returns earned and available achievements for gamification.
+   */
+  @Get('achievements')
+  @ApiOperation({
+    summary: 'Get your achievements',
+    description:
+      'Returns your earned achievements and available achievements to unlock. ' +
+      'Achievements reward positive financial behaviors with encouraging names.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Achievements retrieved successfully',
+    type: AchievementsResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getAchievements(
+    @CurrentUser('id') userId: string,
+  ): Promise<AchievementsResponseDto> {
+    return this.streakService.getAchievements(userId);
+  }
+
+  // ==========================================
+  // NOTIFICATION ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get user's notifications
+   *
+   * Returns proactive alerts about budget events.
+   * Answers the user need: "Tell me when I overspend"
+   */
+  @Get('notifications')
+  @ApiOperation({
+    summary: 'Get your GPS notifications',
+    description:
+      'Returns proactive notifications about budget threshold crossings. ' +
+      'Notifications are created automatically when you approach or exceed budget limits.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notifications retrieved successfully',
+    type: NotificationsResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getNotifications(
+    @CurrentUser('id') userId: string,
+    @Query() query: NotificationsQueryDto,
+  ): Promise<NotificationsResponseDto> {
+    return this.notificationService.getNotifications(userId, query.limit, query.unreadOnly);
+  }
+
+  /**
+   * Get unread notification count
+   *
+   * Useful for displaying a badge on the notifications icon.
+   */
+  @Get('notifications/unread-count')
+  @ApiOperation({
+    summary: 'Get unread notification count',
+    description:
+      'Returns the count of unread notifications. Use this for displaying ' +
+      'a notification badge in your UI.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Unread count retrieved successfully',
+    type: UnreadCountResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getUnreadCount(
+    @CurrentUser('id') userId: string,
+  ): Promise<UnreadCountResponseDto> {
+    return this.notificationService.getUnreadCount(userId);
+  }
+
+  /**
+   * Mark a notification as read
+   */
+  @Post('notifications/:notificationId/read')
+  @ApiOperation({
+    summary: 'Mark a notification as read',
+    description: 'Marks a specific notification as read.',
+  })
+  @ApiParam({
+    name: 'notificationId',
+    description: 'Notification ID to mark as read',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification marked as read',
+    type: MarkReadResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async markNotificationAsRead(
+    @CurrentUser('id') userId: string,
+    @Param('notificationId', ParseUUIDPipe) notificationId: string,
+  ): Promise<MarkReadResponseDto> {
+    return this.notificationService.markAsRead(userId, notificationId);
+  }
+
+  /**
+   * Mark all notifications as read
+   */
+  @Post('notifications/read-all')
+  @ApiOperation({
+    summary: 'Mark all notifications as read',
+    description: 'Marks all unread notifications as read.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All notifications marked as read',
+    type: MarkReadResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async markAllNotificationsAsRead(
+    @CurrentUser('id') userId: string,
+  ): Promise<MarkReadResponseDto> {
+    return this.notificationService.markAllAsRead(userId);
+  }
+
+  // ==========================================
   // ACTIVE ADJUSTMENTS ENDPOINTS
   // ==========================================
 
@@ -411,32 +729,59 @@ export class GpsController {
   async getActiveAdjustments(
     @CurrentUser('id') userId: string,
   ): Promise<ActiveAdjustmentsResponseDto> {
-    const [savingsAdjustment, categoryFreezes] = await Promise.all([
+    const [savingsAdjustment, categoryFreezes, timelineExtensionsData] = await Promise.all([
       this.getActiveSavingsAdjustmentDto(userId),
       this.getActiveCategoryFreezeDtos(userId),
+      this.gpsService.getTimelineExtensions(userId),
     ]);
+
+    // Convert timeline extensions to DTOs
+    const timelineExtensions: TimelineExtensionDto[] = timelineExtensionsData.map((ext) => ({
+      goalId: ext.goalId,
+      goalName: ext.goalName,
+      originalDeadline: ext.originalDeadline,
+      newDeadline: ext.newDeadline,
+      extensionDays: ext.extensionDays,
+      sessionId: ext.sessionId,
+    }));
+
+    // Calculate summary
+    const summary = this.calculateAdjustmentsSummary(
+      savingsAdjustment,
+      categoryFreezes,
+      timelineExtensions,
+    );
 
     return {
       savingsAdjustment,
       categoryFreezes,
-      hasActiveAdjustments: savingsAdjustment !== null || categoryFreezes.length > 0,
+      timelineExtensions,
+      summary,
+      hasActiveAdjustments:
+        savingsAdjustment !== null ||
+        categoryFreezes.length > 0 ||
+        timelineExtensions.length > 0,
     };
   }
 
   /**
    * Check if a specific category is frozen
+   *
+   * Accepts either a category ID (UUID) or category name (e.g., "Food & Dining").
+   * Returns detailed freeze information when the category is frozen.
    */
   @Get('active-adjustments/frozen/:categoryId')
   @ApiOperation({
     summary: 'Check if a category is frozen',
     description:
       'Checks whether a specific spending category is currently frozen. ' +
-      'Returns a boolean indicating the freeze status.',
+      'Accepts either a category ID (UUID) or category name (e.g., "Food & Dining"). ' +
+      'Returns freeze status and detailed information when frozen.',
   })
   @ApiParam({
     name: 'categoryId',
-    description: 'Category ID to check',
-    example: 'cat-uuid-123',
+    description: 'Category ID (UUID) or category name (e.g., "Food & Dining")',
+    example: 'Food & Dining',
   })
   @ApiResponse({
     status: 200,
@@ -448,10 +793,80 @@ export class GpsController {
   })
   async isCategoryFrozen(
     @CurrentUser('id') userId: string,
-    @Param('categoryId', ParseUUIDPipe) categoryId: string,
-  ): Promise<{ categoryId: string; isFrozen: boolean }> {
-    const isFrozen = await this.recoveryActionService.isCategoryFrozen(userId, categoryId);
-    return { categoryId, isFrozen };
+    @Param('categoryId') categoryId: string,
+  ): Promise<{
+    categoryId: string;
+    categoryName: string;
+    isFrozen: boolean;
+    freezeDetails?: {
+      startDate: Date;
+      endDate: Date;
+      daysRemaining: number;
+      reason: string;
+    };
+    suggestions?: Array<{ id: string; name: string }>;
+    didYouMean?: string;
+  }> {
+    const freezeDetails = await this.recoveryActionService.getCategoryFreezeDetails(
+      userId,
+      categoryId,
+    );
+
+    if (!freezeDetails) {
+      // Category is not frozen - try to find similar categories for suggestions
+      const allCategories = await this.prisma.expenseCategory.findMany({
+        where: { isDefault: true },
+        select: { id: true, name: true },
+      });
+
+      // Check if the provided categoryId matches any known category
+      const matchedCategory = allCategories.find(
+        (c) =>
+          c.id.toLowerCase() === categoryId.toLowerCase() ||
+          c.name.toLowerCase() === categoryId.toLowerCase(),
+      );
+
+      if (matchedCategory) {
+        // Valid category, just not frozen
+        return {
+          categoryId: matchedCategory.id,
+          categoryName: matchedCategory.name,
+          isFrozen: false,
+        };
+      }
+
+      // Unknown category - provide "Did you mean?" suggestions
+      const suggestions = findBestMatches(categoryId, allCategories, {
+        maxResults: 3,
+        minSimilarity: 0.3,
+      });
+
+      const didYouMean = generateDidYouMeanMessage(categoryId, suggestions);
+
+      return {
+        categoryId: categoryId,
+        categoryName: categoryId,
+        isFrozen: false,
+        suggestions: suggestions.length > 0 ? suggestions.map((s) => ({ id: s.id, name: s.name })) : undefined,
+        didYouMean: didYouMean || undefined,
+      };
+    }
+
+    // Category is frozen - return detailed information
+    const now = new Date();
+    const daysRemaining = Math.max(0, differenceInDays(freezeDetails.endDate, now));
+
+    return {
+      categoryId: freezeDetails.categoryId,
+      categoryName: freezeDetails.categoryName,
+      isFrozen: true,
+      freezeDetails: {
+        startDate: freezeDetails.startDate,
+        endDate: freezeDetails.endDate,
+        daysRemaining,
+        reason: `Category frozen as part of recovery action (Session: ${freezeDetails.sessionId})`,
+      },
+    };
   }
 
   // ==========================================
@@ -502,30 +917,70 @@ export class GpsController {
       durationWeeks: freeze.durationWeeks,
       startDate: freeze.startDate,
       endDate: freeze.endDate,
-      savedAmount: Number(freeze.savedAmount),
+      savedAmount: createMonetaryValue(Number(freeze.savedAmount), 'USD'),
       daysRemaining: Math.max(0, differenceInDays(freeze.endDate, now)),
     }));
   }
 
   /**
+   * Calculate summary of all active adjustments
+   */
+  private calculateAdjustmentsSummary(
+    savingsAdjustment: ActiveSavingsAdjustmentDto | null,
+    categoryFreezes: ActiveCategoryFreezeDto[],
+    timelineExtensions: TimelineExtensionDto[],
+  ): ActiveAdjustmentsSummaryDto {
+    // Calculate estimated monthly savings
+    // From category freezes: sum of savedAmount (which is estimated savings over the freeze period)
+    // Convert to monthly: savedAmount / durationWeeks * 4 (approx weeks per month)
+    const freezeMonthlySavings = categoryFreezes.reduce((total, freeze) => {
+      const monthlyEquivalent = (freeze.savedAmount.amount / freeze.durationWeeks) * 4;
+      return total + monthlyEquivalent;
+    }, 0);
+
+    // Note: Savings boost impact is measured in percentage points (additionalRate), not absolute amounts.
+    // We would need the user's monthly income to calculate monetary impact.
+    // For now, estimatedMonthlySavings only includes concrete monetary amounts from freezes.
+    const estimatedMonthlySavingsAmount = Math.round(freezeMonthlySavings);
+
+    // Find the earliest end date of active adjustments
+    const endDates: Date[] = [];
+
+    if (savingsAdjustment) {
+      endDates.push(savingsAdjustment.endDate);
+    }
+
+    categoryFreezes.forEach((freeze) => {
+      endDates.push(freeze.endDate);
+    });
+
+    // Note: Timeline extensions don't have an "end date" - they permanently extend the goal deadline
+    // So we only consider savings adjustments and freezes for recovery date
+
+    const estimatedRecoveryDate =
+      endDates.length > 0
+        ? new Date(Math.min(...endDates.map((d) => d.getTime())))
+        : null;
+
+    return {
+      totalActiveFreezes: categoryFreezes.length,
+      totalActiveBoosts: savingsAdjustment ? 1 : 0,
+      totalTimelineExtensions: timelineExtensions.length,
+      estimatedMonthlySavings: createMonetaryValue(estimatedMonthlySavingsAmount, 'USD'),
+      estimatedRecoveryDate,
+    };
+  }
+
+  /**
    * Convert budget status to DTO
    */
-  private toBudgetStatusDto(status: {
-    category: string;
-    categoryId: string;
-    budgeted: number;
-    spent: number;
-    remaining: number;
-    overagePercent: number;
-    trigger: string;
-    period: string;
-  }): BudgetStatusDto {
+  private toBudgetStatusDto(status: BudgetStatus): BudgetStatusDto {
     return {
       category: status.category,
       categoryId: status.categoryId,
-      budgeted: status.budgeted,
-      spent: status.spent,
-      remaining: status.remaining,
+      budgeted: status.budgeted as MonetaryValueDto,
+      spent: status.spent as MonetaryValueDto,
+      remaining: status.remaining as MonetaryValueDto,
       overagePercent: status.overagePercent,
       trigger: status.trigger as BudgetStatusDto['trigger'],
       period: status.period,
@@ -535,20 +990,11 @@ export class GpsController {
   /**
    * Convert goal impact to DTO
    */
-  private toGoalImpactDto(impact: {
-    goalId: string;
-    goalName: string;
-    goalAmount: number;
-    goalDeadline: Date;
-    previousProbability: number;
-    newProbability: number;
-    probabilityDrop: number;
-    message: string;
-  }): GoalImpactDto {
+  private toGoalImpactDto(impact: GoalImpact): GoalImpactDto {
     return {
       goalId: impact.goalId,
       goalName: impact.goalName,
-      goalAmount: impact.goalAmount,
+      goalAmount: impact.goalAmount as MonetaryValueDto,
       goalDeadline: impact.goalDeadline,
       previousProbability: impact.previousProbability,
       newProbability: impact.newProbability,

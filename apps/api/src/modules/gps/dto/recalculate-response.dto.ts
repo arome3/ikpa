@@ -8,7 +8,31 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   BudgetTrigger,
   EffortLevel,
+  MonetaryValue,
 } from '../interfaces/gps-rerouter.interface';
+
+/**
+ * Monetary value DTO with both amount and formatted string
+ */
+export class MonetaryValueDto implements MonetaryValue {
+  @ApiProperty({
+    example: 50000,
+    description: 'Raw numeric amount',
+  })
+  amount!: number;
+
+  @ApiProperty({
+    example: '₦50,000',
+    description: 'Formatted string with currency symbol',
+  })
+  formatted!: string;
+
+  @ApiProperty({
+    example: 'NGN',
+    description: 'Currency code',
+  })
+  currency!: string;
+}
 
 /**
  * Budget status response DTO
@@ -27,22 +51,25 @@ export class BudgetStatusDto {
   categoryId!: string;
 
   @ApiProperty({
-    example: 50000,
-    description: 'Budgeted amount for the period',
+    type: MonetaryValueDto,
+    example: { amount: 50000, formatted: '₦50,000', currency: 'NGN' },
+    description: 'Budgeted amount for the period with formatted currency',
   })
-  budgeted!: number;
+  budgeted!: MonetaryValueDto;
 
   @ApiProperty({
-    example: 65000,
-    description: 'Amount spent so far',
+    type: MonetaryValueDto,
+    example: { amount: 65000, formatted: '₦65,000', currency: 'NGN' },
+    description: 'Amount spent so far with formatted currency',
   })
-  spent!: number;
+  spent!: MonetaryValueDto;
 
   @ApiProperty({
-    example: -15000,
-    description: 'Amount remaining (negative if overspent)',
+    type: MonetaryValueDto,
+    example: { amount: -15000, formatted: '-₦15,000', currency: 'NGN' },
+    description: 'Amount remaining (negative if overspent) with formatted currency',
   })
-  remaining!: number;
+  remaining!: MonetaryValueDto;
 
   @ApiProperty({
     example: 30,
@@ -81,10 +108,11 @@ export class GoalImpactDto {
   goalName!: string;
 
   @ApiProperty({
-    example: 500000,
-    description: 'Goal target amount',
+    type: MonetaryValueDto,
+    example: { amount: 500000, formatted: '₦500,000', currency: 'NGN' },
+    description: 'Goal target amount with formatted currency',
   })
-  goalAmount!: number;
+  goalAmount!: MonetaryValueDto;
 
   @ApiProperty({
     example: '2026-06-30T00:00:00.000Z',

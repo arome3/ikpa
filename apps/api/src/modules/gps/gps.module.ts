@@ -34,6 +34,9 @@ import { BudgetEventListener } from './budget-event.listener';
 import { GpsCronService } from './gps.cron';
 import { CategoryFreezeGuardService } from './category-freeze-guard.service';
 import { GpsIntegrationService } from './gps-integration.service';
+import { StreakService } from './streaks';
+import { ProgressService } from './progress';
+import { GpsNotificationService, GpsNotificationListener } from './notification';
 
 /**
  * Module for the GPS Re-Router budget recovery system
@@ -62,6 +65,10 @@ import { GpsIntegrationService } from './gps-integration.service';
     GpsCronService,
     CategoryFreezeGuardService,
     GpsIntegrationService,
+    StreakService,
+    ProgressService,
+    GpsNotificationService,
+    GpsNotificationListener,
   ],
   exports: [
     GpsService,
@@ -73,6 +80,9 @@ import { GpsIntegrationService } from './gps-integration.service';
     CategoryFreezeGuardService,
     BudgetEventListener,
     GpsIntegrationService, // Primary integration point for other modules
+    StreakService,
+    ProgressService,
+    GpsNotificationService,
   ],
 })
 export class GpsModule {}

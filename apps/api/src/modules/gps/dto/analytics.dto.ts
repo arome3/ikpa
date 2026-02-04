@@ -8,6 +8,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { MonetaryValueDto } from './recalculate-response.dto';
 
 // ==========================================
 // REQUEST DTOs
@@ -174,6 +175,34 @@ export class AnalyticsDashboardDto {
 }
 
 /**
+ * Time to recovery structured value
+ */
+export class TimeToRecoveryValueDto {
+  @ApiProperty({ description: 'Time in hours, rounded to 2 decimal places', example: 2.5 })
+  hours!: number;
+
+  @ApiProperty({
+    description: 'Human-readable formatted time',
+    example: 'Under 2 hours',
+  })
+  formatted!: string;
+}
+
+/**
+ * Preferred path details
+ */
+export class PreferredPathDto {
+  @ApiProperty({ description: 'Recovery path ID', example: 'rate_adjustment' })
+  id!: string;
+
+  @ApiProperty({ description: 'Human-readable path name', example: 'Savings Boost' })
+  name!: string;
+
+  @ApiProperty({ description: 'Number of times this path was selected', example: 5 })
+  usageCount!: number;
+}
+
+/**
  * User-specific analytics response
  */
 export class UserAnalyticsDto {
@@ -183,17 +212,37 @@ export class UserAnalyticsDto {
   @ApiProperty({ description: 'Recovery rate (0-1)', example: 0.8 })
   recoveryRate!: number;
 
-  @ApiPropertyOptional({
-    description: 'Most frequently selected recovery path',
-    example: 'rate_adjustment',
-  })
-  preferredPath!: string | null;
+  @ApiProperty({ description: 'Recovery rate formatted as percentage', example: '80%' })
+  recoveryRateFormatted!: string;
 
-  @ApiProperty({ description: 'Average time to recovery in hours', example: 3.5 })
-  averageTimeToRecovery!: number;
+  @ApiPropertyOptional({
+    description: 'Most frequently selected recovery path with details',
+    type: PreferredPathDto,
+  })
+  preferredPath!: PreferredPathDto | null;
+
+  @ApiProperty({
+    description: 'Average time to recovery with structured value',
+    type: TimeToRecoveryValueDto,
+  })
+  averageTimeToRecovery!: TimeToRecoveryValueDto;
 
   @ApiProperty({ description: 'Total probability points restored', example: 0.25 })
   totalProbabilityRestored!: number;
+}
+
+/**
+ * Most selected path details for category analytics
+ */
+export class MostSelectedPathDto {
+  @ApiProperty({ description: 'Recovery path ID', example: 'freeze_protocol' })
+  id!: string;
+
+  @ApiProperty({ description: 'Human-readable path name', example: 'Category Pause' })
+  name!: string;
+
+  @ApiProperty({ description: 'Number of times this path was selected', example: 8 })
+  count!: number;
 }
 
 /**
@@ -203,17 +252,32 @@ export class CategoryAnalyticsDto {
   @ApiProperty({ description: 'Spending category name', example: 'Entertainment' })
   category!: string;
 
+  @ApiProperty({ description: 'Category identifier', example: 'entertainment' })
+  categoryId!: string;
+
   @ApiProperty({ description: 'Total slip events in this category', example: 15 })
   totalSlips!: number;
 
   @ApiProperty({ description: 'Recovery rate for this category (0-1)', example: 0.73 })
   recoveryRate!: number;
 
+  @ApiProperty({ description: 'Recovery rate formatted as percentage', example: '73%' })
+  recoveryRateFormatted!: string;
+
   @ApiPropertyOptional({
     description: 'Most selected recovery path for this category',
-    example: 'freeze_protocol',
+    type: MostSelectedPathDto,
   })
-  mostSelectedPath!: string | null;
+  mostSelectedPath!: MostSelectedPathDto | null;
+
+  @ApiProperty({ description: 'Average overspend as percentage of budget', example: 15.5 })
+  averageOverspendPercent!: number;
+
+  @ApiProperty({
+    description: 'Total overspend amount',
+    type: MonetaryValueDto,
+  })
+  totalOverspendAmount!: MonetaryValueDto;
 }
 
 // ==========================================
@@ -253,6 +317,53 @@ export class ActiveSavingsAdjustmentDto {
 }
 
 /**
+ * Timeline extension from time_adjustment recovery path
+ */
+export class TimelineExtensionDto {
+  @ApiProperty({ description: 'Goal ID' })
+  goalId!: string;
+
+  @ApiProperty({ description: 'Goal name', example: 'Emergency Fund' })
+  goalName!: string;
+
+  @ApiProperty({ description: 'Original deadline before extension' })
+  originalDeadline!: Date;
+
+  @ApiProperty({ description: 'New deadline after extension' })
+  newDeadline!: Date;
+
+  @ApiProperty({ description: 'Total days extended', example: 14 })
+  extensionDays!: number;
+
+  @ApiProperty({ description: 'Recovery session ID that caused this extension' })
+  sessionId!: string;
+}
+
+/**
+ * Summary of all active adjustments
+ */
+export class ActiveAdjustmentsSummaryDto {
+  @ApiProperty({ description: 'Total number of active category freezes', example: 2 })
+  totalActiveFreezes!: number;
+
+  @ApiProperty({ description: 'Total number of active savings boosts (0 or 1)', example: 1 })
+  totalActiveBoosts!: number;
+
+  @ApiProperty({ description: 'Total number of timeline extensions', example: 1 })
+  totalTimelineExtensions!: number;
+
+  @ApiProperty({
+    description: 'Estimated monthly savings from freezes and boosts with currency formatting',
+    type: MonetaryValueDto,
+    example: { amount: 15000, formatted: '₦15,000', currency: 'NGN' },
+  })
+  estimatedMonthlySavings!: MonetaryValueDto;
+
+  @ApiPropertyOptional({ description: 'Earliest end date of active adjustments' })
+  estimatedRecoveryDate!: Date | null;
+}
+
+/**
  * Active category freeze
  */
 export class ActiveCategoryFreezeDto {
@@ -277,8 +388,12 @@ export class ActiveCategoryFreezeDto {
   @ApiProperty({ description: 'End date of freeze' })
   endDate!: Date;
 
-  @ApiProperty({ description: 'Estimated savings amount', example: 5000 })
-  savedAmount!: number;
+  @ApiProperty({
+    description: 'Estimated savings amount with currency formatting',
+    type: MonetaryValueDto,
+    example: { amount: 5000, formatted: '₦5,000', currency: 'NGN' },
+  })
+  savedAmount!: MonetaryValueDto;
 
   @ApiProperty({ description: 'Days remaining', example: 7 })
   daysRemaining!: number;
@@ -299,6 +414,18 @@ export class ActiveAdjustmentsResponseDto {
     type: [ActiveCategoryFreezeDto],
   })
   categoryFreezes!: ActiveCategoryFreezeDto[];
+
+  @ApiProperty({
+    description: 'Timeline extensions from time_adjustment recovery paths',
+    type: [TimelineExtensionDto],
+  })
+  timelineExtensions!: TimelineExtensionDto[];
+
+  @ApiProperty({
+    description: 'Summary of all active adjustments',
+    type: ActiveAdjustmentsSummaryDto,
+  })
+  summary!: ActiveAdjustmentsSummaryDto;
 
   @ApiProperty({ description: 'Whether any adjustments are active', example: true })
   hasActiveAdjustments!: boolean;
