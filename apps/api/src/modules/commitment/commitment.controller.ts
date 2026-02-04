@@ -66,7 +66,7 @@ import { CreateCommitmentInput, UpdateCommitmentInput } from './interfaces';
  * - POST /v1/commitment/referee/invite - Invite referee
  */
 @ApiTags('Commitment Device Engine')
-@Controller('v1/commitment')
+@Controller('commitment')
 export class CommitmentController {
   constructor(
     private readonly commitmentService: CommitmentService,

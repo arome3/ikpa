@@ -59,7 +59,7 @@ import {
 @ApiTags('Ubuntu Manager')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('v1/ubuntu')
+@Controller('ubuntu')
 export class UbuntuController {
   constructor(private readonly ubuntuService: UbuntuService) {}
 

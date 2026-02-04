@@ -50,7 +50,8 @@ export class EmailService {
     if (!apiKey) {
       this.logger.warn('RESEND_API_KEY not configured - emails will be logged only');
     }
-    this.resend = new Resend(apiKey);
+    // Use dummy key in development if not configured
+    this.resend = new Resend(apiKey || 're_dummy_key_for_development');
 
     this.fromEmail = this.configService.get<string>('EMAIL_FROM') || 'noreply@ikpa.app';
     this.fromName = this.configService.get<string>('EMAIL_FROM_NAME') || 'IKPA';

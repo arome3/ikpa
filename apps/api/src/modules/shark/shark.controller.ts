@@ -53,7 +53,7 @@ import {
 @ApiTags('Shark Auditor')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('v1/shark')
+@Controller('shark')
 export class SharkController {
   constructor(private readonly sharkService: SharkService) {}
 

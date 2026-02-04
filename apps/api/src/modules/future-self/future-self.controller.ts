@@ -63,7 +63,7 @@ import { ParseYearsPipe } from './pipes/parse-years.pipe';
 @ApiTags('Future Self Simulator')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('v1/future-self')
+@Controller('future-self')
 export class FutureSelfController {
   constructor(private readonly futureSelfService: FutureSelfService) {}
 

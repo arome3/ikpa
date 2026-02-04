@@ -65,14 +65,14 @@ import { PreviewCardResponse, BulkDeleteResult, BulkGenerateResult } from './int
  * Controller for the Story Cards viral sharing system
  *
  * Endpoints:
- * - POST /v1/story-cards/generate - Generate a story card
- * - GET /v1/story-cards/:id - Get a story card by ID
- * - GET /v1/story-cards/user/:userId - Get all story cards for a user
- * - POST /v1/story-cards/:id/share - Track share event
- * - GET /v1/story-cards/analytics/viral - Get viral metrics
+ * - POST /story-cards/generate - Generate a story card
+ * - GET /story-cards/:id - Get a story card by ID
+ * - GET /story-cards/user/:userId - Get all story cards for a user
+ * - POST /story-cards/:id/share - Track share event
+ * - GET /story-cards/analytics/viral - Get viral metrics
  */
 @ApiTags('Story Cards')
-@Controller('v1/story-cards')
+@Controller('story-cards')
 export class StoryCardsController {
   constructor(
     private readonly storyCardsService: StoryCardsService,
