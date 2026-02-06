@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Decimal } from '@prisma/client/runtime/library';
 import {
   OnboardingStatusResponseDto,
   OnboardingStepDto,
@@ -33,7 +34,7 @@ interface StepDefinition {
  * Manages the 6-step onboarding flow:
  * 1. Profile - Set country, currency, employment type
  * 2. Income - Add at least one income source (required)
- * 3. Savings - Add savings accounts (optional)
+ * 3. Financial Snapshot - Upload bank statements & emergency fund estimate (optional)
  * 4. Debts - Add debts (optional)
  * 5. Goals - Add at least one goal (required)
  * 6. Budgets - Set up category budgets (optional)
@@ -61,11 +62,11 @@ export class OnboardingService {
       description: 'Add your income sources (salary, freelance, etc.)',
     },
     {
-      id: 'savings',
-      name: 'Savings Accounts',
+      id: 'financial-snapshot',
+      name: 'Financial Snapshot',
       order: 3,
       required: false,
-      description: 'Add your savings and emergency funds',
+      description: 'Upload bank statements and provide emergency fund estimate',
     },
     {
       id: 'debts',
@@ -372,6 +373,23 @@ export class OnboardingService {
   }
 
   /**
+   * Save emergency fund estimate for a user
+   */
+  async saveEmergencyEstimate(
+    userId: string,
+    amount: number,
+  ): Promise<{ success: boolean; amount: number }> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { emergencyFundEstimate: new Decimal(amount) },
+    });
+
+    this.logger.log(`Saved emergency fund estimate for user ${userId}: ${amount}`);
+
+    return { success: true, amount };
+  }
+
+  /**
    * Build step statuses based on user data
    */
   private buildStepStatuses(
@@ -430,7 +448,7 @@ export class OnboardingService {
         break;
       }
 
-      case 'savings': {
+      case 'financial-snapshot': {
         // Optional - can be completed without data
         break;
       }

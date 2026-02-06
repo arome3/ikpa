@@ -54,10 +54,26 @@ export interface ApiResponse<T> {
 type RequestOptions = {
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  _skipRefresh?: boolean; // Internal: prevent infinite refresh loops
 };
+
+// Auth callbacks — set by the auth store to avoid circular imports
+let onTokenRefreshed: ((token: string) => void) | null = null;
+let onAuthExpired: (() => void) | null = null;
+
+export function setAuthCallbacks(
+  callbacks: { onTokenRefreshed: (token: string) => void; onAuthExpired: () => void }
+) {
+  onTokenRefreshed = callbacks.onTokenRefreshed;
+  onAuthExpired = callbacks.onAuthExpired;
+}
+
+// Refresh lock — ensures only one refresh happens at a time
+let refreshPromise: Promise<string | null> | null = null;
 
 /**
  * API Client for making authenticated requests
+ * Includes automatic token refresh on 401
  */
 class ApiClient {
   private baseUrl: string;
@@ -66,6 +82,48 @@ class ApiClient {
   constructor(baseUrl: string, getToken: () => string | null) {
     this.baseUrl = baseUrl;
     this.getToken = getToken;
+  }
+
+  private async refreshToken(): Promise<string | null> {
+    // If a refresh is already in progress, wait for it
+    if (refreshPromise) return refreshPromise;
+
+    refreshPromise = (async () => {
+      try {
+        const refreshToken = typeof window !== 'undefined'
+          ? localStorage.getItem('ikpa-refresh-token')
+          : null;
+
+        if (!refreshToken) return null;
+
+        const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        const tokens = data?.data ?? data;
+
+        if (tokens?.accessToken) {
+          // Store new tokens
+          if (tokens.refreshToken && typeof window !== 'undefined') {
+            localStorage.setItem('ikpa-refresh-token', tokens.refreshToken);
+          }
+          onTokenRefreshed?.(tokens.accessToken);
+          return tokens.accessToken;
+        }
+        return null;
+      } catch {
+        return null;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+
+    return refreshPromise;
   }
 
   private async request<T>(
@@ -101,6 +159,21 @@ class ApiClient {
 
     const responseData = await response.json().catch(() => null);
 
+    // Auto-refresh on 401 (skip for auth endpoints and retry requests)
+    if (
+      response.status === 401 &&
+      !options?._skipRefresh &&
+      !endpoint.startsWith('/auth/')
+    ) {
+      const newToken = await this.refreshToken();
+      if (newToken) {
+        // Retry the original request with the new token
+        return this.request<T>(method, endpoint, data, { ...options, _skipRefresh: true });
+      }
+      // Refresh failed — session is dead
+      onAuthExpired?.();
+    }
+
     if (!response.ok) {
       throw new ApiError(
         responseData?.message || `Request failed with status ${response.status}`,
@@ -131,6 +204,56 @@ class ApiClient {
   async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     return this.request<T>('DELETE', endpoint, undefined, options);
   }
+
+  async upload<T>(endpoint: string, formData: FormData, options?: RequestOptions): Promise<T> {
+    const token = this.getToken();
+
+    const headers: Record<string, string> = {
+      // No Content-Type — browser sets multipart boundary automatically
+      ...options?.headers,
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const url = `${this.baseUrl}${endpoint}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+      signal: options?.signal,
+    });
+
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    const responseData = await response.json().catch(() => null);
+
+    if (
+      response.status === 401 &&
+      !options?._skipRefresh &&
+      !endpoint.startsWith('/auth/')
+    ) {
+      const newToken = await this.refreshToken();
+      if (newToken) {
+        return this.upload<T>(endpoint, formData, { ...options, _skipRefresh: true });
+      }
+      onAuthExpired?.();
+    }
+
+    if (!response.ok) {
+      throw new ApiError(
+        responseData?.message || `Request failed with status ${response.status}`,
+        response.status,
+        responseData
+      );
+    }
+
+    return responseData;
+  }
 }
 
 /**
@@ -155,3 +278,6 @@ export const api = new Proxy({} as ApiClient, {
     return client[prop].bind(client);
   },
 });
+
+// Alias for backward compatibility
+export const apiClient = api;

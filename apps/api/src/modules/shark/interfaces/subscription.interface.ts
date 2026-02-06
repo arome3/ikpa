@@ -150,3 +150,73 @@ export interface SubscriptionQueryOptions {
   limit?: number;
   offset?: number;
 }
+
+/**
+ * Overlap group — subscriptions in the same category
+ */
+export interface OverlapGroup {
+  category: string;
+  subscriptions: Array<{
+    id: string;
+    name: string;
+    monthlyCost: number;
+  }>;
+  combinedMonthlyCost: number;
+}
+
+/**
+ * Decision history item
+ */
+export interface DecisionHistoryItem {
+  id: string;
+  subscriptionId: string;
+  subscriptionName: string;
+  category: string;
+  action: SwipeAction;
+  monthlyCost: number;
+  annualSavings: number;
+  decidedAt: Date;
+}
+
+/**
+ * Decision history result with savings summary
+ */
+export interface DecisionHistoryResult {
+  decisions: DecisionHistoryItem[];
+  totalLifetimeSavings: number;
+  totalCancelled: number;
+  totalKept: number;
+  currency: Currency;
+}
+
+/**
+ * Cancellation guide result
+ */
+export interface CancellationGuideResult {
+  subscriptionId: string;
+  subscriptionName: string;
+  steps: string[];
+  directUrl: string | null;
+  tips: string[];
+  estimatedTime: string;
+}
+
+/**
+ * A single money-saving tip for a kept subscription
+ */
+export interface KeepTip {
+  title: string;
+  description: string;
+  estimatedSavings: string | null;
+  actionUrl: string | null;
+}
+
+/**
+ * Keep recommendation result — optimization tips for subscriptions the user keeps
+ */
+export interface KeepRecommendationResult {
+  subscriptionId: string;
+  subscriptionName: string;
+  tips: KeepTip[];
+  summary: string;
+}

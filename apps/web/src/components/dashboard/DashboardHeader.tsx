@@ -2,8 +2,9 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotificationDropdown } from '@/components/notifications';
 
 export interface DashboardHeaderProps {
   /** Additional class names */
@@ -35,8 +36,6 @@ function getGreeting(): string {
 export function DashboardHeader({
   className,
   firstName = 'there',
-  hasNotifications = false,
-  onNotificationsClick,
   onSettingsClick,
 }: DashboardHeaderProps) {
   const greeting = useMemo(() => getGreeting(), []);
@@ -63,24 +62,8 @@ export function DashboardHeader({
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
-          {/* Notification bell */}
-          <button
-            onClick={onNotificationsClick}
-            className={cn(
-              'relative p-2 rounded-xl',
-              'text-gray-500 hover:text-gray-700',
-              'hover:bg-gray-100 dark:hover:bg-slate-800',
-              'dark:text-gray-400 dark:hover:text-gray-200',
-              'transition-colors duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
-            )}
-            aria-label={hasNotifications ? 'View notifications (new)' : 'View notifications'}
-          >
-            <Bell className="h-5 w-5" />
-            {hasNotifications && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-caution-500 rounded-full" />
-            )}
-          </button>
+          {/* Notification dropdown */}
+          <NotificationDropdown />
 
           {/* Settings */}
           <button

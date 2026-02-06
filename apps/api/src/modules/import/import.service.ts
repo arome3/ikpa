@@ -173,6 +173,10 @@ export class ImportService {
           name: 'ImportSuccess',
           value: 1,
         });
+        this.opikService.endTrace(trace, {
+          success: true,
+          result: { jobId, mimeType },
+        });
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -183,6 +187,10 @@ export class ImportService {
           traceId: trace.traceId,
           name: 'ImportSuccess',
           value: 0,
+        });
+        this.opikService.endTrace(trace, {
+          success: false,
+          error: message,
         });
       }
 

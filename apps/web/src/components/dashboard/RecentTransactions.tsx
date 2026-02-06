@@ -59,7 +59,7 @@ export function RecentTransactions({
   transactions = [],
   isLoading = false,
   limit = 5,
-  currency = 'NGN',
+  currency = 'USD',
 }: RecentTransactionsProps) {
   const displayTransactions = transactions.slice(0, limit);
 

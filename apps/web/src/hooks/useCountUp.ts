@@ -99,7 +99,7 @@ export function useCountUp({
     setValue(from);
   }, [from]);
 
-  // Auto-start animation
+  // Auto-start animation (also re-runs when `start` changes due to `to` changing)
   useEffect(() => {
     if (autoStart) {
       start();
@@ -111,13 +111,6 @@ export function useCountUp({
       }
     };
   }, [autoStart, start]);
-
-  // Re-animate when 'to' value changes
-  useEffect(() => {
-    if (autoStart && !isAnimating) {
-      start();
-    }
-  }, [to, autoStart, isAnimating, start]);
 
   return {
     value,

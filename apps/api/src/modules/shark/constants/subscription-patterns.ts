@@ -70,6 +70,34 @@ export const SUBSCRIPTION_PATTERNS: SubscriptionPattern[] = [
     category: SubscriptionCategory.LEARNING,
     displayName: 'Learning',
   },
+  // Telecom & Mobile (phone, internet, mobile carriers)
+  {
+    pattern:
+      /at&?t|t-?mobile|verizon|sprint|comcast|xfinity|spectrum|cox|centurylink|frontier|mint\s*mobile|visible|cricket|metro\s*pcs|boost\s*mobile|google\s*fi|us\s*cellular|mtn|glo\s*mobile|airtel|9mobile|safaricom|vodacom/i,
+    category: SubscriptionCategory.TELECOM,
+    displayName: 'Telecom',
+  },
+  // Utilities (energy, water, gas)
+  {
+    pattern:
+      /energy|electric|power|utility|utilities|gas\s*company|water\s*bill|sewage|austin\s*energy|pg&?e|duke\s*energy|con\s*edison|national\s*grid|ecotricity|bulb\s*energy|octopus\s*energy|ikeja\s*electric|eko\s*electric|enugu\s*electric/i,
+    category: SubscriptionCategory.UTILITIES,
+    displayName: 'Utilities',
+  },
+  // Insurance (health, car, life, renters)
+  {
+    pattern:
+      /insurance|geico|allstate|progressive|state\s*farm|liberty\s*mutual|usaa|lemonade|metlife|prudential|aetna|cigna|humana|united\s*health|kaiser|leadway|axa\s*mansard|custodian|aiico/i,
+    category: SubscriptionCategory.INSURANCE,
+    displayName: 'Insurance',
+  },
+  // Gaming (game subscriptions, platforms)
+  {
+    pattern:
+      /xbox\s*game\s*pass|playstation\s*plus|ps\s*plus|nintendo\s*online|ea\s*play|ubisoft\+?|epic\s*games|steam|twitch|game\s*pass|humble\s*bundle|geforce\s*now|stadia/i,
+    category: SubscriptionCategory.GAMING,
+    displayName: 'Gaming',
+  },
   // Cloud Storage (last - generic terms like "cloud", "storage", "backup")
   {
     pattern:
@@ -122,12 +150,8 @@ export const MAX_EXPENSE_AGE_MONTHS = 12;
  * Currency format configurations for supported currencies
  */
 export const CURRENCY_FORMATS: Record<Currency, CurrencyFormat> = {
-  [Currency.NGN]: { symbol: '₦', locale: 'en-NG', symbolPosition: 'before' },
-  [Currency.GHS]: { symbol: 'GH₵', locale: 'en-GH', symbolPosition: 'before' },
-  [Currency.KES]: { symbol: 'KSh', locale: 'en-KE', symbolPosition: 'before' },
-  [Currency.ZAR]: { symbol: 'R', locale: 'en-ZA', symbolPosition: 'before' },
-  [Currency.EGP]: { symbol: 'E£', locale: 'ar-EG', symbolPosition: 'before' },
   [Currency.USD]: { symbol: '$', locale: 'en-US', symbolPosition: 'before' },
+  [Currency.NGN]: { symbol: '₦', locale: 'en-NG', symbolPosition: 'before' },
 };
 
 /**
@@ -138,47 +162,19 @@ export const CURRENCY_FORMATS: Record<Currency, CurrencyFormat> = {
  * Templates use {amount} placeholder for the formatted annual cost.
  */
 export const CONTEXT_COMPARISONS: Record<Currency, ContextComparison[]> = {
+  [Currency.USD]: [
+    { threshold: 5000, template: "That's equivalent to a month's rent in many US cities" },
+    { threshold: 2000, template: "That's a weekend getaway" },
+    { threshold: 1000, template: "That's 2 months of groceries" },
+    { threshold: 200, template: "That's several nice dinners out" },
+    { threshold: 0, template: "That's money that could be growing in savings" },
+  ],
   [Currency.NGN]: [
     { threshold: 1000000, template: "That's a significant investment in your future" },
     { threshold: 500000, template: "That's equivalent to a month's rent in many cities" },
     { threshold: 200000, template: "That's a weekend getaway to Calabar" },
     { threshold: 100000, template: "That's 2 months of groceries for a small household" },
     { threshold: 50000, template: "That's several nice dinners out" },
-    { threshold: 0, template: "That's money that could be growing in savings" },
-  ],
-  [Currency.GHS]: [
-    { threshold: 10000, template: "That's equivalent to a month's rent in Accra" },
-    { threshold: 5000, template: "That's a weekend trip to Cape Coast" },
-    { threshold: 2000, template: "That's 2 months of groceries" },
-    { threshold: 500, template: "That's several nice meals out" },
-    { threshold: 0, template: "That's money that could be growing in savings" },
-  ],
-  [Currency.KES]: [
-    { threshold: 100000, template: "That's equivalent to a month's rent in Nairobi" },
-    { threshold: 50000, template: "That's a weekend getaway to Mombasa" },
-    { threshold: 20000, template: "That's 2 months of groceries" },
-    { threshold: 5000, template: "That's several nice meals out" },
-    { threshold: 0, template: "That's money that could be growing in savings" },
-  ],
-  [Currency.ZAR]: [
-    { threshold: 50000, template: "That's equivalent to a month's rent in Cape Town" },
-    { threshold: 20000, template: "That's a weekend trip to the Kruger" },
-    { threshold: 10000, template: "That's 2 months of groceries" },
-    { threshold: 2000, template: "That's several nice braais with friends" },
-    { threshold: 0, template: "That's money that could be growing in savings" },
-  ],
-  [Currency.EGP]: [
-    { threshold: 50000, template: "That's equivalent to a month's rent in Cairo" },
-    { threshold: 20000, template: "That's a weekend trip to Sharm El-Sheikh" },
-    { threshold: 10000, template: "That's 2 months of groceries" },
-    { threshold: 2000, template: "That's several nice meals out" },
-    { threshold: 0, template: "That's money that could be growing in savings" },
-  ],
-  [Currency.USD]: [
-    { threshold: 5000, template: "That's equivalent to a month's rent in many US cities" },
-    { threshold: 2000, template: "That's a weekend getaway" },
-    { threshold: 1000, template: "That's 2 months of groceries" },
-    { threshold: 200, template: "That's several nice dinners out" },
     { threshold: 0, template: "That's money that could be growing in savings" },
   ],
 };
@@ -194,5 +190,9 @@ export const DEFAULT_CATEGORY_NAMES: Record<SubscriptionCategory, string> = {
   [SubscriptionCategory.SOFTWARE]: 'Software & Tools',
   [SubscriptionCategory.VPN]: 'VPN Service',
   [SubscriptionCategory.LEARNING]: 'Learning Platform',
+  [SubscriptionCategory.TELECOM]: 'Telecom & Mobile',
+  [SubscriptionCategory.UTILITIES]: 'Utility Service',
+  [SubscriptionCategory.INSURANCE]: 'Insurance',
+  [SubscriptionCategory.GAMING]: 'Gaming Service',
   [SubscriptionCategory.OTHER]: 'Subscription Service',
 };

@@ -37,7 +37,7 @@ import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
 import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser, Public } from '../../common/decorators';
+import { CurrentUser, Public, SkipEmailVerification } from '../../common/decorators';
 import { ImportService } from './import.service';
 import {
   UploadStatementDto,
@@ -66,6 +66,7 @@ import { ImportEmailWebhookInvalidException } from './exceptions';
 @ApiTags('Import')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('import')
 export class ImportController {
   constructor(

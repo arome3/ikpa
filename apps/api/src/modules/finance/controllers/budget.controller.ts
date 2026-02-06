@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../../common/guards';
-import { CurrentUser } from '../../../common/decorators';
+import { CurrentUser, SkipEmailVerification } from '../../../common/decorators';
 import { BudgetCrudService } from '../services';
 import { CreateBudgetDto, UpdateBudgetDto, BudgetResponseDto, BudgetListResponseDto } from '../dto';
 
@@ -35,6 +35,7 @@ import { CreateBudgetDto, UpdateBudgetDto, BudgetResponseDto, BudgetListResponse
 @ApiTags('Finance - Budgets')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('finance/budgets')
 export class BudgetController {
   constructor(private readonly budgetService: BudgetCrudService) {}

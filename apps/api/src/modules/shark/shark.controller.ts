@@ -26,7 +26,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, SkipEmailVerification } from '../../common/decorators';
 import { SharkService } from './shark.service';
 import {
   SubscriptionQueryDto,
@@ -39,7 +39,10 @@ import {
   SwipeDecisionResponseDto,
   CancelSubscriptionDto,
   CancellationResultDto,
+  ChatMessageDto,
+  ChatResponseDto,
 } from './dto';
+import type { ChatMode, SessionContext } from './shark.service';
 
 /**
  * Controller for Shark Auditor subscription management
@@ -53,6 +56,7 @@ import {
 @ApiTags('Shark Auditor')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('shark')
 export class SharkController {
   constructor(private readonly sharkService: SharkService) {}
@@ -281,6 +285,144 @@ export class SharkController {
       decidedAt: result.decidedAt,
       message: result.message,
     };
+  }
+
+  // ==========================================
+  // CONVERSATIONAL REVIEW ENDPOINTS
+  // ==========================================
+
+  /**
+   * Chat with AI about a subscription
+   *
+   * Send conversation history to get AI's next response.
+   * Send empty messages array to get the AI's opening message.
+   */
+  @Post('subscriptions/:id/chat')
+  @ApiOperation({
+    summary: 'Chat about a subscription',
+    description:
+      'AI-powered conversational review. Send the full message history to get ' +
+      "the AI's next response. Send an empty messages array for the opening message.",
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Subscription ID to discuss',
+    example: 'sub-123-abc-def',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'AI response with quick replies and decision metadata',
+    type: ChatResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Subscription not found',
+  })
+  async chatAboutSubscription(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) subscriptionId: string,
+    @Body() body: ChatMessageDto,
+  ): Promise<ChatResponseDto> {
+    return this.sharkService.chatAboutSubscription(
+      userId,
+      subscriptionId,
+      body.messages,
+      (body.mode as ChatMode) ?? 'advisor',
+      body.sessionContext as SessionContext | undefined,
+    );
+  }
+
+  // ==========================================
+  // CANCELLATION GUIDE ENDPOINT
+  // ==========================================
+
+  /**
+   * Generate AI-powered cancellation instructions
+   */
+  @Get('subscriptions/:id/cancel-guide')
+  @ApiOperation({
+    summary: 'Get cancellation guide',
+    description:
+      'Generates AI-powered step-by-step cancellation instructions specific to the subscription service.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Subscription ID to generate cancellation guide for',
+  })
+  @ApiResponse({ status: 200, description: 'Cancellation guide generated' })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  async getCancellationGuide(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) subscriptionId: string,
+  ) {
+    return this.sharkService.generateCancellationGuide(userId, subscriptionId);
+  }
+
+  // ==========================================
+  // KEEP TIPS ENDPOINT
+  // ==========================================
+
+  /**
+   * Generate AI-powered optimization tips for a kept subscription
+   */
+  @Get('subscriptions/:id/keep-tips')
+  @ApiOperation({
+    summary: 'Get keep optimization tips',
+    description:
+      'Generates AI-powered money-saving tips for a subscription the user is keeping — ' +
+      'annual billing, cheaper tiers, shared plans, discounts, etc.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Subscription ID to generate keep tips for',
+  })
+  @ApiResponse({ status: 200, description: 'Keep tips generated' })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  async getKeepTips(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) subscriptionId: string,
+  ) {
+    return this.sharkService.generateKeepRecommendation(userId, subscriptionId);
+  }
+
+  // ==========================================
+  // OVERLAP DETECTION ENDPOINT
+  // ==========================================
+
+  /**
+   * Detect subscription overlaps (multiple subs in same category)
+   */
+  @Get('overlaps')
+  @ApiOperation({
+    summary: 'Detect subscription overlaps',
+    description:
+      'Groups active subscriptions by category and returns groups with 2+ subscriptions, indicating potential redundancy.',
+  })
+  @ApiResponse({ status: 200, description: 'Overlaps detected' })
+  async getOverlaps(@CurrentUser('id') userId: string) {
+    return this.sharkService.detectOverlaps(userId);
+  }
+
+  // ==========================================
+  // DECISION HISTORY ENDPOINT
+  // ==========================================
+
+  /**
+   * Get decision history with savings summary
+   */
+  @Get('history')
+  @ApiOperation({
+    summary: 'Get decision history',
+    description:
+      'Returns all swipe decisions with subscription details and total lifetime savings from cancellations.',
+  })
+  @ApiResponse({ status: 200, description: 'Decision history retrieved' })
+  async getDecisionHistory(@CurrentUser('id') userId: string) {
+    return this.sharkService.getDecisionHistory(userId);
   }
 
   // ==========================================

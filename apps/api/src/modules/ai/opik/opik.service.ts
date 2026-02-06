@@ -155,6 +155,13 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
    */
   private readonly contextStorage = new AsyncLocalStorage<TraceContext>();
 
+  /**
+   * Registry of active trace objects by traceId.
+   * Required because the SDK's feedback API uses trace.score() on the Trace object,
+   * not a client-level method. Entries are cleaned up when traces are ended.
+   */
+  private readonly traceRegistry = new Map<string, OpikTrace>();
+
   constructor(
     @Inject(ConfigService)
     private readonly configService: ConfigService,
@@ -435,6 +442,9 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
         startedAt: new Date(),
       };
 
+      // Register trace for later feedback scoring via trace.score()
+      this.traceRegistry.set(traceId, trace as unknown as OpikTrace);
+
       return trackedTrace;
     } catch (error) {
       this.logger.error(
@@ -534,6 +544,9 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * End a trace with final output
+   *
+   * SDK note: trace.end() takes no parameters.
+   * Output must be set via trace.update() before calling end().
    */
   endTrace(trackedTrace: TrackedTrace | null, output: EndTraceOutput): void {
     if (!trackedTrace) {
@@ -543,14 +556,22 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
     try {
       const durationMs = Date.now() - trackedTrace.startedAt.getTime();
 
-      trackedTrace.trace.end({
-        output: {
-          success: output.success,
-          durationMs,
-          ...output.result,
-          ...(output.error && { error: output.error }),
-        },
+      const outputData = {
+        success: output.success,
+        durationMs,
+        ...output.result,
+        ...(output.error && { error: output.error }),
+      };
+
+      // update() sets the output, end() finalizes the trace
+      (trackedTrace.trace as unknown as { update: (data: Record<string, unknown>) => unknown }).update({
+        output: outputData,
       });
+      trackedTrace.trace.end();
+
+      // Deferred cleanup: keep trace in registry briefly for post-end feedback (e.g., decision scores)
+      // then remove after 5 minutes to prevent memory leaks
+      setTimeout(() => this.traceRegistry.delete(trackedTrace.traceId), 5 * 60 * 1000);
     } catch (error) {
       this.logger.error(
         `Failed to end trace ${trackedTrace.traceName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -712,6 +733,9 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * End a span with output
+   *
+   * SDK note: span.end() takes no parameters.
+   * Output/metadata must be set via span.update() before calling end().
    */
   endSpan(trackedSpan: TrackedSpan | null, output: EndSpanOutput): void {
     if (!trackedSpan) {
@@ -721,19 +745,15 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
     try {
       const durationMs = Date.now() - trackedSpan.startedAt.getTime();
 
-      trackedSpan.span.end({
+      const spanUpdate = trackedSpan.span as unknown as { update: (data: Record<string, unknown>) => unknown };
+      spanUpdate.update({
         output: output.output,
         metadata: {
           durationMs,
           ...output.metadata,
         },
       });
-
-      // Update context with current span if in a traced context
-      const ctx = this.getContext();
-      if (ctx && ctx.spanId === trackedSpan.spanId) {
-        // Span ended, could update context here if needed
-      }
+      trackedSpan.span.end();
     } catch (error) {
       this.logger.error(
         `Failed to end span ${trackedSpan.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -742,7 +762,11 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * End an LLM span with output and usage statistics
+   * End an LLM span with output, usage statistics, and cost estimation
+   *
+   * SDK note: span.end() takes no parameters.
+   * Output, usage, and cost must be set via span.update() before calling end().
+   * The SDK accepts usage as Record<string, number> and totalEstimatedCost as number.
    */
   endLLMSpan(trackedSpan: TrackedSpan | null, output: EndLLMSpanOutput): void {
     if (!trackedSpan) {
@@ -752,7 +776,22 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
     try {
       const durationMs = Date.now() - trackedSpan.startedAt.getTime();
 
-      trackedSpan.span.end({
+      // Build usage record for the SDK (Record<string, number>)
+      const usage: Record<string, number> | undefined = output.usage
+        ? {
+            prompt_tokens: output.usage.promptTokens,
+            completion_tokens: output.usage.completionTokens,
+            total_tokens: output.usage.totalTokens,
+          }
+        : undefined;
+
+      // Estimate cost using Claude Sonnet pricing ($3/M input, $15/M output)
+      const estimatedCost = output.usage
+        ? (output.usage.promptTokens * 3 + output.usage.completionTokens * 15) / 1_000_000
+        : undefined;
+
+      const spanUpdate = trackedSpan.span as unknown as { update: (data: Record<string, unknown>) => unknown };
+      spanUpdate.update({
         output: output.output,
         metadata: {
           durationMs,
@@ -761,9 +800,13 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
             completionTokens: output.usage.completionTokens,
             totalTokens: output.usage.totalTokens,
           }),
+          ...(estimatedCost !== undefined && { estimatedCostUSD: estimatedCost }),
           ...output.metadata,
         },
+        ...(usage && { usage }),
+        ...(estimatedCost !== undefined && { totalEstimatedCost: estimatedCost }),
       });
+      trackedSpan.span.end();
     } catch (error) {
       this.logger.error(
         `Failed to end LLM span ${trackedSpan.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -776,7 +819,10 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
   // ==========================================
 
   /**
-   * Add feedback to a trace for LLM-as-Judge evaluations
+   * Add feedback to a trace using the SDK's trace.score() method
+   *
+   * Looks up the Trace object from the internal registry and calls
+   * score() directly, which is how the SDK v1.9.85 records feedback.
    */
   addFeedback(input: AddFeedbackInput): boolean {
     if (!this.isClientAvailable()) {
@@ -784,24 +830,21 @@ export class OpikService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      const client = this.client as Opik & {
-        logFeedbackScore?: (params: Record<string, unknown>) => void;
-      };
-
-      if (typeof client.logFeedbackScore === 'function') {
-        client.logFeedbackScore({
-          id: randomUUID(),
-          traceId: input.traceId,
+      const traceObj = this.traceRegistry.get(input.traceId);
+      if (traceObj) {
+        // Use the SDK's native trace.score() method
+        const scoreable = traceObj as unknown as {
+          score: (score: { name: string; categoryName?: string; value: number; reason?: string }) => void;
+        };
+        scoreable.score({
           name: input.name,
           value: input.value,
           categoryName: input.category,
           reason: input.comment,
-          source: input.source || 'sdk',
-          ...input.metadata,
         });
       } else {
         this.logger.debug(
-          `Feedback logged for trace ${input.traceId}: ${input.name}=${input.value}`,
+          `Trace ${input.traceId} not in registry (may have expired). Feedback: ${input.name}=${input.value}`,
         );
       }
 

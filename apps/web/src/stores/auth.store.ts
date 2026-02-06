@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { setTokenGetter } from '@/lib/api';
+import { setTokenGetter, setAuthCallbacks } from '@/lib/api';
 
 export interface User {
   id: string;
   email: string;
   name: string;
   avatar?: string;
+  currency?: string;
+  onboardingCompleted: boolean;
   createdAt: string;
 }
 
@@ -80,6 +82,20 @@ export const useAuthStore = create<AuthStore>()(
 
 // Connect auth store to API client
 setTokenGetter(() => useAuthStore.getState().token);
+
+// Register auth callbacks for automatic token refresh
+setAuthCallbacks({
+  onTokenRefreshed: (newToken: string) => {
+    useAuthStore.setState({ token: newToken });
+  },
+  onAuthExpired: () => {
+    useAuthStore.getState().logout();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ikpa-refresh-token');
+      window.location.href = '/signin';
+    }
+  },
+});
 
 // Selectors for common use cases
 export const selectUser = (state: AuthStore) => state.user;

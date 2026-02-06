@@ -163,6 +163,9 @@ export const ErrorCodes = {
   GOAL_NOT_FOUND: 'FIN_17005',
   BUDGET_NOT_FOUND: 'FIN_17006',
   BUDGET_DUPLICATE: 'FIN_17007',
+  EXPENSE_NOT_FOUND: 'FIN_17008',
+  EXPENSE_CATEGORY_NOT_FOUND: 'FIN_17009',
+  CATEGORY_FROZEN: 'FIN_17010',
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

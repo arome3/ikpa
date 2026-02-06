@@ -9,3 +9,4 @@ export * from './subscription-list.dto';
 export * from './audit-trigger.dto';
 export * from './swipe-decision.dto';
 export * from './cancel-subscription.dto';
+export * from './chat-message.dto';

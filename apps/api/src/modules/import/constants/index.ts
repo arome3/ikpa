@@ -34,9 +34,9 @@ export const ASYNC_PROCESSING_BATCH_SIZE = 5;
 export const DEDUPLICATION_DATE_VARIANCE_DAYS = 1;
 
 // Claude API configuration for parsing
-export const PARSING_MAX_TOKENS = 4000;
-export const VISION_MAX_TOKENS = 4000;
-export const PARSING_TIMEOUT_MS = 60000;
+export const PARSING_MAX_TOKENS = 16000;
+export const VISION_MAX_TOKENS = 8000;
+export const PARSING_TIMEOUT_MS = 120000;
 
 // Email import configuration
 export const IMPORT_EMAIL_DOMAIN = 'import.ikpa.app';

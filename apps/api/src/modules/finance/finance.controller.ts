@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, SkipEmailVerification } from '../../common/decorators';
 import { FinanceService } from './finance.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ExpenseCategory } from '@prisma/client';
@@ -42,6 +42,7 @@ import { getScoreLabel, getScoreColor } from './interfaces';
 @ApiTags('Finance')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('finance')
 export class FinanceController {
   constructor(
@@ -214,7 +215,11 @@ export class FinanceController {
   })
   async getCurrentSnapshot(
     @CurrentUser('id') userId: string,
+    @Query('force') force?: string,
   ): Promise<FinancialSnapshotDto> {
+    if (force === 'true') {
+      await this.financeService.invalidateSnapshot(userId);
+    }
     const snapshot = await this.financeService.getCurrentSnapshot(userId);
 
     return {

@@ -12,3 +12,4 @@ export * from './investment';
 export * from './debt';
 export * from './goal';
 export * from './budget';
+export * from './expense';

@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../../common/guards';
-import { CurrentUser } from '../../../common/decorators';
+import { CurrentUser, SkipEmailVerification } from '../../../common/decorators';
 import { SavingsService } from '../services';
 import { CreateSavingsDto, UpdateSavingsDto, SavingsResponseDto, SavingsListResponseDto } from '../dto';
 
@@ -34,6 +34,7 @@ import { CreateSavingsDto, UpdateSavingsDto, SavingsResponseDto, SavingsListResp
 @ApiTags('Finance - Savings')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('finance/savings')
 export class SavingsController {
   constructor(private readonly savingsService: SavingsService) {}

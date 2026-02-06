@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../../common/guards';
-import { CurrentUser } from '../../../common/decorators';
+import { CurrentUser, SkipEmailVerification } from '../../../common/decorators';
 import { DebtService } from '../services';
 import { CreateDebtDto, UpdateDebtDto, DebtResponseDto, DebtListResponseDto } from '../dto';
 
@@ -34,6 +34,7 @@ import { CreateDebtDto, UpdateDebtDto, DebtResponseDto, DebtListResponseDto } fr
 @ApiTags('Finance - Debts')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('finance/debts')
 export class DebtController {
   constructor(private readonly debtService: DebtService) {}

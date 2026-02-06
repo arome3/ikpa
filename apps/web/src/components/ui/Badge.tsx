@@ -3,7 +3,7 @@
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
-export type BadgeVariant = 'success' | 'warning' | 'caution' | 'info' | 'neutral';
+export type BadgeVariant = 'success' | 'warning' | 'caution' | 'info' | 'neutral' | 'outline';
 export type BadgeSize = 'sm' | 'md' | 'lg';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -33,6 +33,10 @@ const variantStyles: Record<BadgeVariant, string> = {
     bg-gray-100 text-gray-700
     dark:bg-gray-800 dark:text-gray-300
   `,
+  outline: `
+    bg-transparent border border-gray-200 text-gray-600
+    dark:border-gray-700 dark:text-gray-400
+  `,
 };
 
 const dotColors: Record<BadgeVariant, string> = {
@@ -41,6 +45,7 @@ const dotColors: Record<BadgeVariant, string> = {
   caution: 'bg-caution-500',
   info: 'bg-info-500',
   neutral: 'bg-gray-500',
+  outline: 'bg-gray-400',
 };
 
 const sizeStyles: Record<BadgeSize, string> = {

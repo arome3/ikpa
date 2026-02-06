@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../../common/guards';
-import { CurrentUser } from '../../../common/decorators';
+import { CurrentUser, SkipEmailVerification } from '../../../common/decorators';
 import { GoalCrudService } from '../services';
 import {
   CreateGoalDto,
@@ -43,6 +43,7 @@ import { GoalStatus } from '@prisma/client';
 @ApiTags('Finance - Goals')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('finance/goals')
 export class GoalController {
   constructor(private readonly goalService: GoalCrudService) {}

@@ -361,10 +361,28 @@ export class CsvParserService {
 
     const cleanDate = dateStr.trim();
 
-    // Try DD/MM/YYYY or DD-MM-YYYY
+    // Try DD/MM/YYYY or MM/DD/YYYY (auto-detect by checking if values exceed 12)
     let match = cleanDate.match(formats[0]) || cleanDate.match(formats[1]);
     if (match) {
-      const [, day, month, year] = match;
+      const [, first, second, year] = match;
+      const n1 = parseInt(first, 10);
+      const n2 = parseInt(second, 10);
+
+      let day: string, month: string;
+      if (n2 > 12 && n1 <= 12) {
+        // Second number can't be a month → first is month (MM/DD/YYYY)
+        month = first;
+        day = second;
+      } else if (n1 > 12 && n2 <= 12) {
+        // First number can't be a month → first is day (DD/MM/YYYY)
+        day = first;
+        month = second;
+      } else {
+        // Ambiguous — default to MM/DD/YYYY (US format) since DD/MM banks
+        // typically use DD-MMM-YYYY or spelled-out months
+        month = first;
+        day = second;
+      }
       return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
 
@@ -438,26 +456,46 @@ export class CsvParserService {
    * Extract merchant name from description
    */
   private extractMerchant(description: string): string | null {
-    // Common patterns in Nigerian bank descriptions
-    const patterns = [
-      // "POS PURCHASE - MERCHANT NAME"
+    // Nigerian bank description patterns
+    const nigerianPatterns = [
       /POS\s+(?:PURCHASE|PAYMENT|TRANSACTION)\s*[-:]\s*(.+?)(?:\s+\d|$)/i,
-      // "TRANSFER TO MERCHANT/NAME"
       /TRANSFER\s+TO\s+(.+?)(?:\s+\d|$)/i,
-      // "WEB PURCHASE - MERCHANT"
       /WEB\s+(?:PURCHASE|PAYMENT)\s*[-:]\s*(.+?)(?:\s+\d|$)/i,
-      // "USSD - MERCHANT"
       /USSD\s*[-:]\s*(.+?)(?:\s+\d|$)/i,
     ];
 
-    for (const pattern of patterns) {
+    for (const pattern of nigerianPatterns) {
       const match = description.match(pattern);
       if (match && match[1]) {
         return match[1].trim();
       }
     }
 
-    return null;
+    // US/International bank description patterns
+    const intlPatterns = [
+      /(?:PURCHASE|PAYMENT)\s+(?:AUTHORIZED|AUTH)\s+(?:ON\s+\d{2}\/\d{2}\s+)?(.+?)(?:\s+CARD\s+\d|$)/i,
+      /(?:DEBIT\s+)?CARD\s+PURCHASE\s*[-:]\s*(.+?)(?:\s+\d{5}|\s+[A-Z]{2}\s*$)/i,
+      /ACH\s+(?:DEBIT|CREDIT|PAYMENT)\s+(.+?)(?:\s+\d|$)/i,
+      /DIRECT\s+DEP(?:OSIT)?\s+(.+?)(?:\s+PAYROLL|\s+SALARY|\s+PAY\s|$)/i,
+      /CHECK\s+CARD\s+(?:PURCHASE\s+)?(.+?)(?:\s+\d{4,}|\s+[A-Z]{2}\s*$)/i,
+    ];
+
+    for (const pattern of intlPatterns) {
+      const match = description.match(pattern);
+      if (match && match[1] && match[1].trim().length > 1) {
+        return match[1].trim();
+      }
+    }
+
+    // Fallback: use the description itself, stripped of common prefixes and trailing location/numbers
+    const cleaned = description
+      .replace(/^(?:POS|DEBIT|CREDIT|ACH|CHECK CARD|PURCHASE|PAYMENT)\s*/i, '')
+      .replace(/\s+#?\d{4,}.*$/i, '')
+      .replace(/\s+[A-Z]{2}\s*\d{5}.*$/i, '')
+      .replace(/\s+[A-Z]{2}\s*$/i, '')
+      .trim();
+
+    return cleaned.length >= 3 ? cleaned : null;
   }
 
   /**
@@ -484,10 +522,10 @@ export class CsvParserService {
       .join(' ');
 
     if (/₦|NGN|naira/i.test(allValues)) return 'NGN';
-    if (/GH₵|GHS|cedi/i.test(allValues)) return 'GHS';
-    if (/KSh|KES|shilling/i.test(allValues)) return 'KES';
-    if (/R\s*\d|ZAR|rand/i.test(allValues)) return 'ZAR';
-    if (/E£|EGP|pound/i.test(allValues)) return 'EGP';
+    if (/GH₵|GHS|cedi/i.test(allValues)) return 'USD';
+    if (/KSh|KES|shilling/i.test(allValues)) return 'USD';
+    if (/R\s*\d|ZAR|rand/i.test(allValues)) return 'USD';
+    if (/E£|EGP|pound/i.test(allValues)) return 'USD';
 
     // Default to NGN for Nigerian banks
     return 'NGN';

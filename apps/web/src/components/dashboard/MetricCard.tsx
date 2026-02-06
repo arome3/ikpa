@@ -37,7 +37,7 @@ export interface MetricCardProps extends React.HTMLAttributes<HTMLDivElement> {
 function formatValue(
   value: number,
   format: MetricFormat,
-  currency: MetricCardProps['currency'] = 'NGN'
+  currency: MetricCardProps['currency'] = 'USD'
 ): string {
   switch (format) {
     case 'currency':

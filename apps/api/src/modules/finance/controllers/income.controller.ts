@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../../common/guards';
-import { CurrentUser } from '../../../common/decorators';
+import { CurrentUser, SkipEmailVerification } from '../../../common/decorators';
 import { IncomeService } from '../services';
 import { CreateIncomeDto, UpdateIncomeDto, IncomeResponseDto, IncomeListResponseDto } from '../dto';
 
@@ -34,6 +34,7 @@ import { CreateIncomeDto, UpdateIncomeDto, IncomeResponseDto, IncomeListResponse
 @ApiTags('Finance - Income')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('finance/income')
 export class IncomeController {
   constructor(private readonly incomeService: IncomeService) {}

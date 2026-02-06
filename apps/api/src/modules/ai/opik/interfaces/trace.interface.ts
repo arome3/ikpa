@@ -207,6 +207,8 @@ export type FeedbackCategory =
   | 'coherence'
   | 'evolution'
   | 'adaptive'
+  | 'performance'
+  | 'engagement'
   | 'custom';
 
 /**

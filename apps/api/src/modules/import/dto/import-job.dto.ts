@@ -5,7 +5,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsArray, IsOptional, IsUUID, IsEnum } from 'class-validator';
+import { IsString, IsArray, IsOptional, IsUUID, IsEnum, IsNotEmpty } from 'class-validator';
 import { Currency, ImportSource, ImportJobStatus, ParsedTransactionStatus } from '@prisma/client';
 
 /**
@@ -225,9 +225,10 @@ export class ConfirmJobDto {
 
   @ApiProperty({
     description: 'Category ID for the expenses',
-    example: 'cat-123-abc',
+    example: 'food-dining',
   })
-  @IsUUID('4')
+  @IsString()
+  @IsNotEmpty()
   categoryId!: string;
 }
 

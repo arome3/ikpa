@@ -16,7 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser } from '../../common/decorators';
+import { CurrentUser, SkipEmailVerification } from '../../common/decorators';
 import { OnboardingService } from './onboarding.service';
 import {
   OnboardingStatusResponseDto,
@@ -34,7 +34,7 @@ import {
  * The 6-step onboarding flow:
  * 1. Profile - Set country, currency, employment type (required)
  * 2. Income - Add at least one income source (required)
- * 3. Savings - Add savings accounts (optional, can skip)
+ * 3. Financial Snapshot - Upload bank statements & emergency fund estimate (optional)
  * 4. Debts - Add debts (optional, can skip)
  * 5. Goals - Add at least one goal (required)
  * 6. Budgets - Set up category budgets (optional, can skip)
@@ -42,6 +42,7 @@ import {
 @ApiTags('Onboarding')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('onboarding')
 export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
@@ -97,6 +98,30 @@ export class OnboardingController {
   }
 
   /**
+   * Submit emergency fund estimate
+   */
+  @Post('emergency-estimate')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Submit Emergency Fund Estimate',
+    description:
+      'Saves the user\'s self-reported emergency fund estimate. ' +
+      'Used during the Financial Snapshot onboarding step.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Emergency fund estimate saved',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid amount' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async submitEmergencyEstimate(
+    @CurrentUser('id') userId: string,
+    @Body() body: { amount: number },
+  ): Promise<{ success: boolean; amount: number }> {
+    return this.onboardingService.saveEmergencyEstimate(userId, body.amount);
+  }
+
+  /**
    * Complete a step
    */
   @Post('steps/:step/complete')
@@ -113,7 +138,7 @@ export class OnboardingController {
   @ApiParam({
     name: 'step',
     description: 'Step ID to complete',
-    enum: ['profile', 'income', 'savings', 'debts', 'goals', 'budgets'],
+    enum: ['profile', 'income', 'financial-snapshot', 'debts', 'goals', 'budgets'],
   })
   @ApiResponse({
     status: 201,
@@ -140,7 +165,7 @@ export class OnboardingController {
     summary: 'Skip Step',
     description:
       'Skips an optional step. Only these steps can be skipped:\n' +
-      '- savings\n' +
+      '- financial-snapshot\n' +
       '- debts\n' +
       '- budgets\n\n' +
       'Required steps (profile, income, goals) cannot be skipped.',
@@ -148,7 +173,7 @@ export class OnboardingController {
   @ApiParam({
     name: 'step',
     description: 'Step ID to skip',
-    enum: ['savings', 'debts', 'budgets'],
+    enum: ['financial-snapshot', 'debts', 'budgets'],
   })
   @ApiResponse({
     status: 201,

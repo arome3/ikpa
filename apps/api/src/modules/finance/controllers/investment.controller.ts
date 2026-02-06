@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../../common/guards';
-import { CurrentUser } from '../../../common/decorators';
+import { CurrentUser, SkipEmailVerification } from '../../../common/decorators';
 import { InvestmentService } from '../services';
 import { CreateInvestmentDto, UpdateInvestmentDto, InvestmentResponseDto, InvestmentListResponseDto } from '../dto';
 
@@ -34,6 +34,7 @@ import { CreateInvestmentDto, UpdateInvestmentDto, InvestmentResponseDto, Invest
 @ApiTags('Finance - Investments')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@SkipEmailVerification()
 @Controller('finance/investments')
 export class InvestmentController {
   constructor(private readonly investmentService: InvestmentService) {}

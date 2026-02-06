@@ -8,9 +8,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-type CurrencyCode = 'NGN' | 'USD' | 'GBP' | 'EUR' | 'GHS' | 'KES' | 'ZAR';
+export type CurrencyCode = 'NGN' | 'USD' | 'GBP' | 'EUR' | 'GHS' | 'KES' | 'ZAR';
 
-const currencySymbols: Record<CurrencyCode, string> = {
+export const currencySymbols: Record<CurrencyCode, string> = {
   NGN: '₦',
   USD: '$',
   GBP: '£',
@@ -21,11 +21,18 @@ const currencySymbols: Record<CurrencyCode, string> = {
 };
 
 /**
+ * Get the symbol for a currency code (e.g., 'USD' → '$')
+ */
+export function getCurrencySymbol(code: CurrencyCode | string): string {
+  return currencySymbols[code as CurrencyCode] ?? code;
+}
+
+/**
  * Format a number as currency
  */
 export function formatCurrency(
   amount: number,
-  currency: CurrencyCode = 'NGN',
+  currency: CurrencyCode | string = 'USD',
   options?: {
     compact?: boolean;
     showSign?: boolean;
@@ -33,7 +40,7 @@ export function formatCurrency(
 ): string {
   const { compact = false, showSign = false } = options ?? {};
 
-  const symbol = currencySymbols[currency] ?? currency;
+  const symbol = currencySymbols[currency as CurrencyCode] ?? currency;
   const sign = showSign && amount > 0 ? '+' : '';
 
   let formatted: string;

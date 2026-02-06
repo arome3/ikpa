@@ -24,6 +24,12 @@ const MERCHANT_ALIASES: Record<string, string[]> = {
   'apple music': ['apple music', 'itunes', 'apple.com/bill'],
   youtube: ['youtube', 'youtube premium', 'google youtube'],
   'amazon prime': ['amazon prime', 'prime video', 'amzn prime'],
+  'disney plus': ['disney plus', 'disney+', 'disneyplus', 'disneyplus.com'],
+  hulu: ['hulu', 'hulu llc'],
+  'hbo max': ['hbo max', 'hbo', 'max.com'],
+  'paramount plus': ['paramount+', 'paramount plus'],
+  'apple tv': ['apple tv', 'apple tv+'],
+  peacock: ['peacock', 'peacock tv'],
 
   // Nigerian services
   dstv: ['dstv', 'multichoice', 'dstv subscription'],
@@ -41,21 +47,49 @@ const MERCHANT_ALIASES: Record<string, string[]> = {
   'uber eats': ['uber eats', 'ubereats'],
   glovo: ['glovo'],
   chowdeck: ['chowdeck'],
+  doordash: ['doordash', 'door dash'],
+  grubhub: ['grubhub', 'grub hub'],
+  instacart: ['instacart'],
+  postmates: ['postmates'],
 
   // Ride-sharing
   uber: ['uber', 'uber bv', 'uber trip'],
   bolt: ['bolt', 'bolt eu', 'bolt ride'],
+  lyft: ['lyft', 'lyft inc'],
 
   // Cloud/Software
   icloud: ['icloud', 'apple icloud', 'apple.com/bill icloud'],
   google: ['google', 'google play', 'google.com'],
   microsoft: ['microsoft', 'ms365', 'office 365'],
   dropbox: ['dropbox'],
+  adobe: ['adobe', 'adobe systems'],
 
-  // Retail
+  // Retail - US
+  amazon: ['amazon', 'amzn', 'amazon.com', 'amzn mktp'],
+  walmart: ['walmart', 'wal-mart', 'wal mart'],
+  target: ['target'],
+  costco: ['costco', 'costco wholesale'],
+  'whole foods': ['whole foods', 'wholefds', 'wholefoods'],
+  'trader joes': ['trader joe', 'trader joes'],
+  kroger: ['kroger'],
+  publix: ['publix'],
+
+  // Gas stations
+  shell: ['shell', 'shell oil'],
+  chevron: ['chevron'],
+  exxon: ['exxon', 'exxonmobil'],
+  bp: ['bp'],
+
+  // Retail - Nigeria
   shoprite: ['shoprite', 'shoprite nigeria'],
   spar: ['spar', 'spar nigeria'],
   'game stores': ['game stores', 'game nigeria'],
+
+  // Restaurants / Fast food
+  starbucks: ['starbucks'],
+  'chick-fil-a': ['chick-fil-a', 'chick fil a', 'chickfila'],
+  chipotle: ['chipotle'],
+  mcdonalds: ['mcdonalds', "mcdonald's", 'mcd'],
 };
 
 @Injectable()
@@ -129,6 +163,7 @@ export class TransactionNormalizerService {
       date,
       amount,
       normalizedMerchant,
+      txn.description,
     );
 
     return {
@@ -204,8 +239,8 @@ export class TransactionNormalizerService {
   ): string | null {
     if (!description) return null;
 
-    // Common patterns in Nigerian bank descriptions
-    const patterns = [
+    // Nigerian bank description patterns
+    const nigerianPatterns = [
       // "POS PURCHASE - MERCHANT"
       /POS\s+(?:PURCHASE|PAYMENT)\s*[-:]\s*(.+?)(?:\s+\d|$)/i,
       // "Transfer to MERCHANT"
@@ -216,11 +251,55 @@ export class TransactionNormalizerService {
       /USSD\s*[-:]\s*(.+?)(?:\s+\d|$)/i,
     ];
 
-    for (const pattern of patterns) {
+    for (const pattern of nigerianPatterns) {
       const match = description.match(pattern);
       if (match && match[1]) {
         return this.normalizeMerchant(match[1]);
       }
+    }
+
+    // US/International bank description patterns
+    const intlPatterns = [
+      // "PURCHASE AUTHORIZED ON 12/20 NETFLIX.COM" or "RECURRING PAYMENT AUTHORIZED ON 12/20 SPOTIFY"
+      /(?:PURCHASE|PAYMENT|RECURRING)\s+(?:AUTHORIZED|AUTH)\s+(?:ON\s+\d{2}\/\d{2}\s+)?(.+?)(?:\s+CARD\s+\d|$)/i,
+      // "DEBIT CARD PURCHASE - WHOLE FOODS MARKET #10234 AUSTIN TX"
+      /(?:DEBIT\s+)?CARD\s+PURCHASE\s*[-:]\s*(.+?)(?:\s+\d{5}|\s+[A-Z]{2}\s*$)/i,
+      // "ACH DEBIT NETFLIX.COM"
+      /ACH\s+(?:DEBIT|CREDIT|PAYMENT)\s+(.+?)(?:\s+\d|$)/i,
+      // "DIRECT DEP TECHCORP INC PAYROLL" → "TECHCORP INC"
+      /DIRECT\s+DEP(?:OSIT)?\s+(.+?)(?:\s+PAYROLL|\s+SALARY|\s+PAY\s|$)/i,
+      // "CHECK CARD PURCHASE CHEVRON 12345 AUSTIN TX"
+      /CHECK\s+CARD\s+(?:PURCHASE\s+)?(.+?)(?:\s+\d{4,}|\s+[A-Z]{2}\s*$)/i,
+      // "VENMO PAYMENT" / "ZELLE PAYMENT TO JOHN"
+      /(?:VENMO|ZELLE|CASHAPP|PAYPAL)\s+(?:PAYMENT|TRANSFER|SENT)?\s*(?:TO\s+)?(.+?)$/i,
+    ];
+
+    for (const pattern of intlPatterns) {
+      const match = description.match(pattern);
+      if (match && match[1] && match[1].trim().length > 1) {
+        return this.normalizeMerchant(match[1].trim());
+      }
+    }
+
+    // Fallback: Check if description matches any known alias directly
+    const lowerDesc = description.toLowerCase();
+    for (const [canonical, aliases] of Object.entries(MERCHANT_ALIASES)) {
+      if (aliases.some((alias) => lowerDesc.includes(alias))) {
+        return canonical;
+      }
+    }
+
+    // Last resort: use the description itself as merchant (cleaned up)
+    // Strip common prefixes, trailing numbers/locations, and normalize
+    const cleaned = description
+      .replace(/^(?:POS|DEBIT|CREDIT|ACH|CHECK CARD|PURCHASE|PAYMENT)\s*/i, '')
+      .replace(/\s+#?\d{4,}.*$/i, '') // trailing store numbers
+      .replace(/\s+[A-Z]{2}\s*\d{5}.*$/i, '') // trailing STATE ZIP
+      .replace(/\s+[A-Z]{2}\s*$/i, '') // trailing STATE
+      .trim();
+
+    if (cleaned.length >= 3) {
+      return this.normalizeMerchant(cleaned);
     }
 
     return null;
@@ -274,6 +353,7 @@ export class TransactionNormalizerService {
     date: Date,
     amount: number,
     normalizedMerchant: string | null,
+    description?: string | null,
   ): string {
     // Use date string without time
     const dateStr = date.toISOString().split('T')[0];
@@ -281,11 +361,21 @@ export class TransactionNormalizerService {
     // Use absolute amount with 2 decimal precision
     const amountStr = Math.abs(amount).toFixed(2);
 
-    // Use normalized merchant or empty string
-    const merchantStr = normalizedMerchant || '';
+    // Use normalized merchant, or fallback to a cleaned description snippet
+    // to prevent false collisions between different merchants on the same day
+    let identifierStr = normalizedMerchant || '';
+    if (!identifierStr && description) {
+      // Use first 40 chars of lowercased, whitespace-collapsed description
+      identifierStr = description
+        .toLowerCase()
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 40);
+    }
 
     // Create hash input
-    const input = `${dateStr}|${amountStr}|${merchantStr}`;
+    const input = `${dateStr}|${amountStr}|${identifierStr}`;
 
     // Generate SHA256 hash
     return crypto.createHash('sha256').update(input).digest('hex').substring(0, 32);

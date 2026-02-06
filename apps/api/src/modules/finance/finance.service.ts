@@ -251,6 +251,21 @@ export class FinanceService {
   }
 
   /**
+   * Invalidate today's cached snapshot so the next request recalculates.
+   */
+  async invalidateSnapshot(userId: string): Promise<void> {
+    await this.prisma.financialSnapshot.deleteMany({
+      where: {
+        userId,
+        date: {
+          gte: startOfDay(new Date()),
+          lte: endOfDay(new Date()),
+        },
+      },
+    });
+  }
+
+  /**
    * Get snapshot history for a date range with pagination
    *
    * @param userId - User ID
@@ -358,10 +373,10 @@ export class FinanceService {
     const oneMonthAgo = subMonths(now, 1);
     const sixMonthsAgo = subMonths(now, 6);
 
-    // Get user's primary currency first
+    // Get user's primary currency and emergency fund estimate
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { currency: true },
+      select: { currency: true, emergencyFundEstimate: true },
     });
 
     const primaryCurrency = user?.currency ?? 'NGN';
@@ -451,12 +466,23 @@ export class FinanceService {
       familySupport.map((f) => ({ amount: f.amount, frequency: f.frequency })),
     );
 
-    // Calculate emergency fund (liquid savings marked as emergency or liquid types)
-    const emergencyFund = savingsAccounts
+    // Emergency fund priority cascade: savings accounts > user estimate > derived default
+    const savingsEmergencyFund = savingsAccounts
       .filter(
         (s) => s.isEmergencyFund || ['BANK_ACCOUNT', 'MOBILE_MONEY', 'CASH'].includes(s.type),
       )
       .reduce((sum, s) => sum.plus(s.balance), new Decimal(0));
+
+    let emergencyFund: Decimal;
+    if (savingsEmergencyFund.gt(0)) {
+      emergencyFund = savingsEmergencyFund;
+    } else if (user?.emergencyFundEstimate) {
+      emergencyFund = new Decimal(user.emergencyFundEstimate.toString());
+    } else {
+      // Derived default: 3 months of net savings
+      const netMonthlySavings = monthlyIncome.minus(monthlyExpenses);
+      emergencyFund = netMonthlySavings.gt(0) ? netMonthlySavings.times(3) : new Decimal(0);
+    }
 
     // Total liquid savings
     const liquidSavings = savingsAccounts.reduce((sum, s) => sum.plus(s.balance), new Decimal(0));
@@ -849,10 +875,10 @@ export class FinanceService {
     const oneMonthAgo = subMonths(now, 1);
     const sixMonthsAgo = subMonths(now, 6);
 
-    // Get user's primary currency first
+    // Get user's primary currency and emergency fund estimate
     const user = await tx.user.findUnique({
       where: { id: userId },
-      select: { currency: true },
+      select: { currency: true, emergencyFundEstimate: true },
     });
 
     const primaryCurrency = user?.currency ?? 'NGN';
@@ -933,11 +959,23 @@ export class FinanceService {
     const totalFamilySupport = this.calculateMonthlyTotal(
       familySupport.map((f) => ({ amount: f.amount, frequency: f.frequency })),
     );
-    const emergencyFund = savingsAccounts
+    // Emergency fund priority cascade: savings accounts > user estimate > derived default
+    const savingsEmergencyFund = savingsAccounts
       .filter(
         (s) => s.isEmergencyFund || ['BANK_ACCOUNT', 'MOBILE_MONEY', 'CASH'].includes(s.type),
       )
       .reduce((sum, s) => sum.plus(s.balance), new Decimal(0));
+
+    let emergencyFund: Decimal;
+    if (savingsEmergencyFund.gt(0)) {
+      emergencyFund = savingsEmergencyFund;
+    } else if (user?.emergencyFundEstimate) {
+      emergencyFund = new Decimal(user.emergencyFundEstimate.toString());
+    } else {
+      const netMonthlySavings = monthlyIncome.minus(monthlyExpenses);
+      emergencyFund = netMonthlySavings.gt(0) ? netMonthlySavings.times(3) : new Decimal(0);
+    }
+
     const liquidSavings = savingsAccounts.reduce((sum, s) => sum.plus(s.balance), new Decimal(0));
     const totalDebt = debts.reduce((sum, d) => sum.plus(d.remainingBalance), new Decimal(0));
     const netIncome = monthlyIncome.minus(totalFamilySupport);

@@ -4,16 +4,16 @@ import { forwardRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Home, Wallet, Sparkles, Target, User } from 'lucide-react';
+import { Home, Wallet, Navigation, Target, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface BottomNavProps extends React.HTMLAttributes<HTMLElement> {}
 
 const navItems = [
   { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/transactions', label: 'Money', icon: Wallet },
-  { href: '/ai', label: 'AI', icon: Sparkles },
-  { href: '/goals', label: 'Goals', icon: Target },
+  { href: '/dashboard/expenses', label: 'Spend', icon: Wallet },
+  { href: '/dashboard/gps', label: 'GPS', icon: Navigation },
+  { href: '/dashboard/finance/goals', label: 'Goals', icon: Target },
   { href: '/profile', label: 'Profile', icon: User },
 ];
 

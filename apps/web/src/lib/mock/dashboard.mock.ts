@@ -21,6 +21,7 @@ export interface FinancialSummary {
   monthlyIncomeChange: number;
   monthlyExpenses: number;
   monthlyExpensesChange: number;
+  currency: string;
 }
 
 export type TransactionCategory =
@@ -113,6 +114,7 @@ export const mockFinancialSummary: FinancialSummary = {
   monthlyIncomeChange: 8.5,
   monthlyExpenses: 468000,
   monthlyExpensesChange: -2.1,
+  currency: 'USD',
 };
 
 const now = new Date();

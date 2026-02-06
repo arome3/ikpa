@@ -12,6 +12,7 @@ import {
   DebtController,
   GoalController,
   BudgetController,
+  ExpenseController,
 } from './controllers';
 import {
   IncomeService,
@@ -20,6 +21,7 @@ import {
   DebtService,
   GoalCrudService,
   BudgetCrudService,
+  ExpenseService,
 } from './services';
 
 /**
@@ -56,6 +58,7 @@ import {
     DebtController,
     GoalController,
     BudgetController,
+    ExpenseController,
   ],
   providers: [
     FinanceService,
@@ -69,6 +72,7 @@ import {
     DebtService,
     GoalCrudService,
     BudgetCrudService,
+    ExpenseService,
   ],
   exports: [
     FinanceService,
@@ -80,6 +84,7 @@ import {
     DebtService,
     GoalCrudService,
     BudgetCrudService,
+    ExpenseService,
   ],
 })
 export class FinanceModule {}

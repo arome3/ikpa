@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MinusCircle, PlusCircle, Target, Sparkles } from 'lucide-react';
+import { MinusCircle, PlusCircle, Target, Sparkles, Fish, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 
@@ -16,6 +16,10 @@ export interface QuickActionsProps {
   onSetGoal?: () => void;
   /** Callback when Ask AI is clicked */
   onAskAI?: () => void;
+  /** Callback when Shark Auditor is clicked */
+  onShark?: () => void;
+  /** Callback when Import is clicked */
+  onImport?: () => void;
 }
 
 const actions = [
@@ -43,17 +47,31 @@ const actions = [
     icon: Sparkles,
     variant: 'ghost' as const,
   },
+  {
+    id: 'shark',
+    label: 'Shark',
+    icon: Fish,
+    variant: 'ghost' as const,
+  },
+  {
+    id: 'import',
+    label: 'Import',
+    icon: Upload,
+    variant: 'secondary' as const,
+  },
 ];
 
 /**
  * Row of quick action buttons for common dashboard tasks
  */
-export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, onAskAI }: QuickActionsProps) {
+export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, onAskAI, onShark, onImport }: QuickActionsProps) {
   const handlers: Record<string, (() => void) | undefined> = {
     expense: onAddExpense,
     income: onAddIncome,
     goal: onSetGoal,
     ai: onAskAI,
+    shark: onShark,
+    import: onImport,
   };
 
   return (
@@ -62,7 +80,7 @@ export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, 
         // Mobile: horizontal scroll
         'flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4',
         // Desktop: grid layout
-        'md:grid md:grid-cols-4 md:mx-0 md:px-0 md:overflow-visible',
+        'md:grid md:grid-cols-3 lg:grid-cols-6 md:mx-0 md:px-0 md:overflow-visible',
         className
       )}
       initial={{ opacity: 0, y: 10 }}

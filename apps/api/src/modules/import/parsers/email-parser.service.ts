@@ -350,10 +350,10 @@ export class EmailParserService {
     const currencyMap: Record<string, Currency> = {
       NGN: 'NGN',
       NAIRA: 'NGN',
-      GHS: 'GHS',
-      KES: 'KES',
-      ZAR: 'ZAR',
-      EGP: 'EGP',
+      GHS: 'USD',
+      KES: 'USD',
+      ZAR: 'USD',
+      EGP: 'USD',
       USD: 'USD',
     };
 

@@ -78,14 +78,18 @@ export class ExpenseCreatorService {
       );
     }
 
-    // Get confirmed transactions
+    // Get selected transactions (include DUPLICATE since user explicitly chose to import them)
     const transactions = await this.prisma.parsedTransaction.findMany({
       where: {
         id: { in: transactionIds },
         jobId,
         job: { userId },
         status: {
-          in: [ParsedTransactionStatus.CONFIRMED, ParsedTransactionStatus.PENDING],
+          in: [
+            ParsedTransactionStatus.CONFIRMED,
+            ParsedTransactionStatus.PENDING,
+            ParsedTransactionStatus.DUPLICATE,
+          ],
         },
       },
     });
@@ -102,24 +106,33 @@ export class ExpenseCreatorService {
     // Create expenses in a transaction
     await this.prisma.$transaction(async (tx) => {
       for (const txn of transactions) {
-        // Skip if already created or duplicate
-        if (
-          txn.status === ParsedTransactionStatus.CREATED ||
-          txn.status === ParsedTransactionStatus.DUPLICATE
-        ) {
+        // Skip if already created
+        if (txn.status === ParsedTransactionStatus.CREATED) {
           skipped++;
+          continue;
+        }
+
+        // Skip credit transactions (income/deposits are not expenses)
+        const numericAmount = Number(txn.amount);
+        if (numericAmount > 0) {
+          skipped++;
+          // Mark as rejected so it doesn't appear importable again
+          await tx.parsedTransaction.update({
+            where: { id: txn.id },
+            data: { status: ParsedTransactionStatus.REJECTED },
+          });
           continue;
         }
 
         // Determine if recurring based on merchant
         const isRecurring = this.isSubscriptionMerchant(txn.normalizedMerchant);
 
-        // Create expense
+        // Create expense (amounts stored as positive values)
         const expense = await tx.expense.create({
           data: {
             userId,
             categoryId,
-            amount: txn.amount,
+            amount: Math.abs(numericAmount),
             currency: txn.currency,
             date: txn.date,
             description: txn.description,
@@ -218,13 +231,13 @@ export class ExpenseCreatorService {
       transaction.isRecurringGuess ??
       this.isSubscriptionMerchant(transaction.normalizedMerchant);
 
-    // Create expense and update transaction
+    // Create expense and update transaction (amount stored as positive)
     const [expense] = await this.prisma.$transaction([
       this.prisma.expense.create({
         data: {
           userId,
           categoryId,
-          amount: transaction.amount,
+          amount: Math.abs(Number(transaction.amount)),
           currency: transaction.currency,
           date: transaction.date,
           description: transaction.description,
