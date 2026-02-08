@@ -4,9 +4,10 @@
  * Provides data import functionality for IKPA:
  * - Bank statement upload (PDF/CSV)
  * - Screenshot OCR upload
- * - Email forwarding
+ * - Email forwarding with auto-confirm + confirmation emails
  *
- * Integrates with Shark Auditor for subscription detection.
+ * Integrates with Shark Auditor for subscription detection
+ * and GPS Re-Router for budget threshold checks.
  */
 
 import { Module } from '@nestjs/common';
@@ -34,8 +35,17 @@ import { ExpenseCreatorService } from './processing/expense-creator.service';
 import { LocalStorageAdapter } from './storage/local-storage.adapter';
 import { FILE_STORAGE } from './storage/file-storage.interface';
 
+// Notifications
+import { ImportConfirmationService } from './notifications/import-confirmation.service';
+import { ImportConfirmationListener } from './notifications/import-confirmation.listener';
+import { WeeklyDigestCronService } from './notifications/weekly-digest.cron';
+
 // Database
 import { PrismaModule } from '../../prisma';
+
+// External modules
+import { AuthModule } from '../auth/auth.module';
+import { GpsModule } from '../gps/gps.module';
 
 @Module({
   imports: [
@@ -44,6 +54,8 @@ import { PrismaModule } from '../../prisma';
     MulterModule.register({
       storage: memoryStorage(), // Use memory storage for processing
     }),
+    AuthModule, // For EmailService
+    GpsModule, // For BudgetService
   ],
   controllers: [ImportController],
   providers: [
@@ -61,6 +73,11 @@ import { PrismaModule } from '../../prisma';
     TransactionNormalizerService,
     DeduplicationService,
     ExpenseCreatorService,
+
+    // Notifications
+    ImportConfirmationService,
+    ImportConfirmationListener,
+    WeeklyDigestCronService,
 
     // Storage
     LocalStorageAdapter,

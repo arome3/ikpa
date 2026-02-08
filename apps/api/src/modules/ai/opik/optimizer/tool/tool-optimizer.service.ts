@@ -31,6 +31,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../../prisma/prisma.service';
 import { RedisService } from '../../../../../redis/redis.service';
 import { OpikService } from '../../opik.service';
@@ -187,7 +188,7 @@ export class ToolOptimizerService implements IToolOptimizer {
           data: policy.rules.map((rule) => ({
             experimentId,
             version: policy.version,
-            condition: rule.condition as unknown as Record<string, unknown>,
+            condition: rule.condition as unknown as Prisma.InputJsonValue,
             recommendedTool: rule.recommendedTool,
             confidence: rule.confidence,
             sampleSize: rule.sampleSize,
@@ -217,7 +218,7 @@ export class ToolOptimizerService implements IToolOptimizer {
           traceId: trace.traceId,
           name: FEEDBACK_TOOL_POLICY_ACCURACY,
           value: accuracy,
-          category: 'gepa',
+          category: 'custom',
           comment: `Policy ${version}: ${rules.length} rules, ${(accuracy * 100).toFixed(1)}% accuracy`,
         });
       }
@@ -358,8 +359,8 @@ export class ToolOptimizerService implements IToolOptimizer {
         userId: record.userId,
         sessionId: record.sessionId,
         selectedTool: record.selectedTool,
-        userProfile: record.userProfile as unknown as Record<string, unknown>,
-        outcome: record.outcome as unknown as Record<string, unknown>,
+        userProfile: record.userProfile as unknown as Prisma.InputJsonValue,
+        outcome: record.outcome as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -524,7 +525,7 @@ export class ToolOptimizerService implements IToolOptimizer {
       version,
       rules: activeRules.map((r) => ({
         id: r.id,
-        condition: r.condition as ProfileCondition[],
+        condition: r.condition as unknown as ProfileCondition[],
         recommendedTool: r.recommendedTool as RecoveryTool,
         confidence: r.confidence,
         sampleSize: r.sampleSize,
@@ -782,7 +783,7 @@ export class ToolOptimizerService implements IToolOptimizer {
           if (typeof value !== 'number' || value > (condition.value as number)) return false;
           break;
         case 'in':
-          if (!Array.isArray(condition.value) || !condition.value.includes(value)) return false;
+          if (!Array.isArray(condition.value) || !(condition.value as unknown[]).includes(value)) return false;
           break;
       }
     }

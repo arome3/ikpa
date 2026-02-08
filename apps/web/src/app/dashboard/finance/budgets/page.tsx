@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Receipt, Utensils, Car, Home, ShoppingBag, Heart, Gamepad2,
-  Pencil, Trash2, AlertTriangle, CheckCircle2, Navigation
+  Pencil, Trash2, AlertTriangle, CheckCircle2, Navigation, Zap
 } from 'lucide-react';
 import { useBudgets, useCategories, type Budget, type CreateBudgetData, useGps, useCurrency } from '@/hooks';
 import { Button, Modal, ModalFooter, Input, Spinner, Badge } from '@/components/ui';
@@ -19,6 +19,7 @@ const categoryIconMap: Record<string, typeof Receipt> = {
   'shopping': ShoppingBag,
   'healthcare': Heart,
   'entertainment': Gamepad2,
+  'utilities': Zap,
 };
 
 const periodOptions = [
@@ -65,7 +66,7 @@ export default function BudgetsPage() {
   const openEditModal = (item: Budget) => {
     setEditingItem(item);
     setFormData({
-      categoryId: item.categoryId,
+      categoryId: item.category?.id || item.categoryId || '',
       amount: Number(item.amount),
       period: item.period,
       alertThreshold: item.alertThreshold ? Number(item.alertThreshold) : undefined,
@@ -265,7 +266,7 @@ export default function BudgetsPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {activeItems.map((item: Budget, index: number) => {
-                const category = getCategoryById(item.categoryId);
+                const category = item.category || getCategoryById(item.category?.id || item.categoryId);
                 const Icon = category ? (categoryIconMap[category.id] || Receipt) : Receipt;
                 const spent = Number(item.spent || 0);
                 const budget = Number(item.amount);

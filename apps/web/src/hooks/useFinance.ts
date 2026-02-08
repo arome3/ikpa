@@ -133,14 +133,14 @@ export interface CreateDebtData {
 export interface Goal {
   id: string;
   name: string;
-  type: 'EMERGENCY_FUND' | 'HOME' | 'VEHICLE' | 'EDUCATION' | 'TRAVEL' | 'RETIREMENT' | 'WEDDING' | 'SAVINGS' | 'INVESTMENT' | 'DEBT_PAYOFF' | 'MAJOR_PURCHASE' | 'FAMILY' | 'BUSINESS' | 'OTHER';
+  type: 'EMERGENCY_FUND' | 'SAVINGS' | 'INVESTMENT' | 'DEBT_PAYOFF' | 'MAJOR_PURCHASE' | 'EDUCATION' | 'TRAVEL' | 'FAMILY' | 'BUSINESS' | 'RETIREMENT' | 'OTHER';
   targetAmount: number;
   currentAmount: number;
   currency: string;
   description?: string;
   targetDate?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ABANDONED';
+  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   updatedAt: string;
   progressPercent?: number;
@@ -166,7 +166,7 @@ export interface ContributeGoalData {
 // Budget
 export interface Budget {
   id: string;
-  categoryId: string;
+  categoryId?: string;
   category?: {
     id: string;
     name: string;

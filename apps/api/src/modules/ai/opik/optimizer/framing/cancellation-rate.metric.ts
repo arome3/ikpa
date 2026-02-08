@@ -57,7 +57,7 @@ export class CancellationRateMetric extends BaseMetric {
    * @param llmOutput - LLM response to evaluate
    * @returns Score: 1 = cancel recommended, 0 = keep recommended, 0.5 = unclear
    */
-  async score(datasetItem: DatasetItem, llmOutput: string): Promise<MetricResult> {
+  async score(_datasetItem: DatasetItem, llmOutput: string): Promise<MetricResult> {
     const normalizedOutput = llmOutput.toLowerCase().trim();
 
     // Check for cancel patterns

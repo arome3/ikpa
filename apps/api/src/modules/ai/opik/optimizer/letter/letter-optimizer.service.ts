@@ -26,6 +26,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../../prisma/prisma.service';
 import { OpikService } from '../../opik.service';
 import { PopulationManager } from './population-manager';
@@ -100,7 +101,7 @@ export class LetterOptimizerService implements ILetterOptimizer {
         id: experimentId,
         type: 'EVOLUTIONARY',
         name: `letter-evolution-${experimentId.slice(0, 8)}`,
-        config: fullConfig as unknown as Record<string, unknown>,
+        config: fullConfig as unknown as Prisma.InputJsonValue,
         status: 'RUNNING',
         startedAt: new Date(),
       },
@@ -284,7 +285,7 @@ export class LetterOptimizerService implements ILetterOptimizer {
         data: {
           status: 'COMPLETED',
           completedAt: new Date(),
-          result: result as unknown as Record<string, unknown>,
+          result: result as unknown as Prisma.InputJsonValue,
         },
       });
 

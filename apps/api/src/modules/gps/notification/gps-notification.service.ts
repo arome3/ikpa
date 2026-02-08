@@ -23,6 +23,9 @@ import {
   UnreadCountResponseDto,
   MarkReadResponseDto,
 } from '../dto/notification.dto';
+import { format } from 'date-fns';
+import { createMonetaryValue } from '../../../common/utils';
+import { GpsWhatsAppNotificationService } from './gps-whatsapp-notification.service';
 
 /**
  * Notification message templates
@@ -65,6 +68,42 @@ const NOTIFICATION_TEMPLATES = {
       "Significant overspend in {category}. Let's find the best path back to your goals.",
     ],
   },
+  SPENDING_DRIFT: {
+    titles: [
+      "Speed check for {category}",
+      "Pacing ahead in {category}",
+      "{category} pace alert",
+    ],
+    messages: [
+      "Your {category} spending is {ratio}x faster than planned. At this pace, you'll exceed your budget around {date}. Aim for {correction}/day to stay on track.",
+      "Heads up: {category} is {percent}% over pace. Try reducing to {correction}/day to course-correct.",
+      "{category} is moving faster than expected. To stay under budget, aim for {correction}/day.",
+    ],
+  },
+  PACE_WARNING: {
+    titles: [
+      "Heads up: {category} forecast",
+      "{category} spending pace check",
+      "Quick forecast for {category}",
+    ],
+    messages: [
+      "Heads up: {category} is on pace to hit {projected} by month end (budget: {budgeted}). Safe daily limit: {dailyLimit}/day",
+      "{category} is tracking toward {projected} this period (budget: {budgeted}). Try keeping to {dailyLimit}/day to stay on track.",
+      "At current pace, {category} will reach {projected} by period end. Budget is {budgeted}. Aim for {dailyLimit}/day.",
+    ],
+  },
+  FORECAST_ALERT: {
+    titles: [
+      "{category} forecast update",
+      "Spending forecast: {category}",
+      "{category} budget projection",
+    ],
+    messages: [
+      "Your {category} spending is projected to reach {projected} (budget: {budgeted}). Safe daily limit: {dailyLimit}/day.",
+      "{category} is on track for {projected} this period. Budget: {budgeted}. Consider limiting to {dailyLimit}/day.",
+      "Forecast shows {category} heading to {projected} (budget: {budgeted}). You can stay on track with {dailyLimit}/day.",
+    ],
+  },
 };
 
 /**
@@ -81,7 +120,10 @@ const FATIGUE_CONFIG = {
 export class GpsNotificationService {
   private readonly logger = new Logger(GpsNotificationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly whatsappNotificationService: GpsWhatsAppNotificationService,
+  ) {}
 
   /**
    * Get notifications for a user
@@ -223,6 +265,17 @@ export class GpsNotificationService {
       `category ${categoryName} (${Math.round(spentPercent)}%)`,
     );
 
+    // Fire-and-forget WhatsApp delivery (never blocks in-app notification)
+    if (notification) {
+      this.whatsappNotificationService
+        .sendBudgetAlert(userId, title, message)
+        .catch((err) => {
+          this.logger.warn(
+            `[createBudgetNotification] WhatsApp delivery failed: ${err.message}`,
+          );
+        });
+    }
+
     return this.toDto(notification);
   }
 
@@ -246,6 +299,250 @@ export class GpsNotificationService {
     }
 
     return result.count;
+  }
+
+  /**
+   * Create a notification for spending drift detection
+   * Uses BUDGET_WARNING as trigger type with drift metadata to distinguish
+   */
+  async createDriftNotification(
+    userId: string,
+    categoryId: string,
+    categoryName: string,
+    velocityRatio: number,
+    projectedOverspendDate: Date | null,
+    courseCorrectionDaily: number,
+    currency: string,
+  ): Promise<GpsNotificationDto | null> {
+    // Check drift-specific fatigue prevention
+    const shouldSkip = await this.shouldSkipDriftNotification(userId, categoryId);
+    if (shouldSkip) {
+      this.logger.debug(
+        `[createDriftNotification] Skipping drift notification for user ${userId}, ` +
+        `category ${categoryName} - fatigue prevention`,
+      );
+      return null;
+    }
+
+    // Generate message from drift templates
+    const templates = NOTIFICATION_TEMPLATES.SPENDING_DRIFT;
+    const correctionFormatted = createMonetaryValue(
+      Math.round(courseCorrectionDaily),
+      currency,
+    ).formatted;
+    const overPacePercent = Math.round((velocityRatio - 1) * 100);
+    const dateStr = projectedOverspendDate
+      ? format(projectedOverspendDate, 'MMM d')
+      : 'soon';
+
+    const title = this.pickRandom(templates.titles)
+      .replace('{category}', categoryName);
+    const message = this.pickRandom(templates.messages)
+      .replace('{category}', categoryName)
+      .replace('{ratio}', velocityRatio.toFixed(1))
+      .replace('{date}', dateStr)
+      .replace('{correction}', correctionFormatted)
+      .replace('{percent}', String(overPacePercent));
+
+    const actionUrl = `/gps?drift=${categoryId}`;
+
+    const notification = await this.prisma.gpsNotification.create({
+      data: {
+        userId,
+        triggerType: BudgetTriggerEnum.BUDGET_WARNING,
+        categoryId,
+        categoryName,
+        title,
+        message,
+        actionUrl,
+        metadata: {
+          type: 'drift',
+          velocityRatio,
+          projectedOverspendDate: projectedOverspendDate?.toISOString() ?? null,
+          courseCorrectionDaily,
+        },
+      },
+    });
+
+    this.logger.log(
+      `[createDriftNotification] Created drift notification for user ${userId}, ` +
+      `category ${categoryName} (${velocityRatio.toFixed(1)}x pace)`,
+    );
+
+    // Fire-and-forget WhatsApp delivery (never blocks in-app notification)
+    if (notification) {
+      this.whatsappNotificationService
+        .sendBudgetAlert(userId, title, message)
+        .catch((err) => {
+          this.logger.warn(
+            `[createDriftNotification] WhatsApp delivery failed: ${err.message}`,
+          );
+        });
+    }
+
+    return this.toDto(notification);
+  }
+
+  /**
+   * Check if drift notification should be skipped (24h cooldown per category)
+   */
+  private async shouldSkipDriftNotification(
+    userId: string,
+    categoryId: string,
+  ): Promise<boolean> {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // Check for recent drift notification for this category
+    const recentDrift = await this.prisma.gpsNotification.findFirst({
+      where: {
+        userId,
+        categoryId,
+        createdAt: { gte: twentyFourHoursAgo },
+        metadata: {
+          path: ['type'],
+          equals: 'drift',
+        },
+      },
+    });
+
+    if (recentDrift) return true;
+
+    // Check daily limit
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const todayCount = await this.prisma.gpsNotification.count({
+      where: {
+        userId,
+        createdAt: { gte: startOfDay },
+      },
+    });
+
+    return todayCount >= FATIGUE_CONFIG.maxPerDayPerUser;
+  }
+
+
+  /**
+   * Create a notification for a proactive budget forecast alert
+   * Uses PACE_WARNING notification type with 3-day cooldown per category
+   */
+  async createForecastNotification(
+    userId: string,
+    categoryId: string,
+    categoryName: string,
+    projectedTotal: number,
+    budgetedAmount: number,
+    suggestedDailyLimit: number,
+    currency: string,
+  ): Promise<GpsNotificationDto | null> {
+    // Check forecast-specific fatigue prevention (3 days per category)
+    const shouldSkip = await this.shouldSkipForecastNotification(userId, categoryId);
+    if (shouldSkip) {
+      this.logger.debug(
+        `[createForecastNotification] Skipping forecast notification for user ${userId}, ` +
+        `category ${categoryName} - fatigue prevention (3-day cooldown)`,
+      );
+      return null;
+    }
+
+    // Generate message from PACE_WARNING templates
+    const templates = NOTIFICATION_TEMPLATES.PACE_WARNING;
+    const projectedFormatted = createMonetaryValue(
+      Math.round(projectedTotal),
+      currency,
+    ).formatted;
+    const budgetedFormatted = createMonetaryValue(
+      Math.round(budgetedAmount),
+      currency,
+    ).formatted;
+    const dailyLimitFormatted = createMonetaryValue(
+      Math.round(suggestedDailyLimit * 100) / 100,
+      currency,
+    ).formatted;
+
+    const title = this.pickRandom(templates.titles)
+      .replace('{category}', categoryName);
+    const message = this.pickRandom(templates.messages)
+      .replace('{category}', categoryName)
+      .replace('{projected}', projectedFormatted)
+      .replace('{budgeted}', budgetedFormatted)
+      .replace('{dailyLimit}', dailyLimitFormatted);
+
+    const actionUrl = `/gps/forecast?category=${encodeURIComponent(categoryId)}`;
+
+    const notification = await this.prisma.gpsNotification.create({
+      data: {
+        userId,
+        triggerType: BudgetTriggerEnum.BUDGET_WARNING,
+        categoryId,
+        categoryName,
+        title,
+        message,
+        actionUrl,
+        metadata: {
+          type: 'forecast',
+          projectedTotal,
+          budgetedAmount,
+          suggestedDailyLimit,
+        },
+      },
+    });
+
+    this.logger.log(
+      `[createForecastNotification] Created forecast notification for user ${userId}, ` +
+      `category ${categoryName} (projected: ${projectedFormatted}, budget: ${budgetedFormatted})`,
+    );
+
+    // Fire-and-forget WhatsApp delivery
+    if (notification) {
+      this.whatsappNotificationService
+        .sendBudgetAlert(userId, title, message)
+        .catch((err) => {
+          this.logger.warn(
+            `[createForecastNotification] WhatsApp delivery failed: ${err.message}`,
+          );
+        });
+    }
+
+    return this.toDto(notification);
+  }
+
+  /**
+   * Check if forecast notification should be skipped (3-day cooldown per category)
+   */
+  private async shouldSkipForecastNotification(
+    userId: string,
+    categoryId: string,
+  ): Promise<boolean> {
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+    // Check for recent forecast notification for this category
+    const recentForecast = await this.prisma.gpsNotification.findFirst({
+      where: {
+        userId,
+        categoryId,
+        createdAt: { gte: threeDaysAgo },
+        metadata: {
+          path: ['type'],
+          equals: 'forecast',
+        },
+      },
+    });
+
+    if (recentForecast) return true;
+
+    // Check daily limit
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const todayCount = await this.prisma.gpsNotification.count({
+      where: {
+        userId,
+        createdAt: { gte: startOfDay },
+      },
+    });
+
+    return todayCount >= FATIGUE_CONFIG.maxPerDayPerUser;
   }
 
   // ==========================================

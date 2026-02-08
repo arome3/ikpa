@@ -21,6 +21,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { FinanceModule } from '../finance/finance.module';
+import { RedisModule } from '../../redis';
 import { FutureSelfController } from './future-self.controller';
 import { FutureSelfService } from './future-self.service';
 import { FutureSelfAgent } from './agents/future-self.agent';
@@ -32,6 +33,7 @@ import { FutureSelfCacheListener } from './future-self-cache.listener';
   imports: [
     PrismaModule,
     FinanceModule,
+    RedisModule,
   ],
   controllers: [FutureSelfController],
   providers: [

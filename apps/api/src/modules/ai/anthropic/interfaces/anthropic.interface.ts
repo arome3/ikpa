@@ -4,6 +4,8 @@
  * Type definitions for Claude API interactions.
  */
 
+import Anthropic from '@anthropic-ai/sdk';
+
 /**
  * Message role for Anthropic API
  */
@@ -108,4 +110,52 @@ export interface ImageSource {
 export interface AnthropicVisionMessage {
   role: MessageRole;
   content: ContentBlock[];
+}
+
+/**
+ * Response from Anthropic API with raw content blocks (for tool_use)
+ *
+ * Unlike AnthropicResponse which extracts text, this preserves the
+ * full content array so callers can process tool_use blocks in an
+ * agentic loop.
+ */
+export interface ToolUseResponse {
+  /** Raw content blocks — may contain text and/or tool_use blocks */
+  content: Anthropic.ContentBlock[];
+  /** Token usage for this turn */
+  usage: TokenUsage;
+  /** Model that generated the response */
+  model: string;
+  /** Stop reason — 'tool_use' means Claude wants to call tools, 'end_turn' means done */
+  stopReason: string | null;
+}
+
+/**
+ * Message content for tool_use conversations
+ * Supports string content, content blocks, and tool_result arrays
+ */
+export type ToolUseMessageContent =
+  | string
+  | Anthropic.ContentBlockParam[];
+
+/**
+ * Message format for tool_use conversations
+ */
+export interface ToolUseMessage {
+  role: MessageRole;
+  content: ToolUseMessageContent;
+}
+
+/**
+ * Options for generateWithTools calls
+ */
+export interface GenerateWithToolsOptions {
+  /** Maximum tokens in response */
+  maxTokens: number;
+  /** System prompt */
+  systemPrompt?: string;
+  /** Custom timeout in ms (overrides default) */
+  timeoutMs?: number;
+  /** Tool definitions for Claude */
+  tools: Anthropic.Tool[];
 }

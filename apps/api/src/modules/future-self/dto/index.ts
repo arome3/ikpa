@@ -5,3 +5,5 @@ export * from './preferences.dto';
 export * from './letter-history.dto';
 export * from './engagement.dto';
 export * from './statistics.dto';
+export * from './conversation.dto';
+export * from './commitment.dto';

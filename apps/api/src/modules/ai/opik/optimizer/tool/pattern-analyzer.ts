@@ -13,7 +13,6 @@ import {
   ToolSelectionRecord,
   ExtractedPattern,
   FeatureBin,
-  ProfileSegment,
   ToolPerformanceStats,
 } from '../interfaces';
 import {
@@ -280,7 +279,7 @@ export class PatternAnalyzer implements IPatternAnalyzer {
           if (typeof value !== 'number' || value > (condition.value as number)) return false;
           break;
         case 'in':
-          if (!Array.isArray(condition.value) || !condition.value.includes(value)) return false;
+          if (!Array.isArray(condition.value) || !(condition.value as unknown[]).includes(value)) return false;
           break;
       }
     }

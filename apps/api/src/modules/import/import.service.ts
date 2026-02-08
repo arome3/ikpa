@@ -6,10 +6,14 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ImportSource, ImportJobStatus, ParsedTransactionStatus } from '@prisma/client';
+import { Resend } from 'resend';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma';
 import { OpikService } from '../ai/opik/opik.service';
+import { IMPORT_EVENTS } from './notifications/import-events';
 
 // Parsers
 import { CsvParserService } from './parsers/csv-parser.service';
@@ -50,10 +54,13 @@ import {
 @Injectable()
 export class ImportService {
   private readonly logger = new Logger(ImportService.name);
+  private readonly resend: Resend | null;
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
     private readonly opikService: OpikService,
+    private readonly eventEmitter: EventEmitter2,
     private readonly csvParser: CsvParserService,
     private readonly pdfParser: PdfParserService,
     private readonly visionParser: VisionParserService,
@@ -62,7 +69,15 @@ export class ImportService {
     private readonly deduplication: DeduplicationService,
     private readonly expenseCreator: ExpenseCreatorService,
     private readonly storage: LocalStorageAdapter,
-  ) {}
+  ) {
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+    if (apiKey) {
+      this.resend = new Resend(apiKey);
+    } else {
+      this.resend = null;
+      this.logger.warn('RESEND_API_KEY not configured — email content fetch will be unavailable');
+    }
+  }
 
   // ==========================================
   // STATEMENT UPLOAD (PDF/CSV)
@@ -290,6 +305,48 @@ export class ImportService {
   // ==========================================
 
   /**
+   * Fetch full email content from Resend's inbound API.
+   *
+   * Resend webhooks only contain metadata (from, to, subject, email_id).
+   * The actual body must be fetched via `emails.receiving.get(emailId)`.
+   */
+  async fetchEmailContent(
+    emailId: string,
+    from: string,
+    to: string[],
+    subject: string,
+  ): Promise<ResendEmailContent> {
+    if (!this.resend) {
+      this.logger.warn('Resend client not configured — returning empty email content');
+      return { from, to, subject, text: '', html: '', attachments: [] };
+    }
+
+    try {
+      const { data, error } = await this.resend.emails.receiving.get(emailId);
+
+      if (error || !data) {
+        this.logger.warn(
+          `Failed to fetch email ${emailId} from Resend: ${error?.message || 'No data returned'}`,
+        );
+        return { from, to, subject, text: '', html: '', attachments: [] };
+      }
+
+      return {
+        from: data.from || from,
+        to: data.to || to,
+        subject: data.subject || subject,
+        text: data.text || '',
+        html: data.html || '',
+        attachments: [], // Attachments require separate API calls if needed
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Resend API error fetching email ${emailId}: ${message}`);
+      return { from, to, subject, text: '', html: '', attachments: [] };
+    }
+  }
+
+  /**
    * Process incoming email from webhook
    */
   async processEmailWebhook(
@@ -351,10 +408,104 @@ export class ImportService {
       }
 
       await this.processAndStoreTransactions(jobId, parseResult);
+
+      // Auto-confirm single high-confidence debit transactions from email forwards
+      await this.tryAutoConfirmEmail(jobId, emailContent.from);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       await this.updateJobStatus(jobId, ImportJobStatus.FAILED, message);
       this.logger.error(`Email processing failed: ${message}`);
+    }
+  }
+
+  /**
+   * Auto-confirm single-transaction email imports.
+   *
+   * Conditions:
+   * - Job source is EMAIL_FORWARD
+   * - Exactly 1 non-duplicate debit transaction
+   * - Confidence >= 0.7
+   *
+   * If met, creates expense automatically and emits confirmation event.
+   */
+  private async tryAutoConfirmEmail(
+    jobId: string,
+    fromEmail: string,
+  ): Promise<void> {
+    try {
+      const job = await this.prisma.importJob.findUnique({
+        where: { id: jobId },
+        select: { userId: true, source: true },
+      });
+
+      if (!job || job.source !== ImportSource.EMAIL_FORWARD) return;
+
+      // Get stored transactions for this job
+      const transactions = await this.prisma.parsedTransaction.findMany({
+        where: { jobId },
+      });
+
+      // Filter to non-duplicate debit transactions
+      const debitTxns = transactions.filter(
+        (t) =>
+          t.status === ParsedTransactionStatus.PENDING &&
+          Number(t.amount) < 0,
+      );
+
+      // Only auto-confirm if exactly 1 eligible transaction with high confidence
+      if (debitTxns.length !== 1) return;
+
+      const txn = debitTxns[0];
+      const confidence = txn.confidence ? Number(txn.confidence) : 0;
+      if (confidence < 0.7) return;
+
+      this.logger.log(
+        `Auto-confirming email import: job ${jobId}, txn ${txn.id} (confidence: ${confidence})`,
+      );
+
+      // Create expense with auto-categorization
+      const result = await this.expenseCreator.createExpenses(
+        job.userId,
+        jobId,
+        [txn.id],
+        'auto',
+      );
+
+      if (result.expensesCreated > 0 && result.expenseIds.length > 0) {
+        // Look up the created expense for the event payload
+        const expense = await this.prisma.expense.findUnique({
+          where: { id: result.expenseIds[0] },
+          select: {
+            id: true,
+            amount: true,
+            currency: true,
+            merchant: true,
+            categoryId: true,
+            date: true,
+            description: true,
+          },
+        });
+
+        if (expense) {
+          this.eventEmitter.emit(IMPORT_EVENTS.EMAIL_AUTO_CONFIRMED, {
+            userId: job.userId,
+            jobId,
+            expenseId: expense.id,
+            amount: Number(expense.amount),
+            currency: expense.currency,
+            merchant: expense.merchant,
+            categoryId: expense.categoryId,
+            date: expense.date,
+            description: expense.description,
+            fromEmail,
+          });
+        }
+      }
+    } catch (error) {
+      // Don't let auto-confirm failure break the pipeline
+      this.logger.warn(
+        `Auto-confirm failed for job ${jobId}: ${error instanceof Error ? error.message : error}`,
+      );
     }
   }
 
@@ -387,6 +538,12 @@ export class ImportService {
           emailAddress,
           secretToken,
         },
+      });
+
+      // Emit event to trigger welcome email
+      this.eventEmitter.emit(IMPORT_EVENTS.IMPORT_EMAIL_CREATED, {
+        userId,
+        emailAddress,
       });
     }
 

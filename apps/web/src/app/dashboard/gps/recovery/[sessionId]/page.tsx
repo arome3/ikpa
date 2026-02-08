@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -15,9 +15,12 @@ import {
   Sparkles,
   ChevronDown,
   AlertCircle,
+  RefreshCw,
+  ListChecks,
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
-import { useGps, RecoveryPath, GoalImpact, BudgetStatus, NonJudgmentalMessage } from '@/hooks/useGps';
+import { useGps, RecoveryPath, GoalImpact, BudgetStatus, NonJudgmentalMessage, CommitmentAtRisk } from '@/hooks/useGps';
+import { ShieldCheck, Users, HeartCrack, Lock } from 'lucide-react';
 
 // ============================================
 // RECOVERY PATH SELECTION PAGE
@@ -26,12 +29,35 @@ import { useGps, RecoveryPath, GoalImpact, BudgetStatus, NonJudgmentalMessage } 
 interface RecoveryData {
   sessionId: string;
   budgetStatus: BudgetStatus;
-  goalImpact: GoalImpact;
+  goalImpact: GoalImpact | null;
   recoveryPaths: RecoveryPath[];
   message: NonJudgmentalMessage;
+  commitmentAtRisk?: CommitmentAtRisk;
 }
 
+const STAKE_TYPE_ICONS: Record<string, typeof Users> = {
+  SOCIAL: Users,
+  ANTI_CHARITY: HeartCrack,
+  LOSS_POOL: Lock,
+};
+const STAKE_TYPE_COLORS: Record<string, string> = {
+  SOCIAL: 'text-purple-400',
+  ANTI_CHARITY: 'text-red-400',
+  LOSS_POOL: 'text-amber-400',
+};
+const RISK_LEVEL_COLORS: Record<string, { border: string; bg: string; text: string }> = {
+  high: { border: 'border-red-500/40', bg: 'bg-red-500/10', text: 'text-red-400' },
+  medium: { border: 'border-amber-500/40', bg: 'bg-amber-500/10', text: 'text-amber-400' },
+  low: { border: 'border-slate-500/40', bg: 'bg-slate-500/10', text: 'text-slate-400' },
+};
+
 const effortColors = {
+  None: {
+    bg: 'from-blue-500/20 to-cyan-500/20',
+    border: 'border-blue-500/30',
+    text: 'text-blue-400',
+    badge: 'bg-blue-500/20 text-blue-300',
+  },
   Low: {
     bg: 'from-green-500/20 to-emerald-500/20',
     border: 'border-green-500/30',
@@ -53,6 +79,7 @@ const effortColors = {
 };
 
 const pathIcons = {
+  category_rebalance: RefreshCw,
   time_adjustment: Clock,
   rate_adjustment: TrendingUp,
   freeze_protocol: Pause,
@@ -63,7 +90,7 @@ export default function RecoverySessionPage() {
   const router = useRouter();
   const sessionId = params.sessionId as string;
 
-  const { getRecoveryPaths, selectPath, isSelectingPath, recalculateData } = useGps();
+  const { getRecoveryPaths, getSession, getSpendingVelocity, selectPath, isSelectingPath, recalculateData } = useGps();
 
   const [recoveryData, setRecoveryData] = useState<RecoveryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,50 +102,84 @@ export default function RecoverySessionPage() {
   } | null>(null);
   const [expandedPath, setExpandedPath] = useState<string | null>(null);
 
+  // Prevent duplicate fetches from dependency changes
+  const hasFetched = useRef(false);
+
   // Load recovery data
   useEffect(() => {
-    const loadData = async () => {
-      // If we have data from recalculate, use it
-      if (recalculateData && recalculateData.sessionId === sessionId) {
-        setRecoveryData({
-          sessionId: recalculateData.sessionId,
-          budgetStatus: recalculateData.budgetStatus,
-          goalImpact: recalculateData.goalImpact,
-          recoveryPaths: recalculateData.recoveryPaths,
-          message: recalculateData.message,
-        });
-        setIsLoading(false);
-        return;
-      }
+    // If we already have data from recalculate, use it immediately
+    if (recalculateData && recalculateData.sessionId === sessionId) {
+      setRecoveryData({
+        sessionId: recalculateData.sessionId,
+        budgetStatus: recalculateData.budgetStatus,
+        goalImpact: recalculateData.goalImpact ?? null,
+        recoveryPaths: recalculateData.recoveryPaths,
+        message: recalculateData.message,
+        commitmentAtRisk: recalculateData.commitmentAtRisk,
+      });
+      setIsLoading(false);
+      hasFetched.current = true;
+      return;
+    }
 
-      // Otherwise fetch from API
+    // Skip if we already fetched for this session
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
+    // Fetch real session data + recovery paths from API
+    const loadData = async () => {
       try {
-        const result = await getRecoveryPaths(sessionId);
-        // We need to make another call to get full session data
-        // For now, construct with what we have
+        const [session, pathsResult] = await Promise.all([
+          getSession(sessionId),
+          getRecoveryPaths(sessionId),
+        ]);
+
+        // Try to get budget details for the category
+        let budgetAmount = 0;
+        let spentAmount = 0;
+        let currency = 'USD';
+        let overagePercent = 0;
+        try {
+          const velocity = await getSpendingVelocity(session.category);
+          budgetAmount = velocity.budget.budgeted.amount;
+          spentAmount = velocity.budget.spent.amount;
+          currency = velocity.budget.budgeted.currency;
+          overagePercent = budgetAmount > 0
+            ? Math.max(0, ((spentAmount - budgetAmount) / budgetAmount) * 100)
+            : 0;
+        } catch {
+          // If velocity unavailable, derive from session overspend
+          spentAmount = session.overspendAmount;
+          overagePercent = 100;
+        }
+
+        const probabilityDrop = session.newProbability - session.previousProbability;
+
         setRecoveryData({
-          sessionId: result.sessionId,
+          sessionId: session.id,
           budgetStatus: {
-            category: result.category,
+            category: session.category,
             categoryId: '',
-            budgeted: { amount: 0, formatted: '', currency: 'NGN' },
-            spent: { amount: 0, formatted: '', currency: 'NGN' },
-            remaining: { amount: 0, formatted: '', currency: 'NGN' },
-            overagePercent: 0,
-            trigger: 'BUDGET_EXCEEDED',
+            budgeted: { amount: budgetAmount, formatted: formatCurrency(budgetAmount, currency), currency },
+            spent: { amount: spentAmount, formatted: formatCurrency(spentAmount, currency), currency },
+            remaining: { amount: budgetAmount - spentAmount, formatted: formatCurrency(budgetAmount - spentAmount, currency), currency },
+            overagePercent,
+            trigger: overagePercent >= 20 ? 'BUDGET_CRITICAL' : 'BUDGET_EXCEEDED',
             period: 'MONTHLY',
           },
-          goalImpact: {
-            goalId: '',
-            goalName: 'Your Goal',
-            goalAmount: { amount: 0, formatted: '', currency: 'NGN' },
+          goalImpact: session.goalId ? {
+            goalId: session.goalId,
+            goalName: session.goalName || session.category,
+            goalAmount: { amount: 0, formatted: '', currency },
             goalDeadline: '',
-            previousProbability: 0.75,
-            newProbability: 0.68,
-            probabilityDrop: -0.07,
-            message: '',
-          },
-          recoveryPaths: result.paths,
+            previousProbability: session.previousProbability,
+            newProbability: session.newProbability,
+            probabilityDrop,
+            message: probabilityDrop < 0
+              ? `Probability decreased by ${Math.abs(probabilityDrop * 100).toFixed(1)} percentage points`
+              : 'Probability unchanged',
+          } : null,
+          recoveryPaths: pathsResult.paths,
           message: {
             tone: 'Supportive',
             headline: "Let's recalculate your route",
@@ -133,7 +194,8 @@ export default function RecoverySessionPage() {
     };
 
     loadData();
-  }, [sessionId, recalculateData, getRecoveryPaths]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, recalculateData]);
 
   const handleSelectPath = async (pathId: string) => {
     setSelectedPathId(pathId);
@@ -293,12 +355,67 @@ export default function RecoverySessionPage() {
           </p>
         </motion.header>
 
+        {/* Stakes at Risk Banner */}
+        {recoveryData?.commitmentAtRisk?.hasActiveCommitment && (
+          <motion.section
+            className="mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            {(() => {
+              const risk = recoveryData.commitmentAtRisk!;
+              const riskColors = RISK_LEVEL_COLORS[risk.riskLevel] || RISK_LEVEL_COLORS.low;
+              return (
+                <div className={cn('p-4 rounded-xl border', riskColors.border, riskColors.bg)}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldCheck className={cn('h-5 w-5', riskColors.text)} />
+                    <span className={cn('text-sm font-semibold', riskColors.text)}>
+                      Stakes at Risk
+                    </span>
+                    {risk.totalStakeAtRisk > 0 && (
+                      <span className="ml-auto text-sm font-bold text-white">
+                        {formatCurrency(risk.totalStakeAtRisk, 'USD')}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 mb-3">{risk.message}</p>
+                  <div className="space-y-1.5">
+                    {risk.contracts.slice(0, 3).map((c) => {
+                      const StakeIcon = STAKE_TYPE_ICONS[c.stakeType] || ShieldCheck;
+                      const stakeColor = STAKE_TYPE_COLORS[c.stakeType] || 'text-slate-400';
+                      return (
+                        <div key={c.id} className="flex items-center gap-2 text-xs">
+                          <StakeIcon className={cn('h-3.5 w-3.5', stakeColor)} />
+                          <span className="text-slate-300 truncate flex-1">{c.goalName}</span>
+                          <span className="text-slate-400">{c.daysRemaining}d left</span>
+                          {c.stakeAmount != null && (
+                            <span className="text-white font-medium">
+                              {formatCurrency(c.stakeAmount, 'USD')}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => router.push('/dashboard/commitments')}
+                    className="mt-3 w-full text-xs text-center py-2 rounded-lg border border-white/10 text-slate-300 hover:bg-white/5 transition-colors"
+                  >
+                    View Commitments
+                  </button>
+                </div>
+              );
+            })()}
+          </motion.section>
+        )}
+
         {/* Impact Summary */}
         <motion.section
           className="mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: recoveryData?.commitmentAtRisk?.hasActiveCommitment ? 0.2 : 0.1 }}
         >
           <div className="p-5 rounded-2xl bg-gradient-to-br from-red-500/10 via-orange-500/10 to-amber-500/10 border border-red-500/20">
             <div className="flex items-center gap-3 mb-4">
@@ -329,46 +446,72 @@ export default function RecoverySessionPage() {
               </div>
             </div>
 
-            {/* Goal Impact */}
-            <div className="pt-4 border-t border-white/10">
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="w-4 h-4 text-slate-400" />
-                <p className="text-sm text-slate-400">Impact on {recoveryData?.goalImpact.goalName}</p>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="text-center">
-                  <p className="text-xs text-slate-500">Before</p>
-                  <p className="text-lg font-bold text-white">
-                    {Math.round((recoveryData?.goalImpact.previousProbability ?? 0) * 100)}%
-                  </p>
+            {/* Goal Impact or Budget-Only Notice */}
+            {recoveryData?.goalImpact ? (
+              <div className="pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="w-4 h-4 text-slate-400" />
+                  <p className="text-sm text-slate-400">Impact on {recoveryData.goalImpact.goalName}</p>
                 </div>
 
-                <div className="flex-1 px-4">
-                  <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div
-                      className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-red-500"
-                      initial={{ width: '100%' }}
-                      animate={{
-                        width: `${((recoveryData?.goalImpact.newProbability ?? 0) / (recoveryData?.goalImpact.previousProbability ?? 1)) * 100}%`,
-                      }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                    />
+                {/* Timeline-based display when available */}
+                {recoveryData.goalImpact.humanReadable ? (
+                  <div className="mb-3">
+                    <p className="text-sm text-white font-medium">
+                      {recoveryData.goalImpact.humanReadable}
+                    </p>
+                    {recoveryData.goalImpact.scheduleStatus && (
+                      <p className="text-xs text-amber-400 mt-1">
+                        {recoveryData.goalImpact.scheduleStatus}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+
+                <div className="flex items-center justify-between">
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500">Before</p>
+                    <p className="text-lg font-bold text-white">
+                      {Math.round((recoveryData.goalImpact.previousProbability ?? 0) * 100)}%
+                    </p>
+                  </div>
+
+                  <div className="flex-1 px-4">
+                    <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div
+                        className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-red-500"
+                        initial={{ width: '100%' }}
+                        animate={{
+                          width: `${((recoveryData.goalImpact.newProbability ?? 0) / (recoveryData.goalImpact.previousProbability ?? 1)) * 100}%`,
+                        }}
+                        transition={{ duration: 1, delay: 0.5 }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500">After</p>
+                    <p className="text-lg font-bold text-red-400">
+                      {Math.round((recoveryData.goalImpact.newProbability ?? 0) * 100)}%
+                    </p>
                   </div>
                 </div>
 
-                <div className="text-center">
-                  <p className="text-xs text-slate-500">After</p>
-                  <p className="text-lg font-bold text-red-400">
-                    {Math.round((recoveryData?.goalImpact.newProbability ?? 0) * 100)}%
-                  </p>
-                </div>
+                <p className="text-xs text-slate-500 mt-2 text-center">
+                  Goal achievement probability
+                </p>
               </div>
-
-              <p className="text-xs text-slate-500 mt-2 text-center">
-                Goal achievement probability
-              </p>
-            </div>
+            ) : (
+              <div className="pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="w-4 h-4 text-slate-400" />
+                  <p className="text-sm text-slate-400">Budget Recovery Mode</p>
+                </div>
+                <p className="text-xs text-slate-500">
+                  No active financial goals. Recovery paths focus on getting your spending back on track.
+                </p>
+              </div>
+            )}
           </div>
         </motion.section>
 
@@ -431,23 +574,35 @@ export default function RecoverySessionPage() {
                       />
                     </div>
 
-                    {/* New probability */}
-                    <div className="mt-4 flex items-center gap-3">
-                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-green-500 to-emerald-400"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${path.newProbability * 100}%` }}
-                          transition={{ duration: 0.8, delay: 0.3 }}
-                        />
+                    {/* New probability or budget impact */}
+                    {path.newProbability !== null ? (
+                      <>
+                        <div className="mt-4 flex items-center gap-3">
+                          <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full bg-gradient-to-r from-green-500 to-emerald-400"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${path.newProbability * 100}%` }}
+                              transition={{ duration: 0.8, delay: 0.3 }}
+                            />
+                          </div>
+                          <span className="text-lg font-bold text-green-400">
+                            {Math.round(path.newProbability * 100)}%
+                          </span>
+                        </div>
+                        {path.timelineEffect ? (
+                          <p className="text-xs text-emerald-400 mt-1">{path.timelineEffect}</p>
+                        ) : (
+                          <p className="text-xs text-slate-500 mt-1">
+                            New goal probability after recovery
+                          </p>
+                        )}
+                      </>
+                    ) : path.budgetImpact ? (
+                      <div className="mt-3 p-2.5 bg-white/5 rounded-lg">
+                        <p className="text-sm text-slate-300">{path.budgetImpact}</p>
                       </div>
-                      <span className="text-lg font-bold text-green-400">
-                        {Math.round(path.newProbability * 100)}%
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      New goal probability after recovery
-                    </p>
+                    ) : null}
                   </button>
 
                   {/* Expanded details */}
@@ -462,6 +617,29 @@ export default function RecoverySessionPage() {
                       >
                         <div className="px-5 pb-5 pt-2 border-t border-white/10">
                           <div className="grid grid-cols-2 gap-3 mb-4">
+                            {path.rebalanceInfo && (
+                              <>
+                                <div className="p-3 bg-white/5 rounded-lg">
+                                  <p className="text-xs text-slate-500">From</p>
+                                  <p className="text-sm font-medium text-white">{path.rebalanceInfo.fromCategory}</p>
+                                </div>
+                                <div className="p-3 bg-white/5 rounded-lg">
+                                  <p className="text-xs text-slate-500">Coverage</p>
+                                  <p className="text-sm font-medium text-white">
+                                    {path.rebalanceInfo.isFullCoverage ? 'Full' : 'Partial'}
+                                  </p>
+                                </div>
+                                <div className="p-3 bg-blue-500/10 rounded-lg col-span-2 border border-blue-500/20">
+                                  <p className="text-xs text-blue-400">Surplus Available</p>
+                                  <p className="text-sm font-medium text-white">
+                                    {formatCurrency(path.rebalanceInfo.availableSurplus, recoveryData?.budgetStatus.remaining.currency ?? 'NGN')}
+                                    {' '}covers{' '}
+                                    {formatCurrency(path.rebalanceInfo.coverageAmount, recoveryData?.budgetStatus.remaining.currency ?? 'NGN')}
+                                    {' '}of your overage
+                                  </p>
+                                </div>
+                              </>
+                            )}
                             {path.timelineImpact && (
                               <div className="p-3 bg-white/5 rounded-lg">
                                 <p className="text-xs text-slate-500">Timeline</p>
@@ -481,6 +659,27 @@ export default function RecoverySessionPage() {
                               </div>
                             )}
                           </div>
+
+                          {/* Concrete Daily Actions */}
+                          {path.concreteActions && path.concreteActions.length > 0 && (
+                            <div className="mb-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <ListChecks className="w-4 h-4 text-emerald-400" />
+                                <p className="text-sm font-medium text-emerald-300">Things you can do today</p>
+                              </div>
+                              <div className="space-y-2">
+                                {path.concreteActions.map((action, actionIdx) => (
+                                  <div
+                                    key={actionIdx}
+                                    className="flex items-start gap-2.5 p-2.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                                    <p className="text-sm text-slate-300">{action}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           <button
                             onClick={() => handleSelectPath(path.id)}

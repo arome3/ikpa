@@ -50,6 +50,9 @@ import {
   VisionImage,
   GenerateVisionOptions,
   ContentBlock,
+  ToolUseResponse,
+  ToolUseMessage,
+  GenerateWithToolsOptions,
 } from './interfaces';
 
 @Injectable()
@@ -471,6 +474,96 @@ export class AnthropicService implements OnModuleInit {
         const delay = this.getRetryDelay(attempt);
         this.logger.warn(
           `Anthropic Vision API error (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay}ms: ${errorMessage}`,
+        );
+
+        await this.sleep(delay);
+      }
+    }
+
+    // All retries exhausted
+    if (lastError instanceof Anthropic.APIError) {
+      if (lastError.status === 429) {
+        throw new AnthropicRateLimitException();
+      }
+    }
+
+    throw lastError;
+  }
+
+  /**
+   * Generate a message using Claude with tool_use support
+   *
+   * Unlike generateMessage() which extracts text, this returns the raw
+   * content blocks array so the caller can process tool_use blocks in
+   * an agentic loop.
+   *
+   * @param messages - Array of messages (supports tool_result content blocks)
+   * @param options - Generation options including tool definitions
+   * @returns Raw content blocks, stop_reason, and usage
+   * @throws AnthropicServiceUnavailableException if service is not available
+   */
+  async generateWithTools(
+    messages: ToolUseMessage[],
+    options: GenerateWithToolsOptions,
+  ): Promise<ToolUseResponse> {
+    if (!this.isAvailable()) {
+      throw new AnthropicServiceUnavailableException('API key not configured');
+    }
+
+    // Check circuit breaker
+    if (this.isCircuitOpen()) {
+      this.logger.warn('Circuit breaker is open, rejecting tool_use request');
+      throw new AnthropicServiceUnavailableException('Circuit breaker is open');
+    }
+
+    const { maxTokens, systemPrompt, timeoutMs = DEFAULT_API_TIMEOUT_MS, tools } = options;
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await this.withTimeout(
+          this.client!.messages.create({
+            model: this.model,
+            max_tokens: maxTokens,
+            messages: messages.map((m) => ({
+              role: m.role,
+              content: m.content as string | Anthropic.ContentBlockParam[],
+            })),
+            tools,
+            ...(systemPrompt && { system: systemPrompt }),
+          }),
+          timeoutMs,
+          'Anthropic Tool Use API call',
+        );
+
+        // Record success for circuit breaker
+        this.recordSuccess();
+
+        return {
+          content: response.content,
+          usage: {
+            promptTokens: response.usage.input_tokens,
+            completionTokens: response.usage.output_tokens,
+            totalTokens: response.usage.input_tokens + response.usage.output_tokens,
+          },
+          model: response.model,
+          stopReason: response.stop_reason,
+        };
+      } catch (error) {
+        lastError = error;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        if (!this.isRetryableError(error) || attempt === MAX_RETRIES) {
+          this.logger.error(
+            `Anthropic Tool Use API error (attempt ${attempt}/${MAX_RETRIES}, non-retryable): ${errorMessage}`,
+          );
+          this.recordFailure();
+          break;
+        }
+
+        const delay = this.getRetryDelay(attempt);
+        this.logger.warn(
+          `Anthropic Tool Use API error (attempt ${attempt}/${MAX_RETRIES}), retrying in ${delay}ms: ${errorMessage}`,
         );
 
         await this.sleep(delay);

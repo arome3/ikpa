@@ -163,6 +163,21 @@ export class EmailService {
   }
 
   /**
+   * Send a custom email with arbitrary HTML/text content
+   *
+   * Public wrapper around the internal sendEmail() with retry logic.
+   * Used by other modules (e.g., import confirmation emails).
+   */
+  async sendCustomEmail(
+    to: string,
+    subject: string,
+    html: string,
+    text: string,
+  ): Promise<EmailResult> {
+    return this.sendEmail({ to, subject, html, text });
+  }
+
+  /**
    * Internal method to send email via Resend with retry logic
    *
    * Implements exponential backoff for transient failures.

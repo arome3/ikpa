@@ -19,7 +19,42 @@ export type BudgetTrigger = 'BUDGET_WARNING' | 'BUDGET_EXCEEDED' | 'BUDGET_CRITI
 /**
  * Effort level required for a recovery path
  */
-export type EffortLevel = 'Low' | 'Medium' | 'High';
+export type EffortLevel = 'None' | 'Low' | 'Medium' | 'High';
+
+/**
+ * Forecast risk level based on projected spending
+ * - safe: projected spending < 80% of budget
+ * - caution: projected spending 80-100% of budget
+ * - warning: projected spending > 100% of budget
+ */
+export type ForecastRiskLevel = 'safe' | 'caution' | 'warning';
+
+/**
+ * Proactive budget forecast for a single category
+ * Used to warn users BEFORE they overspend
+ */
+export interface BudgetForecast {
+  /** Category ID */
+  categoryId: string;
+  /** Category name */
+  categoryName: string;
+  /** Budgeted amount for the period */
+  budgeted: number;
+  /** Amount spent so far */
+  spent: number;
+  /** Projected total spending at end of period */
+  projectedTotal: number;
+  /** Projected overage amount (projectedTotal - budgeted), 0 if under */
+  projectedOverage: number;
+  /** Days until projected spending crosses budget line, null if won't exceed */
+  daysUntilExceed: number | null;
+  /** Suggested daily limit to stay within remaining budget */
+  suggestedDailyLimit: number;
+  /** Risk level based on projected spending vs budget */
+  riskLevel: ForecastRiskLevel;
+  /** Currency code */
+  currency: string;
+}
 
 /**
  * Monetary value with both raw amount and formatted string
@@ -76,6 +111,26 @@ export interface GoalImpact {
   probabilityDrop: number;
   /** Human-readable impact message */
   message: string;
+  /** Projected date the user will reach this goal */
+  projectedDate?: Date;
+  /** Human-readable timeline (e.g. "You'll likely reach Emergency Fund by August 2026") */
+  humanReadable?: string;
+  /** Schedule status (e.g. "3 months ahead of schedule" or "2 months behind schedule") */
+  scheduleStatus?: string;
+}
+
+/**
+ * Timeline translation for a goal - converts probabilities to concrete dates
+ */
+export interface TimelineTranslation {
+  /** Projected date of goal achievement */
+  projectedDate: Date;
+  /** Human-readable summary */
+  humanReadable: string;
+  /** Relative status (ahead/behind/on track) */
+  scheduleStatus: string;
+  /** Months needed at current pace */
+  monthsToGoal: number;
 }
 
 /**
@@ -88,8 +143,8 @@ export interface RecoveryPath {
   name: string;
   /** Human-readable description of what this path involves */
   description: string;
-  /** Projected probability if this path is followed */
-  newProbability: number;
+  /** Projected probability if this path is followed (null for budget-only mode) */
+  newProbability: number | null;
   /** Effort level required */
   effort: EffortLevel;
   /** How the timeline changes (e.g., "+2 weeks") */
@@ -98,6 +153,20 @@ export interface RecoveryPath {
   savingsImpact?: string;
   /** Category freeze duration if applicable */
   freezeDuration?: string;
+  /** Rebalance info for category_rebalance path */
+  rebalanceInfo?: {
+    fromCategory: string;
+    fromCategoryId: string;
+    availableSurplus: number;
+    coverageAmount: number;
+    isFullCoverage: boolean;
+  };
+  /** Concrete daily actions the user can take to save money */
+  concreteActions?: string[];
+  /** Budget impact description for budget-only mode (no goals) */
+  budgetImpact?: string;
+  /** Timeline effect description (e.g. "Moves projected date from October to August") */
+  timelineEffect?: string;
 }
 
 /**
@@ -139,14 +208,29 @@ export interface RecoveryResponse {
   sessionId: string;
   /** Current budget status */
   budgetStatus: BudgetStatus;
-  /** Impact on the user's primary goal (for backwards compatibility) */
-  goalImpact: GoalImpact;
-  /** Impact on all active goals (multi-goal assessment) */
-  multiGoalImpact?: MultiGoalImpact;
+  /** Impact on the user's primary goal (null when no goals exist) */
+  goalImpact: GoalImpact | null;
+  /** Impact on all active goals (null when no goals exist) */
+  multiGoalImpact?: MultiGoalImpact | null;
   /** Three recovery path options */
   recoveryPaths: RecoveryPath[];
   /** Non-judgmental supportive message */
   message: NonJudgmentalMessage;
+  /** Active commitment contracts at risk due to overspending */
+  commitmentAtRisk?: {
+    hasActiveCommitment: boolean;
+    contracts: Array<{
+      id: string;
+      goalId: string;
+      goalName: string;
+      stakeType: string;
+      stakeAmount: number | null;
+      daysRemaining: number;
+    }>;
+    riskLevel: 'none' | 'low' | 'medium' | 'high';
+    totalStakeAtRisk: number;
+    message: string;
+  };
 }
 
 /**
@@ -165,7 +249,7 @@ export interface AdjustedSimulationInput {
     incomeGrowthRate: number;
   };
   /** Adjustment type */
-  adjustmentType: 'time' | 'rate' | 'freeze';
+  adjustmentType: 'time' | 'rate' | 'freeze' | 'rebalance';
   /** Weeks to extend deadline (for time adjustment) */
   weeksExtension?: number;
   /** Additional savings rate (for rate adjustment) */
@@ -174,6 +258,88 @@ export interface AdjustedSimulationInput {
   freezeAmountSaved?: number;
 }
 
+/**
+ * Spending velocity analysis for a budget category
+ * Used by drift detection to determine if spending pace will lead to overspending
+ */
+export interface SpendingVelocity {
+  /** Ratio of actual vs safe burn rate (1.0 = on pace, >1.0 = overpacing) */
+  velocityRatio: number;
+  /** Actual daily spending rate */
+  spendingVelocity: number;
+  /** Safe daily spending rate to stay within budget */
+  safeBurnRate: number;
+  /** Days elapsed since period start */
+  daysElapsed: number;
+  /** Days remaining in budget period */
+  daysRemaining: number;
+  /** Projected date when budget will be exceeded, or null if on pace */
+  projectedOverspendDate: Date | null;
+  /** Target daily spend to stay within remaining budget */
+  courseCorrectionDaily: number;
+  /** Whether current pace will lead to overspending */
+  willOverspend: boolean;
+}
+
+/**
+ * Budget insight from spending pattern analysis
+ *
+ * Identifies budgets that are consistently unrealistic based on
+ * historical spending data (3-month lookback). If someone overspends
+ * on Food 3 months in a row, the budget is wrong, not the person.
+ */
+export interface BudgetInsight {
+  /** Unique identifier for the insight */
+  id: string;
+  /** Type of insight detected */
+  type: 'UNREALISTIC_BUDGET' | 'CURRENT_MONTH_EXCEEDED' | 'CONSISTENT_SURPLUS' | 'NEW_CATEGORY';
+  /** Category name */
+  category: string;
+  /** Category ID for database reference */
+  categoryId: string;
+  /** Current budgeted amount */
+  budgeted: number;
+  /** Average monthly spending over the lookback period */
+  averageSpent: number;
+  /** Number of months where spending exceeded budget */
+  monthsExceeded: number;
+  /** Monthly spending history for the lookback period */
+  monthlyHistory: { month: string; spent: number }[];
+  /** Suggested new budget amount */
+  suggestedBudget: number;
+  /** Offset suggestion: which surplus category can absorb the increase */
+  offsetSuggestion?: {
+    categoryId: string;
+    categoryName: string;
+    currentBudget: number;
+    suggestedReduction: number;
+    averageSurplus: number;
+  };
+  /** Human-readable message explaining the insight */
+  message: string;
+}
+
+/**
+ * Request body for applying a budget insight adjustment
+ */
+export interface ApplyBudgetInsightInput {
+  /** Category ID of the underfunded budget */
+  categoryId: string;
+  /** New budget amount for the underfunded category */
+  suggestedBudget: number;
+  /** Optional: category ID of the surplus category to offset */
+  offsetCategoryId?: string;
+  /** Optional: amount to reduce from the offset category */
+  offsetAmount?: number;
+}
+
+/**
+ * Budget insight from spending pattern analysis
+ *
+ * Identifies budgets that are consistently unrealistic based on
+ * historical spending data (3-month lookback). If someone overspends
+ * on Food 3 months in a row, the budget is wrong, not the person.
+ */
 /**
  * Recovery path configuration for generating paths
  */
@@ -188,4 +354,54 @@ export interface RecoveryPathConfig {
   effort: EffortLevel;
   /** Function to calculate the adjustment */
   calculateAdjustment: (overspendAmount: number, monthlyIncome: number) => AdjustedSimulationInput['adjustmentType'];
+}
+
+/**
+ * Recovery progress tracking
+ * Tracks whether a selected recovery path is actually working
+ */
+export interface RecoveryProgress {
+  sessionId: string;
+  pathId: string;
+  pathName: string;
+  startDate: Date;
+  endDate: Date;
+  daysTotal: number;
+  daysElapsed: number;
+  daysRemaining: number;
+  adherence: number;
+  status: 'on_track' | 'at_risk' | 'completed' | 'failed';
+  actualSaved: number;
+  targetSaved: number;
+  message: string;
+}
+
+/**
+ * Historical recovery record for past recovery sessions
+ */
+export interface RecoveryHistoryEntry {
+  date: Date;
+  category: string;
+  pathChosen: string;
+  target: number;
+  actual: number;
+  success: boolean;
+}
+
+/**
+ * Spending breakdown for a budget category
+ * Shows where the money is going within a category
+ */
+export interface SpendingBreakdown {
+  categoryId: string;
+  categoryName: string;
+  totalSpent: number;
+  budgeted: number;
+  breakdown: Array<{
+    label: string;
+    amount: number;
+    percent: number;
+    count: number;
+  }>;
+  insight: string;
 }

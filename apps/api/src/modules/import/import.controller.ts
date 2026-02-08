@@ -60,6 +60,7 @@ import {
   MAX_SCREENSHOTS_PER_UPLOAD,
   STATEMENT_UPLOAD_LIMIT_PER_HOUR,
   SCREENSHOT_UPLOAD_LIMIT_PER_HOUR,
+  IMPORT_EMAIL_DOMAIN,
 } from './constants';
 import { ImportEmailWebhookInvalidException } from './exceptions';
 
@@ -263,7 +264,7 @@ export class ImportController {
 
     // Find recipient import email
     const recipientEmail = dto.data.to.find((email) =>
-      email.includes('@import.ikpa.app'),
+      email.endsWith(`@${IMPORT_EMAIL_DOMAIN}`),
     );
 
     if (!recipientEmail) {
@@ -273,17 +274,13 @@ export class ImportController {
       };
     }
 
-    // Fetch full email content from Resend API
-    // Note: In production, implement Resend API call to fetch body/attachments
-    // For now, we'll create a placeholder content object
-    const emailContent = {
-      from: dto.data.from,
-      to: dto.data.to,
-      subject: dto.data.subject,
-      text: '', // Would be fetched from Resend API
-      html: '',
-      attachments: [],
-    };
+    // Fetch full email content from Resend's inbound API
+    const emailContent = await this.importService.fetchEmailContent(
+      dto.data.email_id,
+      dto.data.from,
+      dto.data.to,
+      dto.data.subject,
+    );
 
     const result = await this.importService.processEmailWebhook(
       recipientEmail,

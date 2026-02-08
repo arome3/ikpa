@@ -1,5 +1,7 @@
 # IKPA
+
 ## Product Specification Document
+
 ### AI-Powered Personal Finance Co-Pilot for Young Africans
 
 ---
@@ -40,7 +42,7 @@ Ikpa is not a fintech app. It is a **financial intelligence platform**—a lens 
 
 ### 1.2 The One-Liner
 
-> *"See your money clearly. Understand it deeply. Plan it wisely."*
+> _"See your money clearly. Understand it deeply. Plan it wisely."_
 
 ### 1.3 The Core Insight
 
@@ -56,14 +58,14 @@ Young Africans don't have a financial literacy problem—they have a **financial
 
 ### 1.4 What Makes Ikpa Different
 
-| Traditional Finance Apps | Ikpa |
-|--------------------------|------|
-| Show you numbers | Explains what numbers mean for *your* life |
-| Track expenses | Reveals patterns and predicts consequences |
-| Generic advice | Context-aware guidance for African realities |
-| Static dashboards | Dynamic AI reasoning that adapts to you |
-| Focus on transactions | Focus on understanding and transformation |
-| Create anxiety | Creates agency |
+| Traditional Finance Apps | Ikpa                                         |
+| ------------------------ | -------------------------------------------- |
+| Show you numbers         | Explains what numbers mean for _your_ life   |
+| Track expenses           | Reveals patterns and predicts consequences   |
+| Generic advice           | Context-aware guidance for African realities |
+| Static dashboards        | Dynamic AI reasoning that adapts to you      |
+| Focus on transactions    | Focus on understanding and transformation    |
+| Create anxiety           | Creates agency                               |
 
 ### 1.5 The Transformation We Enable
 
@@ -80,6 +82,7 @@ Young Africans don't have a financial literacy problem—they have a **financial
 **Ikpa** — "Purse" in Igbo (Nigerian language)
 
 The name was chosen because:
+
 - It's short, memorable, and easy to pronounce across languages
 - It connects to a tangible, everyday object associated with money
 - It's rooted in African identity, not imported terminology
@@ -94,6 +97,7 @@ The name was chosen because:
 **Financial Intelligence Platform** (not fintech, not banking, not investment app)
 
 This positioning:
+
 - Avoids fintech compliance and regulatory complexity
 - Sets realistic expectations (no ROI promises)
 - Reduces user fear around scams and fraud
@@ -101,13 +105,13 @@ This positioning:
 
 ### 2.4 Brand Principles
 
-| Principle | What It Means |
-|-----------|---------------|
-| **Clarity over complexity** | We simplify without dumbing down |
-| **Agency over anxiety** | We empower, never shame |
-| **Context over copying** | We're built for African realities, not imported assumptions |
-| **Guidance over control** | We inform decisions; users make them |
-| **Transformation over transactions** | We change how people think, not just what they do |
+| Principle                            | What It Means                                               |
+| ------------------------------------ | ----------------------------------------------------------- |
+| **Clarity over complexity**          | We simplify without dumbing down                            |
+| **Agency over anxiety**              | We empower, never shame                                     |
+| **Context over copying**             | We're built for African realities, not imported assumptions |
+| **Guidance over control**            | We inform decisions; users make them                        |
+| **Transformation over transactions** | We change how people think, not just what they do           |
 
 ### 2.5 Voice & Tone
 
@@ -126,6 +130,7 @@ Ikpa speaks like a **knowledgeable friend who happens to be great with money**�
 ### 3.1 The Surface Problem
 
 Young Africans struggle to manage their finances effectively, leading to:
+
 - Chronic financial stress
 - Inability to build wealth over time
 - Vulnerability to economic shocks
@@ -136,43 +141,43 @@ Young Africans struggle to manage their finances effectively, leading to:
 
 #### 3.2.1 Systemic Factors
 
-| Factor | Impact |
-|--------|--------|
-| **No financial education in schools** | Most curricula don't include personal finance |
-| **Irrelevant available resources** | Western advice assumes stable income, reliable banks, different asset classes |
-| **Distrust of institutions** | History of bank failures, predatory fees, and inaccessible services |
-| **Informal economy dominance** | Irregular, cash-based income makes traditional tools useless |
-| **Economic volatility** | Currency devaluation, inflation, and instability make planning feel pointless |
+| Factor                                | Impact                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------- |
+| **No financial education in schools** | Most curricula don't include personal finance                                 |
+| **Irrelevant available resources**    | Western advice assumes stable income, reliable banks, different asset classes |
+| **Distrust of institutions**          | History of bank failures, predatory fees, and inaccessible services           |
+| **Informal economy dominance**        | Irregular, cash-based income makes traditional tools useless                  |
+| **Economic volatility**               | Currency devaluation, inflation, and instability make planning feel pointless |
 
 #### 3.2.2 Cultural Factors
 
-| Factor | Impact |
-|--------|--------|
-| **Extended family obligations** | Income is often treated as collective, making personal planning complex |
-| **Social pressure to display success** | Consumption prioritized over saving to maintain appearances |
-| **Money as taboo topic** | Lack of open conversation about finances within families |
-| **Shame around financial struggles** | Prevents people from seeking help or admitting challenges |
+| Factor                                 | Impact                                                                  |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| **Extended family obligations**        | Income is often treated as collective, making personal planning complex |
+| **Social pressure to display success** | Consumption prioritized over saving to maintain appearances             |
+| **Money as taboo topic**               | Lack of open conversation about finances within families                |
+| **Shame around financial struggles**   | Prevents people from seeking help or admitting challenges               |
 
 #### 3.2.3 Psychological Factors
 
-| Factor | Impact |
-|--------|--------|
-| **Present bias** | Immediate needs consistently override future planning |
-| **Future self disconnection** | The person you'll be in 10 years feels like a stranger |
-| **Learned helplessness** | "I don't earn enough to plan" becomes a self-fulfilling prophecy |
-| **Information overwhelm** | Too much conflicting advice leads to paralysis |
-| **Lack of visualization** | Abstract numbers don't create emotional motivation |
+| Factor                        | Impact                                                           |
+| ----------------------------- | ---------------------------------------------------------------- |
+| **Present bias**              | Immediate needs consistently override future planning            |
+| **Future self disconnection** | The person you'll be in 10 years feels like a stranger           |
+| **Learned helplessness**      | "I don't earn enough to plan" becomes a self-fulfilling prophecy |
+| **Information overwhelm**     | Too much conflicting advice leads to paralysis                   |
+| **Lack of visualization**     | Abstract numbers don't create emotional motivation               |
 
 ### 3.3 Why Existing Solutions Fail
 
-| Solution | Why It Fails |
-|----------|--------------|
+| Solution                       | Why It Fails                                                                |
+| ------------------------------ | --------------------------------------------------------------------------- |
 | **Traditional budgeting apps** | Show numbers without explaining meaning; don't account for irregular income |
-| **Western finance apps** | Assume 401ks, credit scores, stable currency—irrelevant to African context |
-| **Bank-provided tools** | Focus on transactions, not education; low trust |
-| **Financial literacy courses** | Static content doesn't personalize; knowledge ≠ behavior change |
-| **Investment apps** | Jump to advanced concepts before basics are understood |
-| **Generic AI chatbots** | No persistent context; can't track progress over time |
+| **Western finance apps**       | Assume 401ks, credit scores, stable currency—irrelevant to African context  |
+| **Bank-provided tools**        | Focus on transactions, not education; low trust                             |
+| **Financial literacy courses** | Static content doesn't personalize; knowledge ≠ behavior change             |
+| **Investment apps**            | Jump to advanced concepts before basics are understood                      |
+| **Generic AI chatbots**        | No persistent context; can't track progress over time                       |
 
 ### 3.4 The Opportunity
 
@@ -192,9 +197,10 @@ Young Africans struggle to manage their finances effectively, leading to:
 **Age:** 26  
 **Location:** Lagos, Nigeria  
 **Income:** ₦450,000/month (employed) + ₦80,000/month (side hustle, irregular)  
-**Education:** University graduate  
+**Education:** University graduate
 
 **Financial Situation:**
+
 - Has a salary but doesn't know where it goes
 - Supports two younger siblings' education
 - Wants to save but "something always comes up"
@@ -203,12 +209,14 @@ Young Africans struggle to manage their finances effectively, leading to:
 - Rents an apartment; dreams of owning land
 
 **Pain Points:**
+
 - "I make decent money but I'm always broke by month-end"
 - "I don't understand investing—it feels like gambling"
 - "My family thinks I'm rich because I have a job, but I'm barely surviving"
 - "Every financial app feels like it's made for Americans"
 
 **What Chidi Needs:**
+
 - Clear picture of where money actually goes
 - Understanding of how to balance personal goals with family obligations
 - Safe space to learn without judgment
@@ -220,9 +228,10 @@ Young Africans struggle to manage their finances effectively, leading to:
 **Age:** 23  
 **Location:** Accra, Ghana  
 **Income:** Variable (₵3,000-8,000/month depending on gigs)  
-**Education:** HND, self-taught digital skills  
+**Education:** HND, self-taught digital skills
 
 **Financial Situation:**
+
 - Multiple income streams (freelance design, social media management, small trades)
 - Income varies wildly month to month
 - No formal employment, no pension, no benefits
@@ -230,12 +239,14 @@ Young Africans struggle to manage their finances effectively, leading to:
 - Dreams of starting a proper agency
 
 **Pain Points:**
+
 - "Budgeting apps assume I earn the same amount every month"
 - "I never know if I should spend or save because next month is uncertain"
 - "I want to start a business but don't know how much I need"
 - "My susu helps but I need to understand the bigger picture"
 
 **What Amara Needs:**
+
 - Tools designed for variable income
 - Understanding of cash flow management for irregular earners
 - Simulation of business scenarios before committing
@@ -247,9 +258,10 @@ Young Africans struggle to manage their finances effectively, leading to:
 **Age:** 19  
 **Location:** Nairobi, Kenya  
 **Income:** KSh 35,000/month (entry-level job)  
-**Education:** Just completed secondary school  
+**Education:** Just completed secondary school
 
 **Financial Situation:**
+
 - First real job, first real income
 - Lives with family, minimal expenses currently
 - No financial habits formed yet
@@ -257,12 +269,14 @@ Young Africans struggle to manage their finances effectively, leading to:
 - Knows nothing about investing, tax, or long-term planning
 
 **Pain Points:**
+
 - "I finally have money but I don't know what to do with it"
 - "Everyone gives different advice"
 - "Saving feels pointless when I earn so little"
 - "I don't want to ask my parents about money—they'll judge me"
 
 **What Kwame Needs:**
+
 - Foundation-level financial education
 - Habit formation before bad patterns set in
 - Visualization of long-term impact of early decisions
@@ -270,15 +284,15 @@ Young Africans struggle to manage their finances effectively, leading to:
 
 ### 4.4 User Needs Summary
 
-| Need Category | What Users Want |
-|---------------|-----------------|
-| **Clarity** | "Show me exactly where I stand—no sugarcoating" |
-| **Understanding** | "Explain it like I'm smart but new to this" |
-| **Simulation** | "Let me see what happens before I decide" |
-| **Guidance** | "Tell me what to prioritize, but let me choose" |
-| **Transformation** | "Help me become someone who's good with money" |
-| **Context** | "Understand my reality—family obligations, irregular income, naira volatility" |
-| **Safety** | "Don't touch my money; I've been burned before" |
+| Need Category      | What Users Want                                                                |
+| ------------------ | ------------------------------------------------------------------------------ |
+| **Clarity**        | "Show me exactly where I stand—no sugarcoating"                                |
+| **Understanding**  | "Explain it like I'm smart but new to this"                                    |
+| **Simulation**     | "Let me see what happens before I decide"                                      |
+| **Guidance**       | "Tell me what to prioritize, but let me choose"                                |
+| **Transformation** | "Help me become someone who's good with money"                                 |
+| **Context**        | "Understand my reality—family obligations, irregular income, naira volatility" |
+| **Safety**         | "Don't touch my money; I've been burned before"                                |
 
 ---
 
@@ -288,34 +302,34 @@ Ikpa is built on **five integrated layers**, each serving a distinct function wh
 
 ### 5.1 Layer 1: Financial Lens (Clarity)
 
-> *"Where do I actually stand?"*
+> _"Where do I actually stand?"_
 
 The Financial Lens provides users with an honest, comprehensive view of their current financial reality.
 
 #### 5.1.1 Data Inputs
 
-| Category | Data Points |
-|----------|-------------|
-| **Income** | Salary, side hustles, business income, gifts, irregular earnings, rental income |
-| **Expenses** | Fixed (rent, utilities, subscriptions), variable (food, transport, entertainment), irregular (emergencies, celebrations) |
-| **Debts** | Formal loans, credit cards, informal debts (family/friends), buy-now-pay-later |
-| **Savings** | Bank accounts, mobile money, cash reserves, ajo/esusu/susu contributions |
-| **Investments** | Declared holdings (stocks, crypto, real estate, business stakes)—tracked, not executed |
-| **Obligations** | Family support, school fees for dependents, community contributions |
-| **Context** | Location (for tax and cost-of-living), employment type, income stability |
+| Category        | Data Points                                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Income**      | Salary, side hustles, business income, gifts, irregular earnings, rental income                                          |
+| **Expenses**    | Fixed (rent, utilities, subscriptions), variable (food, transport, entertainment), irregular (emergencies, celebrations) |
+| **Debts**       | Formal loans, credit cards, informal debts (family/friends), buy-now-pay-later                                           |
+| **Savings**     | Bank accounts, mobile money, cash reserves, ajo/esusu/susu contributions                                                 |
+| **Investments** | Declared holdings (stocks, crypto, real estate, business stakes)—tracked, not executed                                   |
+| **Obligations** | Family support, school fees for dependents, community contributions                                                      |
+| **Context**     | Location (for tax and cost-of-living), employment type, income stability                                                 |
 
 #### 5.1.2 AI-Generated Outputs
 
-| Metric | What It Reveals | Why It Matters |
-|--------|-----------------|----------------|
-| **Cash Flow Health Score (0-100)** | Overall financial pulse | Single number to track over time |
-| **Burn Rate** | How fast you're spending relative to income | Identifies unsustainable patterns |
-| **Savings Rate** | Percentage of income retained | Core indicator of wealth-building capacity |
-| **Runway** | Months you survive if income stops | Measures true financial security |
-| **Dependency Ratio** | Financial obligations to others vs. self | Unique to African context; often ignored |
-| **Vulnerability Index** | Exposure to shocks (job loss, health, FX) | Identifies risks before they materialize |
-| **Income Stability Score** | Predictability of earnings | Critical for planning with irregular income |
-| **Net Worth Trajectory** | Direction and speed of wealth change | Shows if you're building or depleting |
+| Metric                             | What It Reveals                             | Why It Matters                              |
+| ---------------------------------- | ------------------------------------------- | ------------------------------------------- |
+| **Cash Flow Health Score (0-100)** | Overall financial pulse                     | Single number to track over time            |
+| **Burn Rate**                      | How fast you're spending relative to income | Identifies unsustainable patterns           |
+| **Savings Rate**                   | Percentage of income retained               | Core indicator of wealth-building capacity  |
+| **Runway**                         | Months you survive if income stops          | Measures true financial security            |
+| **Dependency Ratio**               | Financial obligations to others vs. self    | Unique to African context; often ignored    |
+| **Vulnerability Index**            | Exposure to shocks (job loss, health, FX)   | Identifies risks before they materialize    |
+| **Income Stability Score**         | Predictability of earnings                  | Critical for planning with irregular income |
+| **Net Worth Trajectory**           | Direction and speed of wealth change        | Shows if you're building or depleting       |
 
 #### 5.1.3 Design Principles for the Lens
 
@@ -340,7 +354,7 @@ Savings Rate: 8.5%
 Runway: 2.1 months
 Dependency Ratio: 23% (₦120,000/month supporting family)
 
-⚠️ Vulnerability Alert: Your runway is below the recommended 3 months. 
+⚠️ Vulnerability Alert: Your runway is below the recommended 3 months.
    One major expense could create a debt cycle.
 
 📈 Progress: You've increased your savings rate from 3% to 8.5% in 4 months.
@@ -350,45 +364,48 @@ Dependency Ratio: 23% (₦120,000/month supporting family)
 
 ### 5.2 Layer 2: Financial Educator (Understanding)
 
-> *"What does this actually mean for me?"*
+> _"What does this actually mean for me?"_
 
 Most apps show numbers. Ikpa explains them—in context, in plain language, at the right moment.
 
 #### 5.2.1 Core Capabilities
 
-| Capability | Description |
-|------------|-------------|
-| **Contextual Teaching** | Explains concepts when they become relevant to the user's situation |
-| **Plain-Language Translation** | Converts jargon into understandable terms without dumbing down |
-| **Misconception Detection** | Identifies and gently corrects common misunderstandings |
-| **Progressive Complexity** | Explanations mature as user's financial literacy grows |
-| **Cultural Context** | Explains why advice differs from what they might hear elsewhere |
+| Capability                     | Description                                                         |
+| ------------------------------ | ------------------------------------------------------------------- |
+| **Contextual Teaching**        | Explains concepts when they become relevant to the user's situation |
+| **Plain-Language Translation** | Converts jargon into understandable terms without dumbing down      |
+| **Misconception Detection**    | Identifies and gently corrects common misunderstandings             |
+| **Progressive Complexity**     | Explanations mature as user's financial literacy grows              |
+| **Cultural Context**           | Explains why advice differs from what they might hear elsewhere     |
 
 #### 5.2.2 Just-In-Time Education Triggers
 
-| Trigger | Educational Response |
-|---------|----------------------|
-| User's savings rate drops | Explain savings rate impact with their specific numbers |
-| User adds a new debt | Explain interest mechanics and total cost of borrowing |
-| User receives a windfall | Explain decision framework for unexpected money |
-| Currency devalues significantly | Explain FX impact on their purchasing power |
-| User asks about investing | Assess readiness; explain prerequisites before products |
+| Trigger                         | Educational Response                                    |
+| ------------------------------- | ------------------------------------------------------- |
+| User's savings rate drops       | Explain savings rate impact with their specific numbers |
+| User adds a new debt            | Explain interest mechanics and total cost of borrowing  |
+| User receives a windfall        | Explain decision framework for unexpected money         |
+| Currency devalues significantly | Explain FX impact on their purchasing power             |
+| User asks about investing       | Assess readiness; explain prerequisites before products |
 
 #### 5.2.3 Example Educational Interactions
 
 **Savings Rate Explanation:**
+
 > "Your savings rate is 8.5%. For someone with your income volatility (your side hustle varies by 40% month-to-month), this means one major expense—a hospital bill, car repair, family emergency—could wipe out four months of progress and potentially push you into debt.
-> 
+>
 > Most financial stability comes from pushing this above 15%. For you, that's an additional ₦34,500/month. Want me to show you where that could come from?"
 
 **Misconception Correction:**
+
 > "You mentioned your business made ₦180,000 profit last month. Looking at your numbers, that's actually revenue, not profit. After your costs (₦95,000), your actual profit was ₦85,000.
-> 
+>
 > This matters because if you spend based on revenue instead of profit, you'll consistently overspend. Want me to explain how to separate these going forward?"
 
 **Cultural Context:**
+
 > "You're supporting your siblings' education at ₦120,000/month—that's 23% of your income. Traditional Western advice would say 'reduce this,' but that ignores your context.
-> 
+>
 > Instead, let's treat this as a planned expense with an end date. Your brother graduates in 18 months, which frees up ₦50,000/month. Let me show you what that means for your trajectory."
 
 #### 5.2.4 Design Principles for Education
@@ -403,7 +420,7 @@ Most apps show numbers. Ikpa explains them—in context, in plain language, at t
 
 ### 5.3 Layer 3: Simulator (What-If Engine)
 
-> *"What happens if...?"*
+> _"What happens if...?"_
 
 The Simulator is Ikpa's primary differentiator. Users can stress-test decisions before making them in the real world.
 
@@ -478,8 +495,8 @@ Runway:                 2.1 months         0.4 months
 Time to Emergency Fund: 8 months           Never (at current trajectory)
 Net Worth in 3 Years:   +₦2.1M            -₦890,000
 
-⚠️ RISK ALERT: With this loan, a single month of income disruption 
-   would push you into a debt spiral. You'd be unable to cover both 
+⚠️ RISK ALERT: With this loan, a single month of income disruption
+   would push you into a debt spiral. You'd be unable to cover both
    the loan payment and basic expenses.
 
 💡 ALTERNATIVE SCENARIOS:
@@ -502,35 +519,35 @@ What would you like to explore?
 
 ### 5.4 Layer 4: Planner (Guided Action)
 
-> *"What should I actually do?"*
+> _"What should I actually do?"_
 
 The Planner provides prioritized, sequenced recommendations—not prescriptive commands, but informed options.
 
 #### 5.4.1 Planning Horizons
 
-| Horizon | Focus | Example Priorities |
-|---------|-------|-------------------|
-| **Immediate (0-3 months)** | Stabilization | Cash flow optimization, expense reduction, crisis prevention |
-| **Short-term (3-12 months)** | Foundation | Emergency fund, high-interest debt elimination, habit formation |
-| **Medium-term (1-5 years)** | Building | Major purchases, career investment, asset accumulation |
-| **Long-term (5-30 years)** | Wealth | Retirement preparation, legacy building, financial independence |
+| Horizon                      | Focus         | Example Priorities                                              |
+| ---------------------------- | ------------- | --------------------------------------------------------------- |
+| **Immediate (0-3 months)**   | Stabilization | Cash flow optimization, expense reduction, crisis prevention    |
+| **Short-term (3-12 months)** | Foundation    | Emergency fund, high-interest debt elimination, habit formation |
+| **Medium-term (1-5 years)**  | Building      | Major purchases, career investment, asset accumulation          |
+| **Long-term (5-30 years)**   | Wealth        | Retirement preparation, legacy building, financial independence |
 
 #### 5.4.2 Plan Characteristics
 
-| Characteristic | Description |
-|----------------|-------------|
-| **Adaptive** | Adjusts automatically as circumstances change |
-| **Realistic** | Accounts for Nigerian/African economic realities |
-| **Prioritized** | Clear sequencing with explained rationale |
-| **Flexible** | Multiple valid paths; user chooses direction |
-| **Contextual** | Incorporates family obligations, irregular income, local factors |
+| Characteristic  | Description                                                      |
+| --------------- | ---------------------------------------------------------------- |
+| **Adaptive**    | Adjusts automatically as circumstances change                    |
+| **Realistic**   | Accounts for Nigerian/African economic realities                 |
+| **Prioritized** | Clear sequencing with explained rationale                        |
+| **Flexible**    | Multiple valid paths; user chooses direction                     |
+| **Contextual**  | Incorporates family obligations, irregular income, local factors |
 
 #### 5.4.3 Example Plan Output
 
 ```
 YOUR RECOMMENDED FINANCIAL SEQUENCE
 
-Based on your current situation (₦530K income, 8.5% savings rate, 
+Based on your current situation (₦530K income, 8.5% savings rate,
 2.1 month runway, ₦0 high-interest debt), here's the optimal sequence:
 
 PHASE 1: FOUNDATION (Months 1-6)
@@ -567,7 +584,7 @@ PHASE 3: GROWTH (Months 13-24)
 
 PROJECTED OUTCOME (24 months):
 • Emergency fund: ₦1.6M (3 months) ✓
-• Retirement on track: 10% contribution ✓  
+• Retirement on track: 10% contribution ✓
 • Investment portfolio: ₦1.2M started
 • Net worth increase: +₦4.1M
 • Financial stress: Significantly reduced
@@ -588,43 +605,43 @@ Want to simulate alternatives?
 
 ### 5.5 Layer 5: Mindset & Behavioral Layer
 
-> *"How do I think about money differently?"*
+> _"How do I think about money differently?"_
 
 This is where most finance apps fail—and where Ikpa wins. Sustainable financial change requires identity-level transformation, not just tactics.
 
 #### 5.5.1 Cognitive Reframes
 
-| Harmful Belief | Ikpa Reframe |
-|----------------|--------------|
-| "I don't earn enough to save" | "Saving ₦2,000/month builds the habit that scales when income grows. Let me show you the math." |
-| "I'll start when I get a better job" | "Here's what starting now vs. in 2 years actually looks like in numbers." |
+| Harmful Belief                                   | Ikpa Reframe                                                                                         |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| "I don't earn enough to save"                    | "Saving ₦2,000/month builds the habit that scales when income grows. Let me show you the math."      |
+| "I'll start when I get a better job"             | "Here's what starting now vs. in 2 years actually looks like in numbers."                            |
 | "My family obligations make planning impossible" | "Let's model your obligations as a planned expense. They're part of your plan, not obstacles to it." |
-| "I've already made too many mistakes" | "Your past decisions are data, not destiny. Let's see your trajectory from today forward." |
-| "Investing is for rich people" | "Investment is just delayed spending. Here's how ₦10,000/month compounds over time." |
-| "I need to look successful now" | "Let me show you two people: one who looked rich at 25, another who became wealthy by 35." |
-| "It's too complicated" | "You don't need to understand everything. Let's start with the one thing that matters most for you." |
-| "The economy is too unstable to plan" | "Unstable economies make planning more important, not less. Here's how to plan for uncertainty." |
+| "I've already made too many mistakes"            | "Your past decisions are data, not destiny. Let's see your trajectory from today forward."           |
+| "Investing is for rich people"                   | "Investment is just delayed spending. Here's how ₦10,000/month compounds over time."                 |
+| "I need to look successful now"                  | "Let me show you two people: one who looked rich at 25, another who became wealthy by 35."           |
+| "It's too complicated"                           | "You don't need to understand everything. Let's start with the one thing that matters most for you." |
+| "The economy is too unstable to plan"            | "Unstable economies make planning more important, not less. Here's how to plan for uncertainty."     |
 
 #### 5.5.2 Behavioral Features
 
-| Feature | Purpose |
-|---------|---------|
-| **Pattern Recognition** | "You tend to overspend in the last week of the month—here's what's happening psychologically" |
-| **Streak Tracking** | Track consistency, not amounts (e.g., "14-day savings streak") |
-| **Progress Normalization** | "You're ahead of where you were 6 months ago" with visual proof |
-| **Shame Reduction** | Mistakes are reframed as learning data, not moral failures |
-| **Small Wins Celebration** | Acknowledge progress that would otherwise go unnoticed |
-| **Identity Reinforcement** | "You're becoming someone who thinks before spending" |
+| Feature                    | Purpose                                                                                       |
+| -------------------------- | --------------------------------------------------------------------------------------------- |
+| **Pattern Recognition**    | "You tend to overspend in the last week of the month—here's what's happening psychologically" |
+| **Streak Tracking**        | Track consistency, not amounts (e.g., "14-day savings streak")                                |
+| **Progress Normalization** | "You're ahead of where you were 6 months ago" with visual proof                               |
+| **Shame Reduction**        | Mistakes are reframed as learning data, not moral failures                                    |
+| **Small Wins Celebration** | Acknowledge progress that would otherwise go unnoticed                                        |
+| **Identity Reinforcement** | "You're becoming someone who thinks before spending"                                          |
 
 #### 5.5.3 Anti-Patterns to Avoid
 
-| Don't | Why |
-|-------|-----|
-| Moralize spending choices | Creates shame, not change |
-| Compare users to others | Irrelevant and demotivating |
-| Use fear as primary motivator | Leads to avoidance, not action |
-| Over-praise | Feels inauthentic; undermines trust |
-| Ignore setbacks | Pretending failures didn't happen prevents learning |
+| Don't                         | Why                                                 |
+| ----------------------------- | --------------------------------------------------- |
+| Moralize spending choices     | Creates shame, not change                           |
+| Compare users to others       | Irrelevant and demotivating                         |
+| Use fear as primary motivator | Leads to avoidance, not action                      |
+| Over-praise                   | Feels inauthentic; undermines trust                 |
+| Ignore setbacks               | Pretending failures didn't happen prevents learning |
 
 #### 5.5.4 Design Principles for Behavior Change
 
@@ -638,7 +655,7 @@ This is where most finance apps fail—and where Ikpa wins. Sustainable financia
 
 ## 6. The Game-Changer: Future Self Engine
 
-> *"Meet your future self—both versions. Then choose which one you want to become."*
+> _"Meet your future self—both versions. Then choose which one you want to become."_
 
 The Future Self Engine is Ikpa's signature feature—a vivid, AI-generated visualization of who users become under different behavioral paths.
 
@@ -658,6 +675,7 @@ Research from Stanford's Virtual Human Interaction Lab demonstrates that people 
 Using data from the Financial Lens (income, expenses, savings, debts, goals), the AI constructs a dynamic model of the user's financial life.
 
 This isn't a static projection—it's a living simulation that incorporates:
+
 - Income patterns and volatility
 - Expense behaviors and trends
 - Economic assumptions (inflation, FX, interest rates)
@@ -668,21 +686,23 @@ This isn't a static projection—it's a living simulation that incorporates:
 
 The AI presents two parallel futures—typically 5, 10, or 20 years out:
 
-| Current Path Self | Optimized Path Self |
-|-------------------|---------------------|
+| Current Path Self                               | Optimized Path Self                                 |
+| ----------------------------------------------- | --------------------------------------------------- |
 | What happens if you continue exactly as you are | What happens with realistic behavioral improvements |
-| Trajectory of current habits | Trajectory of disciplined consistency |
-| All existing patterns extrapolated | Achievable changes implemented |
-| Full consequences made visible | Full benefits made visible |
+| Trajectory of current habits                    | Trajectory of disciplined consistency               |
+| All existing patterns extrapolated              | Achievable changes implemented                      |
+| Full consequences made visible                  | Full benefits made visible                          |
 
 #### Step 3: Make It Visceral, Not Abstract
 
 Don't just show charts—show **life outcomes** in narrative form.
 
 **Example: Current Path (10 years from now)**
+
 > "At 36, you have ₦4.2M saved. You're still renting in Lagos—property prices have outpaced your savings rate. Your emergency fund covers 6 weeks, which felt safe until your company restructured and you spent 4 months finding new work. You took on debt during that period that you're still paying off. You support your mother and younger brother, but it's a constant source of stress because you have no buffer. Starting a business feels impossible without external funding or taking dangerous risks."
 
 **Example: Optimized Path (10 years from now)**
+
 > "At 36, you have ₦28.4M in assets. You own land in your state and a small investment portfolio that generates passive income. When your company restructured, you took 2 months to find the right opportunity—not the first one—because you had 12 months of runway. You still support your mother and brother, but from a position of strength, not survival. You're evaluating whether to start your own business because you have the capital and the cushion to take a calculated risk."
 
 #### Step 4: Show the Specific Divergence Point
@@ -696,6 +716,7 @@ The AI identifies exactly where the paths split:
 #### 6.3.1 Time Travel Slider
 
 Users can scrub through time like a video player:
+
 - Drag from today to 20 years out
 - Watch both paths diverge in real-time
 - See specific milestones where outcomes differ
@@ -726,19 +747,19 @@ OPTIMIZED PATH:
 AI-generated personalized letter from the user's optimized future self:
 
 > "Dear Chidi,
-> 
+>
 > I'm writing this from 2034. I'm sitting on the balcony of our apartment—yes, we own it—watching Lagos traffic that I no longer sit in because I work from home two days a week.
-> 
+>
 > I remember December 2024. I remember thinking it was impossible. I remember the pressure to spend, the family asking for money, the feeling that planning was pointless in this economy.
-> 
+>
 > It wasn't pointless. The first year was the hardest—saying no to things, feeling like I was missing out, watching friends buy things I couldn't. But by year three, something shifted. They were stressed about money. I wasn't.
-> 
+>
 > Mama is comfortable. Junior finished his master's—we paid for it without stress. And I just invested in a friend's business because I could afford to take the risk.
-> 
+>
 > None of this required luck or a massive salary increase. It required consistency. The boring, unglamorous kind.
-> 
+>
 > Don't give up.
-> 
+>
 > — Future You"
 
 #### 6.3.4 Consequence Previews
@@ -746,36 +767,36 @@ AI-generated personalized letter from the user's optimized future self:
 Before any simulated decision, show both futures:
 
 > "You're considering buying a ₦3M car on loan.
-> 
+>
 > **Current Path (with car):** [visualization]  
 > **Current Path (without car):** [visualization]
-> 
+>
 > In both optimized paths, you eventually own a better car—but the timing and total cost differ by ₦2.1M.
-> 
+>
 > [Explore Full Comparison]"
 
 ### 6.4 Africa-Specific Adaptations
 
-| Reality | How Future Self Engine Handles It |
-|---------|-----------------------------------|
-| Naira devaluation | Both futures show FX-adjusted purchasing power |
-| Family obligations | Modeled explicitly; shown in both paths |
-| Irregular income | Projections use probability ranges, not fixed numbers |
-| Inflation | Nigerian/regional inflation baked into all projections |
-| Land as primary asset | Property ownership shown as major milestone |
-| Ajo/Esusu/Susu | Recognized as legitimate savings vehicles |
-| Low pension reliability | Long-term projections assume self-funded retirement |
-| Economic volatility | Stress-tested against historical crisis scenarios |
+| Reality                 | How Future Self Engine Handles It                      |
+| ----------------------- | ------------------------------------------------------ |
+| Naira devaluation       | Both futures show FX-adjusted purchasing power         |
+| Family obligations      | Modeled explicitly; shown in both paths                |
+| Irregular income        | Projections use probability ranges, not fixed numbers  |
+| Inflation               | Nigerian/regional inflation baked into all projections |
+| Land as primary asset   | Property ownership shown as major milestone            |
+| Ajo/Esusu/Susu          | Recognized as legitimate savings vehicles              |
+| Low pension reliability | Long-term projections assume self-funded retirement    |
+| Economic volatility     | Stress-tested against historical crisis scenarios      |
 
 ### 6.5 The Emotional Design
 
-| Element | Purpose |
-|---------|---------|
-| **Narrative, not just numbers** | Stories create emotional connection |
-| **Specific, not generic** | Uses user's actual names, places, goals |
-| **Hope, not fear** | Optimized path is inspiring, not judgmental about current path |
-| **Agency, not helplessness** | Emphasizes that the choice is theirs |
-| **Honesty, not manipulation** | Projections are realistic, not exaggerated for effect |
+| Element                         | Purpose                                                        |
+| ------------------------------- | -------------------------------------------------------------- |
+| **Narrative, not just numbers** | Stories create emotional connection                            |
+| **Specific, not generic**       | Uses user's actual names, places, goals                        |
+| **Hope, not fear**              | Optimized path is inspiring, not judgmental about current path |
+| **Agency, not helplessness**    | Emphasizes that the choice is theirs                           |
+| **Honesty, not manipulation**   | Projections are realistic, not exaggerated for effect          |
 
 ### 6.6 Why This Feature Wins
 
@@ -794,35 +815,35 @@ Ikpa cannot exist as a static dashboard or rule-based system. AI is not a featur
 
 ### 7.1 The Case for AI
 
-| Requirement | Why AI Is Necessary |
-|-------------|---------------------|
-| **Context-heavy explanations** | Static FAQs can't account for individual situations |
-| **Personalized education** | Learning must adapt to user's current understanding |
-| **Scenario reasoning** | Simulations require dynamic modeling, not lookup tables |
-| **Behavioral detection** | Patterns emerge from data, not user self-reporting |
-| **Progressive relationship** | System must mature alongside the user |
-| **Natural interaction** | Users ask "why" and "what if" in unpredictable ways |
-| **Cultural nuance** | Western financial logic doesn't always translate |
+| Requirement                    | Why AI Is Necessary                                     |
+| ------------------------------ | ------------------------------------------------------- |
+| **Context-heavy explanations** | Static FAQs can't account for individual situations     |
+| **Personalized education**     | Learning must adapt to user's current understanding     |
+| **Scenario reasoning**         | Simulations require dynamic modeling, not lookup tables |
+| **Behavioral detection**       | Patterns emerge from data, not user self-reporting      |
+| **Progressive relationship**   | System must mature alongside the user                   |
+| **Natural interaction**        | Users ask "why" and "what if" in unpredictable ways     |
+| **Cultural nuance**            | Western financial logic doesn't always translate        |
 
 ### 7.2 AI Capabilities Required
 
-| Capability | Application in Ikpa |
-|------------|---------------------|
-| **Conversational reasoning** | Explain concepts in response to natural questions |
-| **Pattern recognition** | Detect spending behaviors, income cycles, risk patterns |
-| **Scenario simulation** | Model complex financial futures with multiple variables |
-| **Personalization** | Adapt tone, complexity, and focus to individual users |
-| **Progressive learning** | Remember user history; evolve recommendations over time |
-| **Narrative generation** | Create compelling future self stories |
-| **Anomaly detection** | Flag unusual patterns for user attention |
+| Capability                   | Application in Ikpa                                     |
+| ---------------------------- | ------------------------------------------------------- |
+| **Conversational reasoning** | Explain concepts in response to natural questions       |
+| **Pattern recognition**      | Detect spending behaviors, income cycles, risk patterns |
+| **Scenario simulation**      | Model complex financial futures with multiple variables |
+| **Personalization**          | Adapt tone, complexity, and focus to individual users   |
+| **Progressive learning**     | Remember user history; evolve recommendations over time |
+| **Narrative generation**     | Create compelling future self stories                   |
+| **Anomaly detection**        | Flag unusual patterns for user attention                |
 
 ### 7.3 What Ikpa Is NOT
 
-| Not This | This Instead |
-|----------|--------------|
-| A chatbot | A financial reasoning engine |
-| A rule-based advisor | A context-aware intelligence |
-| A generic assistant | A personal finance specialist |
+| Not This                 | This Instead                    |
+| ------------------------ | ------------------------------- |
+| A chatbot                | A financial reasoning engine    |
+| A rule-based advisor     | A context-aware intelligence    |
+| A generic assistant      | A personal finance specialist   |
 | A one-size-fits-all tool | An adaptive, personalized guide |
 
 ---
@@ -833,54 +854,54 @@ These are not nice-to-haves—they are core to relevance and adoption.
 
 ### 8.1 Economic Realities
 
-| Reality | Design Response |
-|---------|-----------------|
-| **Irregular income** | Support variable income modeling; don't assume monthly salary |
-| **Multi-currency exposure** | Handle USD/GBP income with Naira expenses; model FX risk |
-| **Inflation volatility** | Adjust projections for purchasing power, not just nominal values |
-| **Currency devaluation** | Include Naira depreciation scenarios in simulations |
-| **Economic instability** | Plan for uncertainty; stress-test against historical crises |
+| Reality                     | Design Response                                                  |
+| --------------------------- | ---------------------------------------------------------------- |
+| **Irregular income**        | Support variable income modeling; don't assume monthly salary    |
+| **Multi-currency exposure** | Handle USD/GBP income with Naira expenses; model FX risk         |
+| **Inflation volatility**    | Adjust projections for purchasing power, not just nominal values |
+| **Currency devaluation**    | Include Naira depreciation scenarios in simulations              |
+| **Economic instability**    | Plan for uncertainty; stress-test against historical crises      |
 
 ### 8.2 Social Realities
 
-| Reality | Design Response |
-|---------|-----------------|
-| **Extended family obligations** | "Dependency ratio" as first-class metric; support as planned expense |
-| **Informal savings groups** | Ajo/Esusu/Susu contributions tracked as legitimate savings |
-| **Community contributions** | Model cultural obligations without judgment |
-| **Pressure to display success** | Behavioral layer addresses this directly |
-| **Multi-generational households** | Account for complex household economics |
+| Reality                           | Design Response                                                      |
+| --------------------------------- | -------------------------------------------------------------------- |
+| **Extended family obligations**   | "Dependency ratio" as first-class metric; support as planned expense |
+| **Informal savings groups**       | Ajo/Esusu/Susu contributions tracked as legitimate savings           |
+| **Community contributions**       | Model cultural obligations without judgment                          |
+| **Pressure to display success**   | Behavioral layer addresses this directly                             |
+| **Multi-generational households** | Account for complex household economics                              |
 
 ### 8.3 Institutional Realities
 
-| Reality | Design Response |
-|---------|-----------------|
-| **Low bank trust** | No required bank connections; user controls all data entry |
-| **Informal economy** | Cash-based tracking without formal documentation |
-| **Weak pension systems** | Long-term planning assumes self-funded retirement |
-| **Limited investment access** | Explain what's available; don't assume Western options |
-| **Mobile-first population** | Design for mobile as primary interface |
+| Reality                       | Design Response                                            |
+| ----------------------------- | ---------------------------------------------------------- |
+| **Low bank trust**            | No required bank connections; user controls all data entry |
+| **Informal economy**          | Cash-based tracking without formal documentation           |
+| **Weak pension systems**      | Long-term planning assumes self-funded retirement          |
+| **Limited investment access** | Explain what's available; don't assume Western options     |
+| **Mobile-first population**   | Design for mobile as primary interface                     |
 
 ### 8.4 Data Entry Considerations
 
-| Method | Implementation |
-|--------|----------------|
-| **Manual entry** | Primary method; simple, trusted, works for everyone |
-| **Receipt scanning** | OCR for expense capture (future phase) |
+| Method                    | Implementation                                          |
+| ------------------------- | ------------------------------------------------------- |
+| **Manual entry**          | Primary method; simple, trusted, works for everyone     |
+| **Receipt scanning**      | OCR for expense capture (future phase)                  |
 | **Bank statement upload** | PDF parsing for bulk import (optional, privacy-focused) |
-| **Open Banking APIs** | Where available (Nigeria, Kenya, South Africa) |
-| **SMS parsing** | Mobile money transaction detection (with permission) |
+| **Open Banking APIs**     | Where available (Nigeria, Kenya, South Africa)          |
+| **SMS parsing**           | Mobile money transaction detection (with permission)    |
 
 ### 8.5 Localization Requirements
 
-| Element | Localization Approach |
-|---------|----------------------|
-| **Currency** | Support NGN, GHS, KES, ZAR, USD, GBP with appropriate formatting |
-| **Tax systems** | Nigeria (PAYE, VAT), Ghana (PAYE, VAT), Kenya (PAYE, VAT), etc. |
-| **Asset classes** | Land, property, local stocks, crypto, traditional savings |
-| **Language** | English first; Pidgin, Swahili, French in future phases |
-| **Examples** | Nigerian/African names, local brands, relevant scenarios |
-| **Holidays/seasons** | Account for salary cycles, festive spending periods |
+| Element              | Localization Approach                                            |
+| -------------------- | ---------------------------------------------------------------- |
+| **Currency**         | Support NGN, GHS, KES, ZAR, USD, GBP with appropriate formatting |
+| **Tax systems**      | Nigeria (PAYE, VAT), Ghana (PAYE, VAT), Kenya (PAYE, VAT), etc.  |
+| **Asset classes**    | Land, property, local stocks, crypto, traditional savings        |
+| **Language**         | English first; Pidgin, Swahili, French in future phases          |
+| **Examples**         | Nigerian/African names, local brands, relevant scenarios         |
+| **Holidays/seasons** | Account for salary cycles, festive spending periods              |
 
 ---
 
@@ -890,26 +911,26 @@ Clarity about what Ikpa is NOT is as important as what it is.
 
 ### 9.1 Excluded Features
 
-| Feature | Why Excluded |
-|---------|--------------|
-| **Transaction execution** | Regulatory complexity; stay advisory |
-| **Investment management** | Requires licensing; not our core value |
-| **Payment processing** | Trust barrier; not differentiated |
-| **Bank account connections (MVP)** | Too risky for initial trust-building |
-| **Lending/credit** | Massive regulatory burden; different business |
-| **Insurance sales** | Requires partnerships and licensing |
+| Feature                            | Why Excluded                                  |
+| ---------------------------------- | --------------------------------------------- |
+| **Transaction execution**          | Regulatory complexity; stay advisory          |
+| **Investment management**          | Requires licensing; not our core value        |
+| **Payment processing**             | Trust barrier; not differentiated             |
+| **Bank account connections (MVP)** | Too risky for initial trust-building          |
+| **Lending/credit**                 | Massive regulatory burden; different business |
+| **Insurance sales**                | Requires partnerships and licensing           |
 
 ### 9.2 Avoided Behaviors
 
-| Behavior | Why Avoided |
-|----------|-------------|
-| **Promising returns** | We're education, not investment advice |
-| **Wealth rankings** | Creates shame, not motivation |
-| **Moralizing spending** | Shows consequences without judgment |
-| **Prescriptive commands** | Guides decisions; users choose |
-| **Complex jargon** | Plain language always |
-| **Western assumptions** | Built for African realities |
-| **Data selling** | User trust is paramount |
+| Behavior                  | Why Avoided                            |
+| ------------------------- | -------------------------------------- |
+| **Promising returns**     | We're education, not investment advice |
+| **Wealth rankings**       | Creates shame, not motivation          |
+| **Moralizing spending**   | Shows consequences without judgment    |
+| **Prescriptive commands** | Guides decisions; users choose         |
+| **Complex jargon**        | Plain language always                  |
+| **Western assumptions**   | Built for African realities            |
+| **Data selling**          | User trust is paramount                |
 
 ### 9.3 Philosophy: Clarity Over Control
 
@@ -927,13 +948,13 @@ Ikpa's role is to illuminate, educate, and guide—never to control, execute, or
 
 **Focus:** Clarity + Understanding
 
-| Feature | Description |
-|---------|-------------|
-| **User Onboarding** | Simple data collection (income, expenses, goals) |
-| **Financial Lens** | Core metrics dashboard (cash flow score, savings rate, runway) |
-| **Basic AI Explanations** | Contextual explanations for each metric |
-| **Simple Insights** | Pattern detection and plain-language feedback |
-| **Manual Data Entry** | Primary input method |
+| Feature                   | Description                                                    |
+| ------------------------- | -------------------------------------------------------------- |
+| **User Onboarding**       | Simple data collection (income, expenses, goals)               |
+| **Financial Lens**        | Core metrics dashboard (cash flow score, savings rate, runway) |
+| **Basic AI Explanations** | Contextual explanations for each metric                        |
+| **Simple Insights**       | Pattern detection and plain-language feedback                  |
+| **Manual Data Entry**     | Primary input method                                           |
 
 **Success Metric:** Users say "I finally understand my money."
 
@@ -941,13 +962,13 @@ Ikpa's role is to illuminate, educate, and guide—never to control, execute, or
 
 **Focus:** What-If Engine
 
-| Feature | Description |
-|---------|-------------|
-| **Basic Simulations** | Best case / worst case / current trajectory |
-| **Life Event Modeling** | Job change, major purchase, family support |
-| **Behavioral Comparisons** | Disciplined vs. current over time |
-| **Economic Scenarios** | Inflation, devaluation stress tests |
-| **Visual Projections** | Charts and trajectory visualization |
+| Feature                    | Description                                 |
+| -------------------------- | ------------------------------------------- |
+| **Basic Simulations**      | Best case / worst case / current trajectory |
+| **Life Event Modeling**    | Job change, major purchase, family support  |
+| **Behavioral Comparisons** | Disciplined vs. current over time           |
+| **Economic Scenarios**     | Inflation, devaluation stress tests         |
+| **Visual Projections**     | Charts and trajectory visualization         |
 
 **Success Metric:** Users simulate decisions before making them.
 
@@ -955,14 +976,14 @@ Ikpa's role is to illuminate, educate, and guide—never to control, execute, or
 
 **Focus:** Planning + Behavior + Future Self
 
-| Feature | Description |
-|---------|-------------|
-| **Goal Setting** | Short, medium, long-term goal frameworks |
-| **AI-Generated Plans** | Sequenced recommendations with rationale |
-| **Future Self Engine** | Dual-path visualization and narrative generation |
-| **Behavioral Nudges** | Pattern detection and intervention |
-| **Letter from Future Self** | Personalized motivational content |
-| **Progress Tracking** | Milestone celebration and streak tracking |
+| Feature                     | Description                                      |
+| --------------------------- | ------------------------------------------------ |
+| **Goal Setting**            | Short, medium, long-term goal frameworks         |
+| **AI-Generated Plans**      | Sequenced recommendations with rationale         |
+| **Future Self Engine**      | Dual-path visualization and narrative generation |
+| **Behavioral Nudges**       | Pattern detection and intervention               |
+| **Letter from Future Self** | Personalized motivational content                |
+| **Progress Tracking**       | Milestone celebration and streak tracking        |
 
 **Success Metric:** Users change behavior and track transformation over time.
 
@@ -970,13 +991,13 @@ Ikpa's role is to illuminate, educate, and guide—never to control, execute, or
 
 **Focus:** Expansion + Platform
 
-| Feature | Description |
-|---------|-------------|
-| **Multi-country Support** | Ghana, Kenya, South Africa |
-| **Bank Statement Import** | Optional bulk data import |
-| **Community Features** | Anonymous progress sharing, challenges |
-| **API Development** | Platform capabilities for partners |
-| **B2B Offering** | Employer financial wellness benefit |
+| Feature                   | Description                            |
+| ------------------------- | -------------------------------------- |
+| **Multi-country Support** | Ghana, Kenya, South Africa             |
+| **Bank Statement Import** | Optional bulk data import              |
+| **Community Features**    | Anonymous progress sharing, challenges |
+| **API Development**       | Platform capabilities for partners     |
+| **B2B Offering**          | Employer financial wellness benefit    |
 
 ### 10.2 MVP Scope Details
 
@@ -1031,13 +1052,13 @@ Ikpa's role is to illuminate, educate, and guide—never to control, execute, or
 
 ### 10.3 MVP Success Criteria
 
-| Metric | Target |
-|--------|--------|
-| **User activation** | 70% complete onboarding |
-| **Weekly retention** | 40% return weekly after 1 month |
+| Metric                        | Target                                      |
+| ----------------------------- | ------------------------------------------- |
+| **User activation**           | 70% complete onboarding                     |
+| **Weekly retention**          | 40% return weekly after 1 month             |
 | **Understanding improvement** | 80% report "better understanding" in survey |
-| **Recommendation quality** | 4.2+ rating on AI insights |
-| **NPS** | 40+ |
+| **Recommendation quality**    | 4.2+ rating on AI insights                  |
+| **NPS**                       | 40+                                         |
 
 ---
 
@@ -1084,18 +1105,18 @@ Ikpa's role is to illuminate, educate, and guide—never to control, execute, or
 
 ### 11.2 Technology Stack
 
-| Layer | Technology | Rationale |
-|-------|------------|-----------|
-| **Mobile Apps** | React Native | Cross-platform efficiency; strong ecosystem |
-| **Web App** | Next.js | SSR for performance; React consistency |
-| **API** | Node.js / Express | Developer productivity; async performance |
-| **AI Integration** | Claude API (Anthropic) | Advanced reasoning; context handling |
-| **Simulation Engine** | Python | Financial modeling libraries; computation |
-| **Primary Database** | PostgreSQL | Reliability; complex queries |
-| **Cache** | Redis | Session management; real-time data |
-| **File Storage** | AWS S3 | Receipt images; document storage |
-| **Infrastructure** | AWS / GCP | Scalability; African region availability |
-| **Authentication** | Auth0 / Firebase Auth | Security; social login support |
+| Layer                 | Technology             | Rationale                                   |
+| --------------------- | ---------------------- | ------------------------------------------- |
+| **Mobile Apps**       | React Native           | Cross-platform efficiency; strong ecosystem |
+| **Web App**           | Next.js                | SSR for performance; React consistency      |
+| **API**               | Node.js / Express      | Developer productivity; async performance   |
+| **AI Integration**    | Claude API (Anthropic) | Advanced reasoning; context handling        |
+| **Simulation Engine** | Python                 | Financial modeling libraries; computation   |
+| **Primary Database**  | PostgreSQL             | Reliability; complex queries                |
+| **Cache**             | Redis                  | Session management; real-time data          |
+| **File Storage**      | AWS S3                 | Receipt images; document storage            |
+| **Infrastructure**    | AWS / GCP              | Scalability; African region availability    |
+| **Authentication**    | Auth0 / Firebase Auth  | Security; social login support              |
 
 ### 11.3 AI Architecture
 
@@ -1214,26 +1235,26 @@ AI_CONVERSATION
 
 ### 11.5 Security Considerations
 
-| Concern | Approach |
-|---------|----------|
-| **Data encryption** | AES-256 at rest; TLS 1.3 in transit |
-| **Authentication** | Multi-factor option; biometric on mobile |
-| **Authorization** | Role-based access; principle of least privilege |
-| **Data ownership** | Users can export/delete all data |
-| **API security** | Rate limiting; request signing; OWASP compliance |
-| **Privacy** | No data selling; minimal collection; clear consent |
-| **Audit logging** | All access logged; anomaly detection |
+| Concern             | Approach                                           |
+| ------------------- | -------------------------------------------------- |
+| **Data encryption** | AES-256 at rest; TLS 1.3 in transit                |
+| **Authentication**  | Multi-factor option; biometric on mobile           |
+| **Authorization**   | Role-based access; principle of least privilege    |
+| **Data ownership**  | Users can export/delete all data                   |
+| **API security**    | Rate limiting; request signing; OWASP compliance   |
+| **Privacy**         | No data selling; minimal collection; clear consent |
+| **Audit logging**   | All access logged; anomaly detection               |
 
 ### 11.6 Offline Considerations
 
 For African markets with intermittent connectivity:
 
-| Feature | Offline Capability |
-|---------|-------------------|
-| **Data entry** | Full offline support; sync when online |
-| **Dashboard viewing** | Cached last snapshot available |
-| **AI interactions** | Require connectivity; queue questions |
-| **Simulations** | Basic calculations offline; complex online |
+| Feature               | Offline Capability                         |
+| --------------------- | ------------------------------------------ |
+| **Data entry**        | Full offline support; sync when online     |
+| **Dashboard viewing** | Cached last snapshot available             |
+| **AI interactions**   | Require connectivity; queue questions      |
+| **Simulations**       | Basic calculations offline; complex online |
 
 ---
 
@@ -1249,39 +1270,39 @@ Measured through: In-app surveys, NPS, behavioral indicators
 
 #### Acquisition Metrics
 
-| Metric | Target (Month 6) |
-|--------|------------------|
-| App downloads | 50,000 |
+| Metric               | Target (Month 6) |
+| -------------------- | ---------------- |
+| App downloads        | 50,000           |
 | Completed onboarding | 70% of downloads |
-| Cost per acquisition | < ₦500 |
+| Cost per acquisition | < ₦500           |
 
 #### Engagement Metrics
 
-| Metric | Target |
-|--------|--------|
-| Daily Active Users (DAU) | 15% of registered |
-| Weekly Active Users (WAU) | 40% of registered |
-| Monthly Active Users (MAU) | 60% of registered |
-| Transactions logged per user/week | 8+ |
-| AI interactions per user/week | 3+ |
+| Metric                            | Target            |
+| --------------------------------- | ----------------- |
+| Daily Active Users (DAU)          | 15% of registered |
+| Weekly Active Users (WAU)         | 40% of registered |
+| Monthly Active Users (MAU)        | 60% of registered |
+| Transactions logged per user/week | 8+                |
+| AI interactions per user/week     | 3+                |
 
 #### Retention Metrics
 
-| Metric | Target |
-|--------|--------|
-| Day 1 retention | 60% |
-| Day 7 retention | 40% |
-| Day 30 retention | 25% |
-| Day 90 retention | 15% |
+| Metric           | Target |
+| ---------------- | ------ |
+| Day 1 retention  | 60%    |
+| Day 7 retention  | 40%    |
+| Day 30 retention | 25%    |
+| Day 90 retention | 15%    |
 
 #### Outcome Metrics
 
-| Metric | Target |
-|--------|--------|
-| Savings rate improvement | 30% increase after 3 months |
-| Financial stress reduction | 40% report less stress |
-| Goal achievement | 50% make progress on stated goals |
-| Knowledge improvement | 70% pass financial literacy check |
+| Metric                     | Target                            |
+| -------------------------- | --------------------------------- |
+| Savings rate improvement   | 30% increase after 3 months       |
+| Financial stress reduction | 40% report less stress            |
+| Goal achievement           | 50% make progress on stated goals |
+| Knowledge improvement      | 70% pass financial literacy check |
 
 ### 12.3 Qualitative Success Indicators
 
@@ -1324,13 +1345,13 @@ Measured through: In-app surveys, NPS, behavioral indicators
 
 ### 13.3 Future Product Lines
 
-| Opportunity | Description |
-|-------------|-------------|
-| **Ikpa for Teams** | Employer-sponsored financial wellness |
-| **Ikpa API** | Financial intelligence layer for other apps |
-| **Ikpa Education** | Structured curriculum for schools/universities |
-| **Ikpa Insights** | Anonymized, consented data insights for research |
-| **Ikpa Certifications** | Verified financial literacy credentials |
+| Opportunity             | Description                                      |
+| ----------------------- | ------------------------------------------------ |
+| **Ikpa for Teams**      | Employer-sponsored financial wellness            |
+| **Ikpa API**            | Financial intelligence layer for other apps      |
+| **Ikpa Education**      | Structured curriculum for schools/universities   |
+| **Ikpa Insights**       | Anonymized, consented data insights for research |
+| **Ikpa Certifications** | Verified financial literacy credentials          |
 
 ### 13.4 The Ultimate Goal
 
@@ -1342,36 +1363,36 @@ Measured through: In-app surveys, NPS, behavioral indicators
 
 ### 14.1 Glossary
 
-| Term | Definition |
-|------|------------|
-| **Ajo** | Nigerian rotating savings group (also called Esusu) |
-| **Susu** | Ghanaian rotating savings group |
-| **Runway** | Number of months expenses can be covered without income |
-| **Dependency Ratio** | Percentage of income supporting others |
-| **Burn Rate** | Speed at which money is being spent |
-| **Cash Flow Score** | Composite health metric (0-100) |
-| **Future Self Engine** | Feature showing dual-path future projections |
+| Term                   | Definition                                              |
+| ---------------------- | ------------------------------------------------------- |
+| **Ajo**                | Nigerian rotating savings group (also called Esusu)     |
+| **Susu**               | Ghanaian rotating savings group                         |
+| **Runway**             | Number of months expenses can be covered without income |
+| **Dependency Ratio**   | Percentage of income supporting others                  |
+| **Burn Rate**          | Speed at which money is being spent                     |
+| **Cash Flow Score**    | Composite health metric (0-100)                         |
+| **Future Self Engine** | Feature showing dual-path future projections            |
 
 ### 14.2 Competitive Landscape
 
-| Competitor | Positioning | Gap Ikpa Fills |
-|------------|-------------|----------------|
-| **PiggyVest** | Savings/investment platform | Education, not just products |
-| **Cowrywise** | Investment for beginners | Deeper financial clarity before investing |
-| **Carbon** | Lending/payments | No debt creation; purely advisory |
-| **Mint** (defunct) | Expense tracking | African context; AI-powered |
-| **YNAB** | Zero-based budgeting | Simpler; African-relevant |
+| Competitor         | Positioning                 | Gap Ikpa Fills                            |
+| ------------------ | --------------------------- | ----------------------------------------- |
+| **PiggyVest**      | Savings/investment platform | Education, not just products              |
+| **Cowrywise**      | Investment for beginners    | Deeper financial clarity before investing |
+| **Carbon**         | Lending/payments            | No debt creation; purely advisory         |
+| **Mint** (defunct) | Expense tracking            | African context; AI-powered               |
+| **YNAB**           | Zero-based budgeting        | Simpler; African-relevant                 |
 
 ### 14.3 Risk Assessment
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Low initial adoption | Medium | High | Focused launch; community building |
-| Data privacy concerns | Medium | High | Transparent policies; local data storage |
-| AI accuracy issues | Medium | Medium | Human review; confidence thresholds |
-| Competitor copying | Low | Medium | Execution speed; brand building |
-| Economic downturn | Medium | Medium | Value proposition strengthens in hard times |
-| Regulatory changes | Low | Medium | Advisory-only model minimizes exposure |
+| Risk                  | Likelihood | Impact | Mitigation                                  |
+| --------------------- | ---------- | ------ | ------------------------------------------- |
+| Low initial adoption  | Medium     | High   | Focused launch; community building          |
+| Data privacy concerns | Medium     | High   | Transparent policies; local data storage    |
+| AI accuracy issues    | Medium     | Medium | Human review; confidence thresholds         |
+| Competitor copying    | Low        | Medium | Execution speed; brand building             |
+| Economic downturn     | Medium     | Medium | Value proposition strengthens in hard times |
+| Regulatory changes    | Low        | Medium | Advisory-only model minimizes exposure      |
 
 ### 14.4 References
 
@@ -1385,13 +1406,13 @@ Measured through: In-app surveys, NPS, behavioral indicators
 
 ## Document Control
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | December 2024 | NatQuest Limited | Initial specification |
+| Version | Date          | Author           | Changes               |
+| ------- | ------------- | ---------------- | --------------------- |
+| 1.0     | December 2024 | NatQuest Limited | Initial specification |
 
 ---
 
-*"Ikpa: See your money clearly. Understand it deeply. Plan it wisely."*
+_"Ikpa: See your money clearly. Understand it deeply. Plan it wisely."_
 
 ---
 

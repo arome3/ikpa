@@ -37,7 +37,13 @@ const config: Config = {
           900: '#78350F',
         },
         // Semantic colors
-        caution: '#F97316', // Orange, NOT red - reduces anxiety
+        caution: {
+          DEFAULT: '#F97316',
+          300: '#FDBA74',
+          400: '#FB923C',
+          500: '#F97316',
+          600: '#EA580C',
+        },
         info: '#3B82F6',
         // Refined neutral palette
         neutral: {

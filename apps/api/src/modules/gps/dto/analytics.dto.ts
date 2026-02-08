@@ -400,6 +400,36 @@ export class ActiveCategoryFreezeDto {
 }
 
 /**
+ * Active budget rebalance DTO
+ */
+export class ActiveBudgetRebalanceDto {
+  @ApiProperty({ description: 'Rebalance ID' })
+  id!: string;
+
+  @ApiProperty({ description: 'Source category ID' })
+  fromCategoryId!: string;
+
+  @ApiProperty({ description: 'Source category name', example: 'Transport' })
+  fromCategoryName!: string;
+
+  @ApiProperty({ description: 'Destination category ID' })
+  toCategoryId!: string;
+
+  @ApiProperty({ description: 'Destination category name', example: 'Food & Dining' })
+  toCategoryName!: string;
+
+  @ApiProperty({
+    description: 'Amount rebalanced with currency formatting',
+    type: MonetaryValueDto,
+    example: { amount: 2500, formatted: '₦2,500', currency: 'NGN' },
+  })
+  amount!: MonetaryValueDto;
+
+  @ApiProperty({ description: 'When the rebalance was created' })
+  createdAt!: Date;
+}
+
+/**
  * Active recovery adjustments response
  */
 export class ActiveAdjustmentsResponseDto {
@@ -420,6 +450,12 @@ export class ActiveAdjustmentsResponseDto {
     type: [TimelineExtensionDto],
   })
   timelineExtensions!: TimelineExtensionDto[];
+
+  @ApiProperty({
+    description: 'Active budget rebalances from Smart Swap',
+    type: [ActiveBudgetRebalanceDto],
+  })
+  budgetRebalances!: ActiveBudgetRebalanceDto[];
 
   @ApiProperty({
     description: 'Summary of all active adjustments',

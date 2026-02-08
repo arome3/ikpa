@@ -10,7 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Goal } from '@prisma/client';
 import { addWeeks } from 'date-fns';
 import { GpsNoActiveGoalException } from './exceptions';
-import { SimulationInput } from '../finance/interfaces';
+import { SimulationInput, ECONOMIC_DEFAULTS } from '../finance/interfaces';
 
 /**
  * Goal with computed fields
@@ -158,8 +158,12 @@ export class GoalService {
     const monthlySavings = Number(financialData.monthlySavings);
     const currentSavingsRate = monthlyIncome > 0 ? Math.max(0, monthlySavings / monthlyIncome) : 0;
 
-    // Calculate net worth
-    const currentNetWorth = Number(financialData.liquidSavings) - Number(financialData.totalDebt);
+    // Calculate net worth — use the greater of liquid savings or goal progress
+    // so the simulation starts from at least the goal's current amount
+    const liquidSavings = Number(financialData.liquidSavings);
+    const goalProgress = Number(goal.currentAmount);
+    const effectiveSavings = Math.max(liquidSavings, goalProgress);
+    const currentNetWorth = effectiveSavings - Number(financialData.totalDebt);
 
     // Get economic defaults based on country
     const defaults = this.getEconomicDefaults(user?.country);
@@ -312,23 +316,15 @@ export class GoalService {
 
   /**
    * Get economic defaults based on country
+   * Uses the canonical ECONOMIC_DEFAULTS from the finance module
    */
   private getEconomicDefaults(country?: string | null): {
     inflationRate: number;
     expectedReturn: number;
     incomeGrowthRate: number;
   } {
-    // Country-specific economic defaults
-    const defaults: Record<string, { inflationRate: number; expectedReturn: number; incomeGrowthRate: number }> = {
-      NIGERIA: { inflationRate: 0.15, expectedReturn: 0.12, incomeGrowthRate: 0.05 },
-      GHANA: { inflationRate: 0.10, expectedReturn: 0.10, incomeGrowthRate: 0.04 },
-      KENYA: { inflationRate: 0.06, expectedReturn: 0.08, incomeGrowthRate: 0.04 },
-      SOUTH_AFRICA: { inflationRate: 0.05, expectedReturn: 0.09, incomeGrowthRate: 0.03 },
-      EGYPT: { inflationRate: 0.12, expectedReturn: 0.10, incomeGrowthRate: 0.04 },
-      DEFAULT: { inflationRate: 0.08, expectedReturn: 0.08, incomeGrowthRate: 0.04 },
-    };
-
     const countryKey = country?.toUpperCase() || 'DEFAULT';
-    return defaults[countryKey] || defaults.DEFAULT;
+    const defaults = ECONOMIC_DEFAULTS[countryKey] || ECONOMIC_DEFAULTS.DEFAULT;
+    return defaults;
   }
 }

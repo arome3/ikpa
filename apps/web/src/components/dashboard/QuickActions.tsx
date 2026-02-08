@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MinusCircle, PlusCircle, Target, Sparkles, Fish, Upload } from 'lucide-react';
+import { MinusCircle, PlusCircle, Target, Navigation, Fish, Upload, Clock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 
@@ -20,6 +20,10 @@ export interface QuickActionsProps {
   onShark?: () => void;
   /** Callback when Import is clicked */
   onImport?: () => void;
+  /** Callback when Future Self is clicked */
+  onFutureSelf?: () => void;
+  /** Callback when Commitments is clicked */
+  onCommitments?: () => void;
 }
 
 const actions = [
@@ -43,8 +47,8 @@ const actions = [
   },
   {
     id: 'ai',
-    label: 'Ask AI',
-    icon: Sparkles,
+    label: 'GPS',
+    icon: Navigation,
     variant: 'ghost' as const,
   },
   {
@@ -59,12 +63,24 @@ const actions = [
     icon: Upload,
     variant: 'secondary' as const,
   },
+  {
+    id: 'futureSelf',
+    label: 'Future Self',
+    icon: Clock,
+    variant: 'ghost' as const,
+  },
+  {
+    id: 'commitments',
+    label: 'Stakes',
+    icon: ShieldCheck,
+    variant: 'ghost' as const,
+  },
 ];
 
 /**
  * Row of quick action buttons for common dashboard tasks
  */
-export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, onAskAI, onShark, onImport }: QuickActionsProps) {
+export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, onAskAI, onShark, onImport, onFutureSelf, onCommitments }: QuickActionsProps) {
   const handlers: Record<string, (() => void) | undefined> = {
     expense: onAddExpense,
     income: onAddIncome,
@@ -72,6 +88,8 @@ export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, 
     ai: onAskAI,
     shark: onShark,
     import: onImport,
+    futureSelf: onFutureSelf,
+    commitments: onCommitments,
   };
 
   return (
@@ -80,7 +98,7 @@ export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, 
         // Mobile: horizontal scroll
         'flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4',
         // Desktop: grid layout
-        'md:grid md:grid-cols-3 lg:grid-cols-6 md:mx-0 md:px-0 md:overflow-visible',
+        'md:grid md:grid-cols-4 lg:grid-cols-7 md:mx-0 md:px-0 md:overflow-visible',
         className
       )}
       initial={{ opacity: 0, y: 10 }}

@@ -54,6 +54,21 @@ export type {
   ActiveAdjustments,
   StreakStatus,
   Achievement,
+  AnalyticsDashboard,
+  UserAnalytics,
+  CategoryAnalytics,
+  PathSelectionDistribution,
+  CommitmentAtRisk,
+  QuickRebalanceRequest,
+  QuickRebalanceResponse,
+  RebalanceOption,
+  RebalanceOptionsResponse,
+  WeeklyBreakdownResponse,
+  WeekBreakdown,
+  CurrentWeekInfo,
+  DailyLimitItem,
+  BudgetInsight,
+  BudgetInsightsResponse,
 } from './useGps';
 
 // Notifications hook
@@ -89,3 +104,41 @@ export type {
 // Shark Chat hook
 export { useSharkChat } from './useSharkChat';
 export type { ChatMessage, ChatMeta, ChatPhase } from './useSharkChat';
+
+// Import Email hook
+export { useImportEmail } from './useImportEmail';
+export type { ImportEmailInfo, RegenerateEmailResult } from './useImportEmail';
+
+// Future Self hook
+export { useFutureSelf } from './useFutureSelf';
+export type {
+  FutureSimulation,
+  TimelineProjection,
+  LetterResponse,
+  LetterHistoryItem,
+  LetterDetail,
+  FutureSelfStats,
+  ConversationMessage,
+  Commitment,
+} from './useFutureSelf';
+
+// Commitment Device Engine hook
+export { useCommitments } from './useCommitments';
+export type {
+  CommitmentContract,
+  CreateStakeInput,
+  StakeEffectiveness,
+  PendingVerification,
+  NegotiationResponse,
+  StreakInfo,
+  DebriefData,
+  AchievementCard,
+} from './useCommitments';
+
+// Group Accountability hook
+export { useGroups, groupKeys } from './useGroups';
+export type {
+  GroupInfo,
+  GroupMemberProgress,
+  GroupDashboard,
+} from './useGroups';

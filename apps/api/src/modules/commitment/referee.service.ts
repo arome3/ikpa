@@ -80,12 +80,20 @@ export class RefereeService implements OnModuleInit {
   }
 
   /**
+   * Generate WhatsApp deep link for referee invitation
+   */
+  generateWhatsAppLink(refereeName: string, userName: string, acceptUrl: string): string {
+    const message = `Hi ${refereeName}! ${userName} wants you to be their accountability partner on IKPA. Accept here: ${acceptUrl}`;
+    return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  }
+
+  /**
    * Invite a new referee
    */
   async inviteReferee(
     userId: string,
     input: InviteRefereeInput,
-  ): Promise<{ refereeId: string; inviteExpires: Date }> {
+  ): Promise<{ refereeId: string; inviteExpires: Date; whatsappLink?: string }> {
     const trace = this.opikService.createTrace({
       name: COMMITMENT_TRACE_NAMES.INVITE_REFEREE,
       input: { userId, email: input.email },
@@ -165,6 +173,10 @@ export class RefereeService implements OnModuleInit {
         rawToken,
       );
 
+      // Generate WhatsApp deep link
+      const acceptUrl = `${this.frontendUrl}/commitment/accept-invite?token=${encodeURIComponent(rawToken)}`;
+      const whatsappLink = this.generateWhatsAppLink(input.name, user?.name || 'A friend', acceptUrl);
+
       this.logger.log(
         `[inviteReferee] Invited ${input.email} as referee for user ${userId}`,
       );
@@ -177,6 +189,7 @@ export class RefereeService implements OnModuleInit {
       return {
         refereeId: referee.id,
         inviteExpires,
+        whatsappLink,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

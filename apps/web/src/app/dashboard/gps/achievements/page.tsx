@@ -13,6 +13,11 @@ import {
   Award,
   Crown,
   Lock,
+  Rocket,
+  Snowflake,
+  Medal,
+  Flag,
+  Footprints,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useGps } from '@/hooks/useGps';
@@ -30,6 +35,11 @@ const achievementIcons: Record<string, typeof Trophy> = {
   shield: Shield,
   award: Award,
   crown: Crown,
+  rocket: Rocket,
+  snowflake: Snowflake,
+  medal: Medal,
+  flag: Flag,
+  footprints: Footprints,
 };
 
 export default function AchievementsPage() {

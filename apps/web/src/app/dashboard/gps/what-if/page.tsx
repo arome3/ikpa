@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -13,6 +13,17 @@ import {
   Target,
   Wallet,
   ChevronRight,
+  Pause,
+  Utensils,
+  Car,
+  ShoppingBag,
+  Zap,
+  Film,
+  HeartPulse,
+  Home,
+  Gamepad2,
+  GraduationCap,
+  type LucideIcon,
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useGps } from '@/hooks/useGps';
@@ -23,21 +34,57 @@ import { useCurrency } from '@/hooks';
 // WHAT-IF SIMULATOR
 // ============================================
 
+const iconNameMap: Record<string, LucideIcon> = {
+  utensils: Utensils,
+  car: Car,
+  'shopping-bag': ShoppingBag,
+  zap: Zap,
+  film: Film,
+  'heart-pulse': HeartPulse,
+  home: Home,
+  gamepad2: Gamepad2,
+  'graduation-cap': GraduationCap,
+};
+
 export default function WhatIfSimulator() {
   const { symbol: currencySymbol } = useCurrency();
   const router = useRouter();
   const { categories } = useCategories();
   const { items: budgets } = useBudgets();
-  const { simulateWhatIf, isSimulating, whatIfData } = useGps();
+  const { simulateWhatIf, isSimulating, whatIfData, checkCategoryFrozen } = useGps();
 
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [hasSimulated, setHasSimulated] = useState(false);
+  const [isCategoryFrozen, setIsCategoryFrozen] = useState(false);
 
   // Get categories that have budgets
   const budgetedCategories = categories.filter((cat) =>
-    budgets.some((b) => b.categoryId === cat.id)
+    budgets.some((b) => (b.category?.id || b.categoryId) === cat.id)
   );
+
+  // Check if selected category is frozen
+  useEffect(() => {
+    if (!selectedCategory) {
+      setIsCategoryFrozen(false);
+      return;
+    }
+
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const cat = budgetedCategories.find((c) => c.name === selectedCategory);
+        if (!cat) return;
+        const result = await checkCategoryFrozen(cat.id);
+        if (!cancelled) setIsCategoryFrozen(result?.isFrozen ?? false);
+      } catch {
+        if (!cancelled) setIsCategoryFrozen(false);
+      }
+    };
+    check();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
 
   const handleSimulate = async () => {
     if (!selectedCategory || !amount) return;
@@ -155,10 +202,13 @@ export default function WhatIfSimulator() {
                     )}
                   >
                     <span
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                      className="w-10 h-10 rounded-lg flex items-center justify-center"
                       style={{ backgroundColor: category.color + '30' }}
                     >
-                      {category.icon}
+                      {(() => {
+                        const Icon = iconNameMap[category.icon];
+                        return Icon ? <Icon className="w-5 h-5" style={{ color: category.color }} /> : <Wallet className="w-5 h-5" style={{ color: category.color }} />;
+                      })()}
                     </span>
                     <span className="text-xs text-slate-300 font-medium truncate w-full text-center">
                       {category.name}
@@ -167,6 +217,23 @@ export default function WhatIfSimulator() {
                 ))}
               </div>
             </div>
+
+            {/* Frozen Category Warning */}
+            <AnimatePresence>
+              {isCategoryFrozen && (
+                <motion.div
+                  className="mb-6 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <Pause className="w-5 h-5 text-blue-400 shrink-0" />
+                  <p className="text-sm text-blue-200">
+                    This category is currently paused as part of a recovery action.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Simulate Button */}
             <button
@@ -306,8 +373,8 @@ export default function WhatIfSimulator() {
 
                   {/* Trigger Warning */}
                   {whatIfData.triggerPreview.wouldTrigger && (
-                    <div className="p-3 bg-caution-500/10 border border-caution-500/20 rounded-xl">
-                      <p className="text-sm text-caution-300">
+                    <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                      <p className="text-sm text-orange-300">
                         {whatIfData.triggerPreview.description}
                       </p>
                     </div>
@@ -316,60 +383,77 @@ export default function WhatIfSimulator() {
               </motion.div>
 
               {/* Goal Impact */}
-              <motion.div
-                className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm mb-4"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <Target className="w-5 h-5 text-slate-400" />
-                  <h3 className="font-semibold text-white">Goal Impact</h3>
-                </div>
-
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm text-slate-400">{whatIfData.probabilityImpact.goalName}</p>
+              {whatIfData.probabilityImpact ? (
+                <motion.div
+                  className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm mb-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <Target className="w-5 h-5 text-slate-400" />
+                    <h3 className="font-semibold text-white">Goal Impact</h3>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-white">
-                      {Math.round(whatIfData.probabilityImpact.currentProbability * 100)}%
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-slate-500" />
+
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm text-slate-400">{whatIfData.probabilityImpact.goalName}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-white">
+                        {Math.round(whatIfData.probabilityImpact.currentProbability * 100)}%
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-slate-500" />
+                      <span className={cn(
+                        'text-lg font-bold',
+                        whatIfData.probabilityImpact.probabilityChange < 0
+                          ? 'text-red-400'
+                          : 'text-green-400'
+                      )}>
+                        {Math.round(whatIfData.probabilityImpact.projectedProbability * 100)}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Probability change indicator */}
+                  <div className={cn(
+                    'flex items-center gap-2 px-3 py-2 rounded-lg',
+                    whatIfData.probabilityImpact.probabilityChange < 0
+                      ? 'bg-red-500/10'
+                      : 'bg-green-500/10'
+                  )}>
+                    {whatIfData.probabilityImpact.probabilityChange < 0 ? (
+                      <TrendingDown className="w-4 h-4 text-red-400" />
+                    ) : (
+                      <TrendingUp className="w-4 h-4 text-green-400" />
+                    )}
                     <span className={cn(
-                      'text-lg font-bold',
+                      'text-sm font-medium',
                       whatIfData.probabilityImpact.probabilityChange < 0
                         ? 'text-red-400'
                         : 'text-green-400'
                     )}>
-                      {Math.round(whatIfData.probabilityImpact.projectedProbability * 100)}%
+                      {whatIfData.probabilityImpact.changePercentPoints > 0 ? '+' : ''}
+                      {whatIfData.probabilityImpact.changePercentPoints} percentage points
                     </span>
                   </div>
-                </div>
-
-                {/* Probability change indicator */}
-                <div className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg',
-                  whatIfData.probabilityImpact.probabilityChange < 0
-                    ? 'bg-red-500/10'
-                    : 'bg-green-500/10'
-                )}>
-                  {whatIfData.probabilityImpact.probabilityChange < 0 ? (
-                    <TrendingDown className="w-4 h-4 text-red-400" />
-                  ) : (
-                    <TrendingUp className="w-4 h-4 text-green-400" />
-                  )}
-                  <span className={cn(
-                    'text-sm font-medium',
-                    whatIfData.probabilityImpact.probabilityChange < 0
-                      ? 'text-red-400'
-                      : 'text-green-400'
-                  )}>
-                    {whatIfData.probabilityImpact.changePercentPoints > 0 ? '+' : ''}
-                    {whatIfData.probabilityImpact.changePercentPoints} percentage points
-                  </span>
-                </div>
-              </motion.div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm mb-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <Target className="w-5 h-5 text-slate-400" />
+                    <h3 className="font-semibold text-white">Budget-Only Mode</h3>
+                  </div>
+                  <p className="text-sm text-slate-400">
+                    No active financial goals. The simulation shows budget impact only.
+                  </p>
+                </motion.div>
+              )}
 
               {/* Recovery Preview (if would trigger) */}
               {whatIfData.triggerPreview.wouldTrigger && whatIfData.recoveryPreview && (
@@ -397,7 +481,9 @@ export default function WhatIfSimulator() {
                           <p className="text-xs text-slate-500">{path.effort} effort</p>
                         </div>
                         <span className="text-green-400 font-bold">
-                          {Math.round(path.newProbability * 100)}%
+                          {path.newProbability !== null
+                            ? `${Math.round(path.newProbability * 100)}%`
+                            : path.budgetImpact || 'Budget recovery'}
                         </span>
                       </div>
                     ))}

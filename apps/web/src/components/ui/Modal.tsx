@@ -73,33 +73,38 @@ export function Modal({
     }
   }, []);
 
+  // Track if modal was previously open to detect open/close transitions
+  const wasOpenRef = useRef(false);
+
+  // Effect for focus management - only runs on open/close transitions
   useEffect(() => {
-    if (isOpen) {
-      // Store current focus
+    if (isOpen && !wasOpenRef.current) {
+      // Modal just opened - store current focus and focus the modal
       previousFocusRef.current = document.activeElement as HTMLElement;
-
-      // Add event listeners
-      document.addEventListener('keydown', handleEscape);
-      document.addEventListener('keydown', handleTabKey);
-
-      // Prevent body scroll
       document.body.style.overflow = 'hidden';
 
-      // Focus the modal
       setTimeout(() => {
         modalRef.current?.focus();
       }, 50);
+    } else if (!isOpen && wasOpenRef.current) {
+      // Modal just closed - restore focus and body scroll
+      document.body.style.overflow = '';
+      previousFocusRef.current?.focus();
     }
+
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  // Separate effect for keyboard event listeners
+  useEffect(() => {
+    if (!isOpen) return;
+
+    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', handleTabKey);
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('keydown', handleTabKey);
-      document.body.style.overflow = '';
-
-      // Restore focus
-      if (!isOpen && previousFocusRef.current) {
-        previousFocusRef.current.focus();
-      }
     };
   }, [isOpen, handleEscape, handleTabKey]);
 

@@ -93,11 +93,26 @@ export class BudgetCrudService {
       orderBy: [{ isActive: 'desc' }, { category: { name: 'asc' } }],
     });
 
+    // Fetch all active rebalances for this user in the current period
+    const periodStart = startOfMonth(new Date());
+    const activeRebalances = await this.prisma.budgetRebalance.findMany({
+      where: { userId, isActive: true, createdAt: { gte: periodStart } },
+      select: { fromCategoryId: true, toCategoryId: true, amount: true },
+    });
+
+    // Build a map of net rebalance adjustments per category
+    const rebalanceMap = new Map<string, number>();
+    for (const rb of activeRebalances) {
+      rebalanceMap.set(rb.toCategoryId, (rebalanceMap.get(rb.toCategoryId) ?? 0) + Number(rb.amount));
+      rebalanceMap.set(rb.fromCategoryId, (rebalanceMap.get(rb.fromCategoryId) ?? 0) - Number(rb.amount));
+    }
+
     // Calculate spending for each budget
     const items = await Promise.all(
       budgets.map(async (budget) => {
         const spent = await this.calculateSpentInPeriod(userId, budget.categoryId, budget.period);
-        return this.toResponseDto(budget, spent);
+        const rebalanceAdj = rebalanceMap.get(budget.categoryId) ?? 0;
+        return this.toResponseDto(budget, spent, rebalanceAdj);
       }),
     );
 
@@ -253,8 +268,8 @@ export class BudgetCrudService {
   /**
    * Convert database model to response DTO
    */
-  private toResponseDto(budget: any, spent?: number): BudgetResponseDto {
-    const amount = Number(budget.amount);
+  private toResponseDto(budget: any, spent?: number, rebalanceAdjustment = 0): BudgetResponseDto {
+    const amount = Number(budget.amount) + rebalanceAdjustment;
     const remaining = spent !== undefined ? amount - spent : undefined;
     const percentUsed = spent !== undefined && amount > 0
       ? Math.round((spent / amount) * 100)
@@ -262,6 +277,7 @@ export class BudgetCrudService {
 
     return {
       id: budget.id,
+      categoryId: budget.categoryId ?? budget.category?.id,
       category: {
         id: budget.category.id,
         name: budget.category.name,

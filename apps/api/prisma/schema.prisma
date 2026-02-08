@@ -206,6 +206,8 @@ model User {
   dateOfBirth          DateTime?
   employmentType       EmploymentType?
   emergencyFundEstimate Decimal?       @db.Decimal(15, 2)
+  phoneNumber                String?          // E.164 format (e.g., +2348012345678)
+  whatsappNotificationsEnabled Boolean        @default(false)
   onboardingCompleted  Boolean         @default(false)
   notificationsEnabled Boolean         @default(true)
   weeklyReportEnabled  Boolean         @default(true)
@@ -247,10 +249,15 @@ model User {
   recoverySessions       RecoverySession[]
   savingsRateAdjustments SavingsRateAdjustment[]
   categoryFreezes        CategoryFreeze[]
+  budgetRebalances       BudgetRebalance[]
   gpsAnalyticsEvents     GpsAnalyticsEvent[]
   commitmentContracts    CommitmentContract[]
   invitedReferees        CommitmentReferee[]
-  futureSelfLetters      FutureSelfLetter[]
+  groupsCreated          CommitmentGroup[]       @relation("groupsCreated")
+  groupMemberships       CommitmentGroupMember[]
+  futureSelfLetters         FutureSelfLetter[]
+  futureSelfConversations   FutureSelfConversation[]
+  futureSelfCommitments     FutureSelfCommitment[]
   dependencyRatioHistory DependencyRatioHistory[]
   familyEmergencies      FamilyEmergency[]
   storyCards             StoryCard[]
@@ -260,6 +267,13 @@ model User {
   importJobs             ImportJob[]
   importEmailAddress     ImportEmailAddress?
   onboardingProgress     OnboardingProgress?
+
+  // Commitment V2 relations
+  commitmentDebriefs       CommitmentDebrief[]       @relation("commitmentDebriefs")
+  commitmentStreak         CommitmentStreak?
+  sentEncouragements       GroupEncouragement[]       @relation("sentEncouragements")
+  receivedEncouragements   GroupEncouragement[]       @relation("receivedEncouragements")
+  sentReactions            GroupReaction[]            @relation("sentReactions")
 
   @@index([email])
   @@index([country])
@@ -809,6 +823,8 @@ model RecoverySession {
   overspendAmount     Decimal        @db.Decimal(15, 2)
   previousProbability Decimal        @db.Decimal(5, 4)
   newProbability      Decimal        @db.Decimal(5, 4)
+  budgetAmount        Decimal?       @db.Decimal(15, 2) // Budget amount at time of session (for overspend % calc)
+  timelineWeeks       Int?           // Adaptive timeline weeks from path generation (for execution)
   selectedPathId      String?
   selectedAt          DateTime?
   actionExecutedAt    DateTime? // When the recovery action was actually executed
@@ -816,10 +832,11 @@ model RecoverySession {
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
-  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goal            Goal?               @relation(fields: [goalId], references: [id])
-  analyticsEvents GpsAnalyticsEvent[]
-  milestones      RecoveryMilestone[]
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal              Goal?               @relation(fields: [goalId], references: [id])
+  analyticsEvents   GpsAnalyticsEvent[]
+  milestones        RecoveryMilestone[]
+  budgetRebalances  BudgetRebalance[]
 
   @@index([userId])
   @@index([userId, status])
@@ -847,6 +864,30 @@ model SavingsRateAdjustment {
   @@index([userId, isActive])
   @@index([endDate])
   @@map("savings_rate_adjustments")
+}
+
+/// Budget rebalance record for GPS Re-Router
+/// Tracks when budget is moved from an under-used category to cover an overspent one
+model BudgetRebalance {
+  id               String          @id @default(uuid())
+  userId           String
+  sessionId        String?
+  fromCategoryId   String
+  fromCategoryName String
+  toCategoryId     String
+  toCategoryName   String
+  amount           Decimal          @db.Decimal(15, 2)
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session RecoverySession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([sessionId])
+  @@map("budget_rebalances")
 }
 
 /// Category spending freeze for GPS Re-Router
@@ -908,6 +949,7 @@ enum GpsEventType {
   MILESTONE_ACHIEVED // Recovery milestone (25%, 50%, 75%, 100%)
   STREAK_UPDATED // Daily streak updated
   ACHIEVEMENT_AWARDED // User earned an achievement
+  DRIFT_DETECTED // Spending velocity drift detected (proactive)
 }
 
 // ============================================
@@ -961,6 +1003,18 @@ enum FundLockStatus {
   REFUNDED // Funds refunded on cancellation
 }
 
+enum GroupRole {
+  OWNER // Creator, can invite/remove members
+  MEMBER // Regular participant
+}
+
+enum GroupStatus {
+  FORMING // Still accepting members (< deadline)
+  ACTIVE // All members joined, commitments running
+  COMPLETED // All deadlines passed, outcome resolved
+  DISBANDED // Owner disbanded or all members left
+}
+
 enum CommitmentAuditAction {
   CREATED // Commitment created
   UPDATED // Commitment updated (deadline, stake, etc.)
@@ -975,6 +1029,11 @@ enum CommitmentAuditAction {
   FUNDS_FORFEITED // Funds were forfeited
   FUNDS_REFUNDED // Funds were refunded (partial or full)
   ENFORCEMENT_TRIGGERED // Cron job triggered enforcement
+  PARTIAL_REFUND_TIER // Partial refund based on achievement tier
+  SELF_VERIFIED // User self-verified after referee grace period
+  DEBRIEF_GENERATED // Post-failure AI debrief generated
+  TRUST_BONUS_APPLIED // Streak trust bonus applied to contract
+  ENCOURAGEMENT_SENT // In-group encouragement sent
 }
 
 // ============================================
@@ -1006,11 +1065,27 @@ model CommitmentContract {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goal      Goal                 @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  referee   CommitmentReferee?   @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
-  fundLocks CommitmentFundLock[]
-  auditLogs CommitmentAuditLog[]
+  // Achievement tier fields (Task 1: Partial Success)
+  achievementPercentage  Decimal?  @db.Decimal(5, 2)
+  achievementTier        String?
+  tierRefundPercentage   Decimal?  @db.Decimal(5, 2)
+
+  // Self-verify fields (Task 2: Referee Grace Period)
+  selfVerifyOfferedAt    DateTime?
+  selfVerifyExpiresAt    DateTime?
+  selfVerifiedAt         DateTime?
+
+  // Streak trust bonus fields (Task 10: Streak Discounts)
+  trustBonusApplied      Boolean   @default(false)
+  trustBonusAmount       Decimal?  @db.Decimal(15, 2)
+
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal        Goal                    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  referee     CommitmentReferee?      @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
+  fundLocks   CommitmentFundLock[]
+  auditLogs   CommitmentAuditLog[]
+  groupMember CommitmentGroupMember?
+  debrief     CommitmentDebrief?
 
   @@index([userId])
   @@index([goalId])
@@ -1107,6 +1182,61 @@ model CommitmentAuditLog {
   @@index([performedBy])
   @@index([createdAt])
   @@map("commitment_audit_logs")
+}
+
+// ============================================
+// COMMITMENT GROUP MODELS (Group Accountability)
+// ============================================
+
+/// Accountability group — shared progress dashboard for 2-5 members
+/// Each member keeps their own CommitmentContract; the group provides social reinforcement
+model CommitmentGroup {
+  id          String      @id @default(uuid())
+  name        String      // e.g., "Savings Squad Q2"
+  description String?
+  inviteCode  String      @unique // 8-char hex code for sharing
+  status      GroupStatus @default(FORMING)
+  maxMembers  Int         @default(5) // 2-5 members (behavioral optimum)
+  createdBy   String      // userId of creator
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Shared group goal fields (Task 7)
+  sharedGoalAmount   Decimal?  @db.Decimal(15, 2)
+  sharedGoalCurrency String?   @default("NGN")
+  sharedGoalLabel    String?   @db.VarChar(200)
+
+  creator        User                    @relation("groupsCreated", fields: [createdBy], references: [id])
+  members        CommitmentGroupMember[]
+  encouragements GroupEncouragement[]
+  reactions      GroupReaction[]
+
+  @@index([createdBy])
+  @@index([inviteCode])
+  @@index([status])
+  @@map("commitment_groups")
+}
+
+/// Membership in an accountability group with optional contract link
+model CommitmentGroupMember {
+  id                String    @id @default(uuid())
+  groupId           String
+  userId            String
+  contractId        String?   @unique // Linked CommitmentContract (null until they create one)
+  role              GroupRole @default(MEMBER)
+  groupBonusAwarded Boolean   @default(false)
+  joinedAt          DateTime  @default(now())
+  leftAt            DateTime? // null = still active
+
+  group    CommitmentGroup     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contract CommitmentContract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+
+  @@unique([groupId, userId]) // One membership per group per user
+  @@index([groupId])
+  @@index([userId])
+  @@index([contractId])
+  @@map("commitment_group_members")
 }
 
 // ============================================
@@ -1207,7 +1337,9 @@ model FutureSelfLetter {
 
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations FutureSelfConversation[]
+  commitments   FutureSelfCommitment[]
 
   @@index([userId])
   @@index([userId, createdAt])
@@ -1215,6 +1347,54 @@ model FutureSelfLetter {
   @@index([trigger])
   @@index([createdAt])
   @@map("future_self_letters")
+}
+
+/// Future Self Conversation - Multi-turn chat with future self persona
+/// Stores conversation history per letter for continuity
+model FutureSelfConversation {
+  id        String   @id @default(uuid())
+  userId    String
+  letterId  String
+  messages  Json     // Array of { role: 'user' | 'future_self', content: string, createdAt: string }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  letter FutureSelfLetter  @relation(fields: [letterId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([letterId])
+  @@map("future_self_conversations")
+}
+
+/// Future Self Commitment - Daily micro-commitments from letter prompts
+/// Tracks user's commitment to save a daily amount after reading a letter
+model FutureSelfCommitment {
+  id            String           @id @default(uuid())
+  userId        String
+  letterId      String
+  dailyAmount   Decimal          @db.Decimal(15, 2)
+  currency      String           @default("NGN")
+  status        FutureSelfCommitmentStatus @default(ACTIVE)
+  startDate     DateTime         @default(now())
+  endDate       DateTime?
+  streakDays    Int              @default(0)
+  upgradedToContractId String?   // Links to CommitmentContract when upgraded from micro-commitment to staked contract
+  createdAt     DateTime         @default(now())
+
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  letter FutureSelfLetter  @relation(fields: [letterId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, status])
+  @@map("future_self_commitments")
+}
+
+enum FutureSelfCommitmentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ABANDONED
 }
 
 // ============================================
@@ -1702,4 +1882,84 @@ model OnboardingProgress {
 
   @@index([userId])
   @@map("onboarding_progress")
+}
+
+// ============================================
+// COMMITMENT DEVICE ENGINE V2 MODELS
+// ============================================
+
+/// AI-generated debrief after commitment failure
+/// Provides empathetic analysis and concrete suggestions for next attempt
+model CommitmentDebrief {
+  id                   String   @id @default(uuid())
+  contractId           String   @unique
+  userId               String
+  analysis             String   @db.Text
+  suggestedStakeType   String?
+  suggestedStakeAmount Decimal? @db.Decimal(15, 2)
+  suggestedDeadlineDays Int?
+  keyInsights          Json?
+  createdAt            DateTime @default(now())
+
+  contract CommitmentContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  user     User               @relation("commitmentDebriefs", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("commitment_debriefs")
+}
+
+/// Tracks consecutive commitment successes for trust bonus eligibility
+/// 3+ streak = 10% trust bonus on LOSS_POOL stakes
+model CommitmentStreak {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  currentStreak   Int       @default(0)
+  longestStreak   Int       @default(0)
+  lastSucceededAt DateTime?
+  trustBonusRate  Decimal   @default(0) @db.Decimal(5, 2)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("commitment_streaks")
+}
+
+/// In-group encouragement messages between members
+/// Rate-limited: max 5 per user per group per day
+model GroupEncouragement {
+  id         String   @id @default(uuid())
+  groupId    String
+  fromUserId String
+  toUserId   String
+  message    String   @default("You got this!") @db.VarChar(200)
+  createdAt  DateTime @default(now())
+
+  group    CommitmentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromUser User            @relation("sentEncouragements", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User            @relation("receivedEncouragements", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([toUserId])
+  @@index([fromUserId, toUserId, createdAt])
+  @@map("group_encouragements")
+}
+
+/// Lightweight emoji reactions on group member progress
+/// Toggle pattern: exists → delete, not exists → create
+model GroupReaction {
+  id        String   @id @default(uuid())
+  groupId   String
+  userId    String
+  targetId  String
+  emoji     String   @db.VarChar(10)
+  createdAt DateTime @default(now())
+
+  group CommitmentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User            @relation("sentReactions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId, targetId, emoji])
+  @@index([groupId, targetId])
+  @@map("group_reactions")
 }

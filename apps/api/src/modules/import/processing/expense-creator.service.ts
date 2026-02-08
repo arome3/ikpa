@@ -11,6 +11,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma';
 import { ImportConfirmationException } from '../exceptions';
 import { ParsedTransactionStatus } from '@prisma/client';
+import { getCategoryForMerchant } from './merchant-category-map';
 
 /**
  * Known subscription merchants for Shark Auditor integration
@@ -67,14 +68,17 @@ export class ExpenseCreatorService {
     skipped: number;
     expenseIds: string[];
   }> {
-    // Validate category exists
+    const shouldAutoCategorize = categoryId === 'other' || categoryId === 'auto';
+
+    // Validate category exists (for auto mode, validate 'other' as the fallback)
+    const validationCategoryId = shouldAutoCategorize ? 'other' : categoryId;
     const category = await this.prisma.expenseCategory.findUnique({
-      where: { id: categoryId },
+      where: { id: validationCategoryId },
     });
 
     if (!category) {
       throw new ImportConfirmationException(
-        `Category with id '${categoryId}' not found`,
+        `Category with id '${validationCategoryId}' not found`,
       );
     }
 
@@ -124,6 +128,13 @@ export class ExpenseCreatorService {
           continue;
         }
 
+        // Resolve category: auto-detect per merchant or use user's explicit choice
+        let resolvedCategoryId = categoryId;
+        if (shouldAutoCategorize) {
+          const detected = getCategoryForMerchant(txn.merchant, txn.normalizedMerchant);
+          resolvedCategoryId = detected || 'other';
+        }
+
         // Determine if recurring based on merchant
         const isRecurring = this.isSubscriptionMerchant(txn.normalizedMerchant);
 
@@ -131,7 +142,7 @@ export class ExpenseCreatorService {
         const expense = await tx.expense.create({
           data: {
             userId,
-            categoryId,
+            categoryId: resolvedCategoryId,
             amount: Math.abs(numericAmount),
             currency: txn.currency,
             date: txn.date,
@@ -142,6 +153,22 @@ export class ExpenseCreatorService {
         });
 
         expenseIds.push(expense.id);
+
+        // Emit per-expense event for GPS budget checking
+        // Look up category name for the event payload
+        const expenseCategory = await tx.expenseCategory.findUnique({
+          where: { id: resolvedCategoryId },
+          select: { name: true },
+        });
+
+        this.eventEmitter.emit('expense.created', {
+          userId,
+          expenseId: expense.id,
+          categoryId: resolvedCategoryId,
+          categoryName: expenseCategory?.name || resolvedCategoryId,
+          amount: Math.abs(numericAmount),
+          currency: txn.currency,
+        });
 
         // Update transaction status
         await tx.parsedTransaction.update({
@@ -167,7 +194,7 @@ export class ExpenseCreatorService {
       `Created ${expenseIds.length} expenses from job ${jobId} (${skipped} skipped)`,
     );
 
-    // Emit event for Shark Auditor to re-scan
+    // Emit bulk event for Shark Auditor to re-scan
     if (expenseIds.length > 0) {
       this.eventEmitter.emit('expenses.created', {
         userId,
@@ -213,14 +240,22 @@ export class ExpenseCreatorService {
       );
     }
 
+    // Resolve category: auto-detect per merchant or use user's explicit choice
+    const shouldAutoCategorize = categoryId === 'other' || categoryId === 'auto';
+    let resolvedCategoryId = categoryId;
+    if (shouldAutoCategorize) {
+      const detected = getCategoryForMerchant(transaction.merchant, transaction.normalizedMerchant);
+      resolvedCategoryId = detected || 'other';
+    }
+
     // Validate category
     const category = await this.prisma.expenseCategory.findUnique({
-      where: { id: categoryId },
+      where: { id: resolvedCategoryId },
     });
 
     if (!category) {
       throw new ImportConfirmationException(
-        `Category with id '${categoryId}' not found`,
+        `Category with id '${resolvedCategoryId}' not found`,
       );
     }
 
@@ -236,7 +271,7 @@ export class ExpenseCreatorService {
       this.prisma.expense.create({
         data: {
           userId,
-          categoryId,
+          categoryId: resolvedCategoryId,
           amount: Math.abs(Number(transaction.amount)),
           currency: transaction.currency,
           date: transaction.date,
@@ -268,7 +303,17 @@ export class ExpenseCreatorService {
 
     this.logger.log(`Created expense ${expense.id} from transaction ${transactionId}`);
 
-    // Emit event
+    // Emit per-expense event for GPS budget checking
+    this.eventEmitter.emit('expense.created', {
+      userId,
+      expenseId: expense.id,
+      categoryId: resolvedCategoryId,
+      categoryName: category.name,
+      amount: Math.abs(Number(transaction.amount)),
+      currency: transaction.currency,
+    });
+
+    // Emit bulk event for Shark Auditor
     this.eventEmitter.emit('expenses.created', {
       userId,
       expenseIds: [expense.id],

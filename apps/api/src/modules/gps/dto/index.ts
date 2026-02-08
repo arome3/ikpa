@@ -10,3 +10,6 @@ export * from './streak.dto';
 export * from './progress.dto';
 export * from './what-if.dto';
 export * from './notification.dto';
+export * from './quick-rebalance.dto';
+export * from './forecast.dto';
+export * from './budget-insight.dto';

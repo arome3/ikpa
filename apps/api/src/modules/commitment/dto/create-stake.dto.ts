@@ -39,6 +39,14 @@ export class CreateStakeDto {
   @IsOptional()
   idempotencyKey?: string;
 
+  @ApiPropertyOptional({
+    example: 'session-123-abc-def',
+    description: 'AI coach negotiation session ID, if this commitment was created via the AI coach. Enables Opik tracking.',
+  })
+  @IsString({ message: 'negotiationSessionId must be a string' })
+  @IsOptional()
+  negotiationSessionId?: string;
+
   @ApiProperty({
     example: 'goal-123-abc-def',
     description: 'The ID of the goal to commit to',

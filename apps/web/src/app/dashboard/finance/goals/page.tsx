@@ -13,12 +13,15 @@ import { formatWithSeparators, useCurrency } from '@/hooks';
 
 const goalTypeConfig: Record<string, { icon: typeof Target; color: string; label: string }> = {
   EMERGENCY_FUND: { icon: Heart, color: 'rose', label: 'Emergency Fund' },
-  HOME: { icon: Home, color: 'blue', label: 'Home' },
-  VEHICLE: { icon: Car, color: 'purple', label: 'Vehicle' },
+  SAVINGS: { icon: Target, color: 'blue', label: 'Savings' },
+  INVESTMENT: { icon: Sparkles, color: 'purple', label: 'Investment' },
+  DEBT_PAYOFF: { icon: Target, color: 'amber', label: 'Debt Payoff' },
+  MAJOR_PURCHASE: { icon: Home, color: 'blue', label: 'Major Purchase' },
   EDUCATION: { icon: GraduationCap, color: 'emerald', label: 'Education' },
   TRAVEL: { icon: Plane, color: 'amber', label: 'Travel' },
+  FAMILY: { icon: Heart, color: 'pink', label: 'Family' },
+  BUSINESS: { icon: Car, color: 'purple', label: 'Business' },
   RETIREMENT: { icon: Sparkles, color: 'pink', label: 'Retirement' },
-  WEDDING: { icon: Heart, color: 'rose', label: 'Wedding' },
   OTHER: { icon: Target, color: 'gray', label: 'Other' },
 };
 

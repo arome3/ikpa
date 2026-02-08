@@ -175,8 +175,12 @@ class ApiClient {
     }
 
     if (!response.ok) {
+      const errorMessage =
+        responseData?.error?.message ||
+        responseData?.message ||
+        `Request failed with status ${response.status}`;
       throw new ApiError(
-        responseData?.message || `Request failed with status ${response.status}`,
+        errorMessage,
         response.status,
         responseData
       );
@@ -245,8 +249,12 @@ class ApiClient {
     }
 
     if (!response.ok) {
+      const errorMessage =
+        responseData?.error?.message ||
+        responseData?.message ||
+        `Request failed with status ${response.status}`;
       throw new ApiError(
-        responseData?.message || `Request failed with status ${response.status}`,
+        errorMessage,
         response.status,
         responseData
       );

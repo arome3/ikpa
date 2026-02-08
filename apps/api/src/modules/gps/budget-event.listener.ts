@@ -18,6 +18,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { GpsEventType } from '@prisma/client';
 import { BudgetService } from './budget.service';
 import { StreakService } from './streaks';
+import { GpsNotificationService } from './notification';
 import { GPS_CONSTANTS } from './constants';
 import { BudgetTrigger, BudgetStatus } from './interfaces';
 
@@ -55,6 +56,7 @@ export const GPS_EVENTS = {
   BUDGET_CHECK: 'budget.check',
   BUDGET_THRESHOLD_CROSSED: 'gps.budget.threshold.crossed',
   GPS_NOTIFICATION_REQUIRED: 'gps.notification.required',
+  SPENDING_DRIFT_DETECTED: 'gps.drift.detected',
 } as const;
 
 @Injectable()
@@ -66,6 +68,7 @@ export class BudgetEventListener {
     private readonly budgetService: BudgetService,
     private readonly eventEmitter: EventEmitter2,
     private readonly streakService: StreakService,
+    private readonly notificationService: GpsNotificationService,
   ) {}
 
   /**
@@ -86,6 +89,16 @@ export class BudgetEventListener {
       // Don't let budget check failures break expense creation
       this.logger.warn(
         `[handleExpenseCreated] Failed to check budget for user ${event.userId}: ${error}`,
+      );
+    }
+
+    // Proactive drift detection — runs independently of threshold checks
+    try {
+      await this.checkSpendingDrift(event.userId, event.categoryId, event.categoryName, event.currency);
+    } catch (error) {
+      // Drift detection failure must never block expense creation
+      this.logger.warn(
+        `[handleExpenseCreated] Drift check failed for user ${event.userId}: ${error}`,
       );
     }
   }
@@ -301,6 +314,92 @@ export class BudgetEventListener {
         newValue: event.spent,
       },
     });
+  }
+
+  /**
+   * Check if spending velocity indicates drift and create notification if needed
+   */
+  private async checkSpendingDrift(
+    userId: string,
+    categoryId: string,
+    categoryName: string,
+    currency: string,
+  ): Promise<void> {
+    const budget = await this.budgetService.getBudgetByCategoryId(userId, categoryId);
+    if (!budget) return;
+
+    const budgetAmount = Number(budget.amount);
+    const spentAmount = await this.budgetService.getSpent(userId, categoryId, budget.period);
+
+    // Skip if budget already exceeded — reactive alerts handle that
+    if (spentAmount >= budgetAmount) return;
+
+    const velocity = await this.budgetService.calculateSpendingVelocity(
+      userId,
+      categoryId,
+      budget.period,
+    );
+    if (!velocity) return;
+
+    const { DRIFT_DETECTION } = GPS_CONSTANTS;
+
+    // Apply all guardrails
+    if (velocity.daysElapsed < DRIFT_DETECTION.MIN_ELAPSED_DAYS) return;
+    if (velocity.daysRemaining < DRIFT_DETECTION.MIN_DAYS_REMAINING) return;
+    if (velocity.velocityRatio < DRIFT_DETECTION.VELOCITY_RATIO_THRESHOLD) return;
+    if (!velocity.willOverspend) return;
+
+    // Check alert horizon
+    if (velocity.projectedOverspendDate) {
+      const now = new Date();
+      const daysUntilOverspend = Math.ceil(
+        (velocity.projectedOverspendDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
+      );
+      if (daysUntilOverspend > DRIFT_DETECTION.ALERT_HORIZON_DAYS) return;
+    }
+
+    // Create drift notification (fatigue prevention is handled inside)
+    const notification = await this.notificationService.createDriftNotification(
+      userId,
+      categoryId,
+      categoryName,
+      velocity.velocityRatio,
+      velocity.projectedOverspendDate,
+      velocity.courseCorrectionDaily,
+      currency || budget.currency || 'USD',
+    );
+
+    if (notification) {
+      // Track analytics event
+      await this.prisma.gpsAnalyticsEvent.create({
+        data: {
+          userId,
+          eventType: GpsEventType.DRIFT_DETECTED,
+          eventData: {
+            categoryId,
+            categoryName,
+            velocityRatio: velocity.velocityRatio,
+            projectedOverspendDate: velocity.projectedOverspendDate?.toISOString() ?? null,
+            courseCorrectionDaily: velocity.courseCorrectionDaily,
+            detectedBy: 'realtime',
+          },
+        },
+      });
+
+      // Emit event for other listeners
+      this.eventEmitter.emit(GPS_EVENTS.SPENDING_DRIFT_DETECTED, {
+        userId,
+        categoryId,
+        categoryName,
+        velocityRatio: velocity.velocityRatio,
+        projectedOverspendDate: velocity.projectedOverspendDate,
+      });
+
+      this.logger.log(
+        `[checkSpendingDrift] User ${userId}: drift detected in ${categoryName} ` +
+          `(${velocity.velocityRatio.toFixed(1)}x pace)`,
+      );
+    }
   }
 
   /**

@@ -87,6 +87,60 @@ export const SPAN_CONTENT_MODERATION = 'content_moderation';
  */
 export const FEEDBACK_TONE_EMPATHY = 'ToneEmpathy';
 
+/**
+ * Trace name for conversation
+ */
+export const TRACE_FUTURE_SELF_CONVERSATION = 'future_self_conversation';
+
+/**
+ * Span names for conversation tracing
+ */
+export const SPAN_LOAD_CONVERSATION_CONTEXT = 'load_conversation_context';
+export const SPAN_GENERATE_RESPONSE = 'generate_response';
+export const SPAN_MODERATE_RESPONSE = 'moderate_response';
+
+/**
+ * Span names for enrichUserContext retrieval tracing
+ */
+export const SPAN_FETCH_EXPENSES = 'fetch_recent_expenses';
+export const SPAN_FETCH_SUBSCRIPTIONS = 'fetch_subscription_cancellations';
+export const SPAN_FETCH_CONTRIBUTIONS = 'fetch_goal_contributions';
+export const SPAN_FETCH_EXPENSE_AGGREGATE = 'fetch_expense_aggregate';
+export const SPAN_FETCH_GPS_RECOVERY = 'fetch_gps_recovery_context';
+
+/**
+ * Feedback name for commitment conversion
+ */
+export const FEEDBACK_COMMITMENT_CONVERSION = 'commitment_conversion';
+
+/**
+ * Feedback name for composite letter quality
+ */
+export const FEEDBACK_LETTER_QUALITY_COMPOSITE = 'letter_quality_composite';
+
+/**
+ * Feedback name for cultural sensitivity score
+ */
+export const FEEDBACK_CULTURAL_SENSITIVITY = 'CulturalSensitivity';
+
+/**
+ * A/B test name for letter mode framing (gratitude vs regret)
+ */
+export const AB_TEST_LETTER_MODE = 'letter-mode-framing';
+
+/**
+ * Trace name for event-triggered letter generation
+ */
+export const TRACE_FUTURE_SELF_TRIGGERED = 'future_self_triggered_letter';
+
+/**
+ * Rate limit for conversation endpoint (5 per minute)
+ */
+export const CONVERSATION_RATE_LIMIT = {
+  ttl: 60000,
+  limit: 5,
+};
+
 // ==========================================
 // RATE LIMITING
 // ==========================================

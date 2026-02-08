@@ -44,13 +44,13 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { Prisma, OptimizerType, OptimizerExperimentStatus } from '@prisma/client';
 import { PrismaService } from '../../../../../prisma/prisma.service';
 import { OpikService } from '../../opik.service';
 import {
   CreateExperimentConfig,
   CompleteExperimentInput,
   RecordVariantResultInput,
-  LinkTraceInput,
   OpikExperiment,
   ExperimentComparison,
   ExperimentAnalysis,
@@ -78,8 +78,6 @@ const TAG_VARIANT_PREFIX = 'variant:';
 /** Feedback name for experiment completion */
 const FEEDBACK_EXPERIMENT_COMPLETE = 'ExperimentComplete';
 
-/** Significance threshold for p-value */
-const SIGNIFICANCE_THRESHOLD = 0.05;
 
 /** Minimum samples for reliable results */
 const MIN_SAMPLES_FOR_SIGNIFICANCE = 30;
@@ -172,7 +170,7 @@ export class OpikExperimentService implements IOpikExperimentService {
     await this.prisma.optimizerExperiment.create({
       data: {
         id: experimentId,
-        type: (config.type || 'FRAMING').toUpperCase(),
+        type: (config.type || 'FRAMING').toUpperCase() as OptimizerType,
         name: config.name,
         config: {
           hypothesis: config.hypothesis,
@@ -180,8 +178,8 @@ export class OpikExperimentService implements IOpikExperimentService {
           variantDescription: config.variantDescription,
           metadata: config.metadata,
           tags: config.tags,
-        },
-        status: 'CREATED',
+        } as unknown as Prisma.InputJsonValue,
+        status: 'CREATED' as OptimizerExperimentStatus,
         startedAt: now,
       },
     });
@@ -263,7 +261,7 @@ export class OpikExperimentService implements IOpikExperimentService {
         result: {
           baselineResults: experiment.baselineResults,
           variantResults: experiment.variantResults,
-        },
+        } as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -331,7 +329,7 @@ export class OpikExperimentService implements IOpikExperimentService {
         traceId: completionTrace.traceId,
         name: FEEDBACK_EXPERIMENT_COMPLETE,
         value: analysis.isSignificant ? 1 : 0,
-        category: 'experiment' as const,
+        category: 'custom',
         comment: fullAnalysis.summary,
       });
     }
@@ -346,7 +344,7 @@ export class OpikExperimentService implements IOpikExperimentService {
           baselineResults: experiment.baselineResults,
           variantResults: experiment.variantResults,
           analysis: fullAnalysis,
-        },
+        } as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -356,7 +354,7 @@ export class OpikExperimentService implements IOpikExperimentService {
     // End completion trace
     this.opikService.endTrace(completionTrace, {
       success: true,
-      result: fullAnalysis,
+      result: fullAnalysis as unknown as Record<string, unknown>,
     });
 
     await this.opikService.flush();
@@ -435,9 +433,9 @@ export class OpikExperimentService implements IOpikExperimentService {
       variantDescription: (config.variantDescription as string) || '',
       type: (dbExperiment.type?.toLowerCase() as OpikExperiment['type']) || 'framing',
       status: this.mapDbStatus(dbExperiment.status),
-      createdAt: dbExperiment.startedAt,
-      startedAt: dbExperiment.startedAt,
-      completedAt: dbExperiment.completedAt || undefined,
+      createdAt: dbExperiment.startedAt!,
+      startedAt: dbExperiment.startedAt!,
+      completedAt: dbExperiment.completedAt ?? undefined,
       rootTraceId: dbExperiment.id,
       metadata: config.metadata as Record<string, unknown>,
       tags: config.tags as string[],

@@ -39,7 +39,7 @@ export const VISION_MAX_TOKENS = 8000;
 export const PARSING_TIMEOUT_MS = 120000;
 
 // Email import configuration
-export const IMPORT_EMAIL_DOMAIN = 'import.ikpa.app';
+export const IMPORT_EMAIL_DOMAIN = 'updates.nat-quest.com';
 
 // Storage configuration
 export const UPLOADS_DIR = './uploads';

@@ -214,7 +214,7 @@ export class MetricsRegistryService implements IMetricsRegistry, OnModuleInit {
         return false;
       }
 
-      const response = await api.feedbackDefinitions.findFeedbackDefinitions({
+      const response = await (api as any).feedbackDefinitions.findFeedbackDefinitions({
         name,
       });
 
@@ -283,7 +283,7 @@ export class MetricsRegistryService implements IMetricsRegistry, OnModuleInit {
     // Register with retry
     return this.withRetry(
       async () => {
-        await api.feedbackDefinitions.createFeedbackDefinition(feedbackCreate);
+        await (api as any).feedbackDefinitions.createFeedbackDefinition(feedbackCreate);
         this.registeredMetrics.add(metric.name);
         return {
           name: metric.name,

@@ -22,6 +22,7 @@ import {
 import { differenceInDays, isBefore, isAfter, addDays } from 'date-fns';
 import { StakeService } from './stake.service';
 import { RefereeService } from './referee.service';
+import { StreakService } from './streak.service';
 import {
   CreateCommitmentInput,
   UpdateCommitmentInput,
@@ -31,11 +32,13 @@ import {
   PaginatedResponse,
   PartialRefundResult,
   AuditLogInput,
+  TierResult,
 } from './interfaces';
 import {
   COMMITMENT_CONSTANTS,
   COMMITMENT_MESSAGES,
   COMMITMENT_TRACE_NAMES,
+  ACHIEVEMENT_TIERS,
 } from './constants';
 import {
   CommitmentNotFoundException,
@@ -62,6 +65,7 @@ export class CommitmentService {
     private readonly opikService: OpikService,
     private readonly stakeService: StakeService,
     private readonly refereeService: RefereeService,
+    private readonly streakService: StreakService,
   ) {}
 
   /**
@@ -204,6 +208,12 @@ export class CommitmentService {
         throw new StakeValidationException(stakeValidation.errors);
       }
 
+      // 8. Check trust bonus eligibility for LOSS_POOL
+      let trustBonus: { eligible: boolean; bonusAmount: number; bonusRate: number } | null = null;
+      if (input.stakeType === StakeType.LOSS_POOL && input.stakeAmount) {
+        trustBonus = await this.streakService.calculateTrustBonus(userId, input.stakeAmount);
+      }
+
       // ========================================
       // PHASE 2: Lock funds FIRST (if needed)
       // ========================================
@@ -254,6 +264,8 @@ export class CommitmentService {
             status: CommitmentStatus.ACTIVE,
             verifiedById: null, // Referee will be linked after invitation
             idempotencyKey: input.idempotencyKey || null,
+            trustBonusApplied: trustBonus?.eligible || false,
+            trustBonusAmount: trustBonus?.eligible ? trustBonus.bonusAmount : null,
           },
           include: {
             goal: { select: { name: true, targetAmount: true } },
@@ -296,6 +308,22 @@ export class CommitmentService {
               metadata: {
                 currency: user?.currency || 'NGN',
                 lockId: fundLockResult.lockId,
+              },
+            },
+          });
+        }
+
+        // If trust bonus applied, log it
+        if (trustBonus?.eligible) {
+          await tx.commitmentAuditLog.create({
+            data: {
+              contractId: newContract.id,
+              action: CommitmentAuditAction.TRUST_BONUS_APPLIED,
+              performedBy: userId,
+              newAmount: trustBonus.bonusAmount ? new Prisma.Decimal(trustBonus.bonusAmount) : null,
+              metadata: {
+                bonusRate: trustBonus.bonusRate,
+                bonusAmount: trustBonus.bonusAmount,
               },
             },
           });
@@ -934,6 +962,80 @@ export class CommitmentService {
   }
 
   /**
+   * Self-verify a commitment when referee hasn't responded
+   * Only available after grace period and before self-verify expiration
+   */
+  async selfVerify(
+    userId: string,
+    contractId: string,
+    decision: boolean,
+    notes?: string,
+  ): Promise<{ success: boolean; newStatus: string; message: string }> {
+    const contract = await this.prisma.commitmentContract.findFirst({
+      where: { id: contractId, userId },
+    });
+
+    if (!contract) {
+      throw new CommitmentNotFoundException(contractId);
+    }
+
+    if (contract.status !== CommitmentStatus.PENDING_VERIFICATION) {
+      throw new CommitmentPendingVerificationException(contractId);
+    }
+
+    if (!contract.selfVerifyOfferedAt) {
+      throw new CommitmentPendingVerificationException(contractId);
+    }
+
+    if (contract.selfVerifyExpiresAt && contract.selfVerifyExpiresAt < new Date()) {
+      throw new DeadlinePassedException(contract.selfVerifyExpiresAt);
+    }
+
+    const newStatus = decision ? CommitmentStatus.SUCCEEDED : CommitmentStatus.FAILED;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.commitmentContract.update({
+        where: { id: contractId },
+        data: {
+          status: newStatus,
+          selfVerifiedAt: new Date(),
+          ...(decision ? { succeededAt: new Date() } : { failedAt: new Date() }),
+        },
+      });
+
+      await tx.commitmentAuditLog.create({
+        data: {
+          contractId,
+          action: CommitmentAuditAction.SELF_VERIFIED,
+          performedBy: userId,
+          previousStatus: CommitmentStatus.PENDING_VERIFICATION,
+          newStatus,
+          metadata: { decision, notes: notes || null, selfVerifiedAt: new Date().toISOString() },
+        },
+      });
+    });
+
+    // Process stakes after transaction
+    try {
+      if (decision) {
+        await this.processSuccessfulCommitment(contract as any);
+      } else {
+        await this.processFailedCommitment(contract as any);
+      }
+    } catch (e) {
+      this.logger.error(`[selfVerify] Stake processing failed: ${e}`);
+    }
+
+    return {
+      success: true,
+      newStatus,
+      message: decision
+        ? 'Commitment verified as successful! Your stake is being released.'
+        : 'Thank you for your honesty. Consider what you might do differently next time.',
+    };
+  }
+
+  /**
    * Process a successful commitment - release funds
    */
   async processSuccessfulCommitment(
@@ -955,6 +1057,13 @@ export class CommitmentService {
         processed = Number(contract.stakeAmount);
       }
 
+      // Update streak on success
+      try {
+        await this.streakService.updateStreak(contract.userId, true);
+      } catch (e) {
+        this.logger.warn(`[processSuccessfulCommitment] Streak update failed: ${e}`);
+      }
+
       this.opikService.endTrace(trace, { success: true, result: { processed } });
       return processed;
     } catch (error) {
@@ -965,7 +1074,7 @@ export class CommitmentService {
   }
 
   /**
-   * Process a failed commitment - enforce stakes
+   * Process a failed commitment - enforce stakes with achievement tier consideration
    */
   async processFailedCommitment(
     contract: {
@@ -986,8 +1095,77 @@ export class CommitmentService {
     });
 
     try {
+      // Calculate achievement tier before enforcing stakes
+      const tierResult = await this.calculateAchievementTier(contract.id);
       let processed: number | undefined;
 
+      // Save tier data on the contract
+      await this.prisma.commitmentContract.update({
+        where: { id: contract.id },
+        data: {
+          achievementPercentage: tierResult.achievementPercentage,
+          achievementTier: tierResult.tier,
+          tierRefundPercentage: tierResult.refundPercentage,
+        },
+      });
+
+      // GOLD tier = treat as success
+      if (tierResult.tier === 'GOLD') {
+        this.logger.log(`[processFailedCommitment] Contract ${contract.id} achieved GOLD tier — treating as success`);
+        await this.prisma.commitmentContract.update({
+          where: { id: contract.id },
+          data: { status: CommitmentStatus.SUCCEEDED, succeededAt: new Date() },
+        });
+        processed = await this.processSuccessfulCommitment(contract);
+        await this.createAuditLog({
+          contractId: contract.id,
+          action: CommitmentAuditAction.PARTIAL_REFUND_TIER,
+          performedBy: 'system',
+          metadata: { tier: 'GOLD', achievementPercentage: tierResult.achievementPercentage, refundPercentage: 100 },
+        });
+        this.opikService.endTrace(trace, { success: true, result: { processed, tier: 'GOLD' } });
+        return processed;
+      }
+
+      // SILVER/BRONZE tier = partial refund
+      if (tierResult.tier === 'SILVER' || tierResult.tier === 'BRONZE') {
+        if (contract.stakeType === StakeType.LOSS_POOL && contract.stakeAmount) {
+          const amount = Number(contract.stakeAmount);
+          const refundAmount = Math.floor((amount * tierResult.refundPercentage) / 100);
+          const forfeitAmount = amount - refundAmount;
+
+          await this.stakeService.processPartialRefund(
+            contract.userId,
+            contract.id,
+            refundAmount,
+            forfeitAmount,
+          );
+          processed = refundAmount;
+        }
+
+        await this.createAuditLog({
+          contractId: contract.id,
+          action: CommitmentAuditAction.PARTIAL_REFUND_TIER,
+          performedBy: 'system',
+          metadata: {
+            tier: tierResult.tier,
+            achievementPercentage: tierResult.achievementPercentage,
+            refundPercentage: tierResult.refundPercentage,
+          },
+        });
+
+        // SILVER/BRONZE: don't reset streak, but don't increment either
+        try {
+          await this.streakService.updateStreak(contract.userId, null);
+        } catch (e) {
+          this.logger.warn(`[processFailedCommitment] Streak update failed: ${e}`);
+        }
+
+        this.opikService.endTrace(trace, { success: true, result: { processed, tier: tierResult.tier } });
+        return processed;
+      }
+
+      // NONE tier = full enforcement (existing logic)
       switch (contract.stakeType) {
         case StakeType.ANTI_CHARITY:
           if (contract.stakeAmount && contract.antiCharityCause) {
@@ -1011,11 +1189,17 @@ export class CommitmentService {
           break;
 
         case StakeType.SOCIAL:
-          // No financial stake to process for social accountability
           break;
       }
 
-      this.opikService.endTrace(trace, { success: true, result: { processed } });
+      // Update streak on full failure (NONE tier only)
+      try {
+        await this.streakService.updateStreak(contract.userId, false);
+      } catch (e) {
+        this.logger.warn(`[processFailedCommitment] Streak update failed: ${e}`);
+      }
+
+      this.opikService.endTrace(trace, { success: true, result: { processed, tier: null } });
       return processed;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -1122,6 +1306,13 @@ export class CommitmentService {
         : undefined,
       message,
       createdAt: contract.createdAt,
+      achievementTier: (contract as any).achievementTier ?? null,
+      achievementPercentage: (contract as any).achievementPercentage ? Number((contract as any).achievementPercentage) : null,
+      tierRefundPercentage: (contract as any).tierRefundPercentage ? Number((contract as any).tierRefundPercentage) : null,
+      selfVerifyOfferedAt: (contract as any).selfVerifyOfferedAt ?? null,
+      selfVerifyExpiresAt: (contract as any).selfVerifyExpiresAt ?? null,
+      trustBonusApplied: (contract as any).trustBonusApplied ?? false,
+      trustBonusAmount: (contract as any).trustBonusAmount ? Number((contract as any).trustBonusAmount) : null,
     };
   }
 
@@ -1216,5 +1407,37 @@ export class CommitmentService {
         userAgent: input.userAgent,
       },
     });
+  }
+
+  /**
+   * Calculate achievement tier based on goal progress
+   */
+  async calculateAchievementTier(contractId: string): Promise<TierResult> {
+    const contract = await this.prisma.commitmentContract.findUnique({
+      where: { id: contractId },
+      include: {
+        goal: { select: { currentAmount: true, targetAmount: true } },
+      },
+    });
+
+    if (!contract || !contract.goal) {
+      return { tier: null, refundPercentage: 0, achievementPercentage: 0 };
+    }
+
+    const current = Number(contract.goal.currentAmount);
+    const target = Number(contract.goal.targetAmount);
+    const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+
+    // Match tier based on percentage thresholds
+    if (percentage >= ACHIEVEMENT_TIERS.GOLD.minPercentage) {
+      return { tier: 'GOLD', refundPercentage: ACHIEVEMENT_TIERS.GOLD.refundPercentage, achievementPercentage: percentage };
+    }
+    if (percentage >= ACHIEVEMENT_TIERS.SILVER.minPercentage) {
+      return { tier: 'SILVER', refundPercentage: ACHIEVEMENT_TIERS.SILVER.refundPercentage, achievementPercentage: percentage };
+    }
+    if (percentage >= ACHIEVEMENT_TIERS.BRONZE.minPercentage) {
+      return { tier: 'BRONZE', refundPercentage: ACHIEVEMENT_TIERS.BRONZE.refundPercentage, achievementPercentage: percentage };
+    }
+    return { tier: null, refundPercentage: 0, achievementPercentage: percentage };
   }
 }

@@ -14,13 +14,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { OpikService } from '../ai/opik/opik.service';
 import { RedisService } from '../../redis';
 import { CommitmentService } from './commitment.service';
+import { GroupService } from './group.service';
+import { DebriefAgent } from './agents';
 import { CommitmentStatus, VerificationMethod } from '@prisma/client';
 import { differenceInHours } from 'date-fns';
 import {
   COMMITMENT_CONSTANTS,
   COMMITMENT_TRACE_NAMES,
 } from './constants';
-import { EnforcementResult, ReminderResult } from './interfaces';
+import { EnforcementResult, ReminderResult, GroupOutcomeResult } from './interfaces';
 
 @Injectable()
 export class CommitmentCronService {
@@ -30,6 +32,8 @@ export class CommitmentCronService {
   private readonly ENFORCEMENT_LOCK_KEY = 'commitment:cron:enforcement';
   private readonly REMINDER_LOCK_KEY = 'commitment:cron:reminder';
   private readonly FOLLOWUP_LOCK_KEY = 'commitment:cron:followup';
+  private readonly GROUP_RESOLVE_LOCK_KEY = 'commitment:cron:group_resolve';
+  private readonly GROUP_NUDGE_LOCK_KEY = 'commitment:cron:group_nudge';
 
   /** Lock TTL in milliseconds */
   private readonly LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -39,6 +43,8 @@ export class CommitmentCronService {
     private readonly opikService: OpikService,
     private readonly redisService: RedisService,
     private readonly commitmentService: CommitmentService,
+    private readonly groupService: GroupService,
+    private readonly debriefAgent: DebriefAgent,
   ) {}
 
   /**
@@ -112,25 +118,54 @@ export class CommitmentCronService {
       for (const contract of contracts) {
         try {
           if (contract.verificationMethod === VerificationMethod.REFEREE_VERIFY) {
-            // IDEMPOTENT: Atomic update only if status is still ACTIVE
-            const updateResult = await this.prisma.commitmentContract.updateMany({
-              where: {
-                id: contract.id,
-                status: CommitmentStatus.ACTIVE, // Only update if still ACTIVE
-              },
-              data: { status: CommitmentStatus.PENDING_VERIFICATION },
+            // Check if already in PENDING_VERIFICATION with self-verify logic
+            const currentContract = await this.prisma.commitmentContract.findUnique({
+              where: { id: contract.id },
+              select: { status: true, selfVerifyOfferedAt: true, selfVerifyExpiresAt: true, selfVerifiedAt: true },
             });
 
-            if (updateResult.count > 0) {
-              result.pendingVerification++;
-              // TODO: Send notification to referee
-              this.logger.log(
-                `[enforcement] Contract ${contract.id} moved to PENDING_VERIFICATION`,
-              );
-            } else {
-              this.logger.debug(
-                `[enforcement] Contract ${contract.id} already processed (status changed)`,
-              );
+            if (currentContract?.status === CommitmentStatus.ACTIVE) {
+              // First time: move to PENDING_VERIFICATION
+              const updateResult = await this.prisma.commitmentContract.updateMany({
+                where: { id: contract.id, status: CommitmentStatus.ACTIVE },
+                data: { status: CommitmentStatus.PENDING_VERIFICATION },
+              });
+              if (updateResult.count > 0) {
+                result.pendingVerification++;
+                this.logger.log(`[enforcement] Contract ${contract.id} moved to PENDING_VERIFICATION`);
+              }
+            } else if (currentContract?.status === CommitmentStatus.PENDING_VERIFICATION) {
+              // Already pending — check grace period for self-verify
+              const hoursOverdue = differenceInHours(new Date(), await this.getContractDeadline(contract.id));
+
+              if (hoursOverdue >= COMMITMENT_CONSTANTS.GRACE_PERIOD_HOURS && !currentContract.selfVerifyOfferedAt) {
+                // Offer self-verify after 48h grace period
+                const selfVerifyExpires = new Date(Date.now() + COMMITMENT_CONSTANTS.SELF_VERIFY_EXTENSION_HOURS * 60 * 60 * 1000);
+                await this.prisma.commitmentContract.update({
+                  where: { id: contract.id },
+                  data: {
+                    selfVerifyOfferedAt: new Date(),
+                    selfVerifyExpiresAt: selfVerifyExpires,
+                  },
+                });
+                this.logger.log(`[enforcement] Contract ${contract.id}: self-verify offered (expires ${selfVerifyExpires.toISOString()})`);
+              } else if (
+                currentContract.selfVerifyExpiresAt &&
+                currentContract.selfVerifyExpiresAt < new Date() &&
+                !currentContract.selfVerifiedAt
+              ) {
+                // Self-verify window expired — auto-fail
+                await this.processContractFailure(contract);
+                result.failedContracts++;
+                this.logger.log(`[enforcement] Contract ${contract.id}: self-verify expired, auto-failed`);
+              } else if (hoursOverdue >= 96) {
+                // Hard cutoff at 96h regardless
+                if (!currentContract.selfVerifiedAt) {
+                  await this.processContractFailure(contract);
+                  result.failedContracts++;
+                  this.logger.log(`[enforcement] Contract ${contract.id}: 96h hard cutoff, auto-failed`);
+                }
+              }
             }
           } else {
             // Check if verification window has passed
@@ -178,6 +213,46 @@ export class CommitmentCronService {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           result.errors.push(`Contract ${contract.id}: ${errorMessage}`);
           this.logger.error(`[enforcement] Failed for contract ${contract.id}: ${errorMessage}`);
+        }
+      }
+
+      // Also get contracts in PENDING_VERIFICATION for grace period processing
+      const pendingContracts = await this.prisma.commitmentContract.findMany({
+        where: {
+          status: CommitmentStatus.PENDING_VERIFICATION,
+          verificationMethod: VerificationMethod.REFEREE_VERIFY,
+        },
+      });
+
+      // Process pending contracts for grace period
+      for (const contract of pendingContracts) {
+        try {
+          const hoursOverdue = differenceInHours(new Date(), contract.deadline);
+
+          if (hoursOverdue >= COMMITMENT_CONSTANTS.GRACE_PERIOD_HOURS && !contract.selfVerifyOfferedAt) {
+            const selfVerifyExpires = new Date(Date.now() + COMMITMENT_CONSTANTS.SELF_VERIFY_EXTENSION_HOURS * 60 * 60 * 1000);
+            await this.prisma.commitmentContract.update({
+              where: { id: contract.id },
+              data: {
+                selfVerifyOfferedAt: new Date(),
+                selfVerifyExpiresAt: selfVerifyExpires,
+              },
+            });
+            this.logger.log(`[enforcement] Contract ${contract.id}: self-verify offered`);
+          } else if (
+            contract.selfVerifyExpiresAt &&
+            contract.selfVerifyExpiresAt < new Date() &&
+            !contract.selfVerifiedAt
+          ) {
+            await this.processContractFailure(contract as any);
+            result.failedContracts++;
+          } else if (hoursOverdue >= 96 && !contract.selfVerifiedAt) {
+            await this.processContractFailure(contract as any);
+            result.failedContracts++;
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          result.errors.push(`Pending contract ${contract.id}: ${errorMessage}`);
         }
       }
 
@@ -418,6 +493,121 @@ export class CommitmentCronService {
   }
 
   /**
+   * Daily group outcome resolution - runs at 7 AM Africa/Lagos time
+   *
+   * Checks all ACTIVE groups where all member contracts are resolved.
+   * If all succeeded, awards the group bonus badge.
+   */
+  @Cron('0 7 * * *', {
+    name: 'commitment-group-resolve',
+    timeZone: 'Africa/Lagos',
+  })
+  async resolveGroupOutcomes(): Promise<GroupOutcomeResult[]> {
+    const lockValue = randomUUID();
+    const lockAcquired = await this.redisService.acquireLock(
+      this.GROUP_RESOLVE_LOCK_KEY,
+      this.LOCK_TTL_MS,
+      lockValue,
+    );
+
+    if (!lockAcquired) {
+      return [];
+    }
+
+    const results: GroupOutcomeResult[] = [];
+
+    try {
+      const groupIds = await this.groupService.getGroupsPendingResolution();
+
+      for (const groupId of groupIds) {
+        try {
+          const result = await this.groupService.resolveGroupOutcome(groupId);
+          results.push(result);
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : 'Unknown error';
+          this.logger.error(`[group-resolve] Failed for group ${groupId}: ${msg}`);
+        }
+      }
+
+      if (results.length > 0) {
+        const bonusCount = results.filter((r) => r.bonusAwarded).length;
+        this.logger.log(
+          `Group resolution completed: ${results.length} groups resolved, ${bonusCount} bonus awards`,
+        );
+      }
+    } finally {
+      await this.redisService.releaseLock(this.GROUP_RESOLVE_LOCK_KEY, lockValue);
+    }
+
+    return results;
+  }
+
+  /**
+   * Weekly group nudge - runs Sunday at 10 AM Africa/Lagos time
+   *
+   * Sends a summary nudge for each ACTIVE group:
+   * "3/4 members are on track this week!"
+   */
+  @Cron('0 10 * * 0', {
+    name: 'commitment-group-nudge',
+    timeZone: 'Africa/Lagos',
+  })
+  async sendGroupWeeklyNudges(): Promise<{ nudgesSent: number }> {
+    const lockValue = randomUUID();
+    const lockAcquired = await this.redisService.acquireLock(
+      this.GROUP_NUDGE_LOCK_KEY,
+      this.LOCK_TTL_MS,
+      lockValue,
+    );
+
+    if (!lockAcquired) {
+      return { nudgesSent: 0 };
+    }
+
+    let nudgesSent = 0;
+
+    try {
+      const activeGroups = await this.prisma.commitmentGroup.findMany({
+        where: { status: 'ACTIVE' },
+        include: {
+          members: {
+            where: { leftAt: null },
+            include: {
+              contract: { select: { status: true, deadline: true } },
+            },
+          },
+        },
+      });
+
+      for (const group of activeGroups) {
+        const total = group.members.length;
+        const onTrack = group.members.filter((m) => {
+          if (!m.contract) return false;
+          if (m.contract.status === 'SUCCEEDED') return true;
+          if (m.contract.status === 'ACTIVE') {
+            return new Date(m.contract.deadline) > new Date();
+          }
+          return false;
+        }).length;
+
+        // TODO: Emit event for notification service
+        this.logger.log(
+          `[group-nudge] Group "${group.name}": ${onTrack}/${total} on track`,
+        );
+        nudgesSent++;
+      }
+
+      if (nudgesSent > 0) {
+        this.logger.log(`Weekly group nudges sent: ${nudgesSent}`);
+      }
+    } finally {
+      await this.redisService.releaseLock(this.GROUP_NUDGE_LOCK_KEY, lockValue);
+    }
+
+    return { nudgesSent };
+  }
+
+  /**
    * Process contract failure and enforce stakes
    */
   private async processContractFailure(contract: {
@@ -453,6 +643,11 @@ export class CommitmentCronService {
     });
 
     this.logger.log(`[enforcement] Contract ${contract.id} marked as FAILED`);
+
+    // Fire-and-forget debrief generation
+    this.debriefAgent.generateDebrief(contract.userId, contract.id).catch((e) => {
+      this.logger.warn(`[processContractFailure] Debrief generation failed: ${e}`);
+    });
   }
 
   /**
@@ -493,6 +688,18 @@ export class CommitmentCronService {
         schedule: '0 9 * * 1',
         timezone: 'Africa/Lagos',
         description: 'Weekly referee follow-up for pending verifications',
+      },
+      {
+        jobName: 'commitment-group-resolve',
+        schedule: '0 7 * * *',
+        timezone: 'Africa/Lagos',
+        description: 'Daily group outcome resolution (bonus awards)',
+      },
+      {
+        jobName: 'commitment-group-nudge',
+        schedule: '0 10 * * 0',
+        timezone: 'Africa/Lagos',
+        description: 'Weekly group nudge notifications (Sundays)',
       },
     ];
   }

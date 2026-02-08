@@ -179,10 +179,12 @@ export class WhatIfResponseDto {
   budgetImpact!: BudgetImpactDto;
 
   @ApiProperty({
-    description: 'Goal probability impact',
+    description: 'Goal probability impact. Null when user has no active goals (budget-only mode).',
     type: ProbabilityImpactDto,
+    nullable: true,
+    required: false,
   })
-  probabilityImpact!: ProbabilityImpactDto;
+  probabilityImpact!: ProbabilityImpactDto | null;
 
   @ApiProperty({
     description: 'Whether this spend would trigger a budget alert',

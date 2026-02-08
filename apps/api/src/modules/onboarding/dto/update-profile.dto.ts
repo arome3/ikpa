@@ -3,6 +3,9 @@ import {
   IsEnum,
   IsOptional,
   IsDateString,
+  IsString,
+  IsBoolean,
+  Matches,
 } from 'class-validator';
 import { Country, Currency, EmploymentType } from '@prisma/client';
 
@@ -52,6 +55,25 @@ export class UpdateProfileDto {
   @IsDateString()
   @IsOptional()
   dateOfBirth?: string;
+
+  @ApiPropertyOptional({
+    example: '+2348012345678',
+    description: 'Phone number in E.164 format for WhatsApp notifications',
+  })
+  @IsString()
+  @Matches(/^\+[1-9]\d{1,14}$/, {
+    message: 'Phone number must be in E.164 format (e.g., +2348012345678)',
+  })
+  @IsOptional()
+  phoneNumber?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Enable WhatsApp budget alert notifications',
+  })
+  @IsBoolean()
+  @IsOptional()
+  whatsappNotificationsEnabled?: boolean;
 }
 
 /**
@@ -69,6 +91,12 @@ export class UpdateProfileResponseDto {
 
   @ApiPropertyOptional({ example: '1995-06-15' })
   dateOfBirth?: string;
+
+  @ApiPropertyOptional({ example: '+2348012345678' })
+  phoneNumber?: string;
+
+  @ApiPropertyOptional({ example: false })
+  whatsappNotificationsEnabled?: boolean;
 
   @ApiPropertyOptional({
     example: true,

@@ -59,6 +59,8 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BudgetEventListener, ExpenseCreatedEvent } from './budget-event.listener';
 import { CategoryFreezeGuardService, FreezeValidationResult } from './category-freeze-guard.service';
 import { RecoveryActionService } from './recovery-action.service';
@@ -92,6 +94,7 @@ export class GpsIntegrationService {
     private readonly budgetEventListener: BudgetEventListener,
     private readonly categoryFreezeGuard: CategoryFreezeGuardService,
     private readonly recoveryActionService: RecoveryActionService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   // ==========================================
@@ -285,5 +288,54 @@ export class GpsIntegrationService {
   async hasActiveRecovery(userId: string): Promise<boolean> {
     const adjustments = await this.getActiveAdjustments(userId);
     return adjustments.hasActiveRecovery;
+  }
+
+  // ==========================================
+  // CROSS-AGENT COORDINATION
+  // ==========================================
+
+  /**
+   * Handle recovery path selection event for cross-agent coordination
+   *
+   * When a user selects a recovery path, this triggers coordination
+   * with the Future Self module to generate a supportive reinforcement
+   * message. This demonstrates multi-agent orchestration.
+   *
+   * Event payload:
+   * - userId: The user who selected the path
+   * - sessionId: The recovery session ID
+   * - pathId: Which path was selected (time_adjustment, rate_adjustment, etc.)
+   * - goalId: The goal being recovered
+   * - pathName: Human-readable path name
+   * - actionResult: Details of the executed action
+   */
+  @OnEvent('gps.recovery.path_selected')
+  async handleRecoveryPathSelected(payload: {
+    userId: string;
+    sessionId: string;
+    pathId: string;
+    goalId: string | null;
+    pathName: string;
+    actionResult: {
+      message: string;
+      details: Record<string, unknown>;
+    };
+  }): Promise<void> {
+    this.logger.log(
+      `[handleRecoveryPathSelected] Requesting Future Self reinforcement for user ${payload.userId}`,
+    );
+
+    // Emit event that Future Self module listens to (loose coupling via events)
+    this.eventEmitter.emit('future_self.reinforcement_requested', {
+      userId: payload.userId,
+      trigger: 'recovery_path_selected',
+      context: {
+        sessionId: payload.sessionId,
+        pathId: payload.pathId,
+        pathName: payload.pathName,
+        goalId: payload.goalId,
+        actionMessage: payload.actionResult.message,
+      },
+    });
   }
 }

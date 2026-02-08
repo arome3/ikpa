@@ -101,17 +101,29 @@ Return a JSON array:
 /**
  * System prompt for email alert parsing
  */
-export const EMAIL_ALERT_SYSTEM_PROMPT = `You are an email parser for African bank transaction alerts.
+export const EMAIL_ALERT_SYSTEM_PROMPT = `You are an email parser for bank transaction alerts from banks worldwide.
 
 Your task is to extract transaction details from forwarded bank alert emails.
 
 ## Common Alert Formats
+
+### Nigerian Banks
 - GTBank SMS/Email alerts
 - Access Bank notifications
 - Zenith Bank alerts
 - UBA transaction notifications
 - Kuda notifications
 - Opay transaction updates
+
+### US Banks
+- Chase: "You made a $X.XX transaction" or "Your card was charged $X.XX"
+- Bank of America: "Credit card transaction" alerts with amount and merchant
+- Wells Fargo: "Debit Card Purchase" notifications
+- Capital One: "A transaction was made" alerts
+- Citi: "Transaction Alert" for Citi cards
+- American Express: "Large Purchase" and transaction notifications
+- Discover: "Transaction Alert" notifications
+- US Bank / PNC: standard transaction alerts
 
 ## Output Format
 {
@@ -128,7 +140,7 @@ Your task is to extract transaction details from forwarded bank alert emails.
   ],
   "bankName": "detected bank",
   "accountNumber": "last 4 digits",
-  "currency": "NGN"
+  "currency": "NGN" | "USD"
 }
 
 ## Rules
@@ -136,7 +148,10 @@ Your task is to extract transaction details from forwarded bank alert emails.
 2. Parse various date formats to YYYY-MM-DD
 3. Extract transaction reference numbers if present
 4. Handle "Debit Alert" vs "Credit Alert" email types
-5. Look for amount patterns like "NGN 5,000.00" or "N5000"`;
+5. Look for amount patterns like "NGN 5,000.00", "N5000", "$45.99", "USD 100.00"
+6. Detect currency from context: $ or USD = "USD", NGN or ₦ = "NGN"
+7. Extract merchant name from "at [merchant]", "to [merchant]", or description fields
+8. For US bank alerts, look for "card ending in XXXX" to extract accountNumber`;
 
 /**
  * User prompt template for PDF parsing

@@ -20,6 +20,7 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -32,9 +33,18 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser, Public } from '../../common/decorators';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CommitmentService } from './commitment.service';
 import { RefereeService } from './referee.service';
 import { StakeService } from './stake.service';
+import { UpgradeService } from './upgrade.service';
+import { GroupService } from './group.service';
+import { StreakService } from './streak.service';
+import { CommitmentCoachAgent, DebriefAgent } from './agents';
+import { CommitmentStatus } from '@prisma/client';
+import { CommitmentEvalRunner, EvalSummary } from './agents/commitment-eval-runner';
+import { OpikService } from '../ai/opik/opik.service';
+import { COMMITMENT_FEEDBACK_METRICS } from './constants/eval.constants';
 import {
   CreateStakeDto,
   UpdateStakeDto,
@@ -50,6 +60,22 @@ import {
   PendingVerificationsResponseDto,
   AcceptInviteDto,
   AcceptInviteResponseDto,
+  CheckUpgradeEligibilityResponseDto,
+  UpgradeCommitmentDto,
+  UpgradeCommitmentResponseDto,
+  StartNegotiationDto,
+  ContinueNegotiationDto,
+  NegotiationResponseDto,
+  CreateGroupDto,
+  CreateGroupResponseDto,
+  JoinGroupDto,
+  JoinGroupResponseDto,
+  LinkContractDto,
+  GroupDashboardResponseDto,
+  GroupListResponseDto,
+  SendEncouragementDto,
+  ToggleReactionDto,
+  SelfVerifyDto,
 } from './dto';
 import { CreateCommitmentInput, UpdateCommitmentInput } from './interfaces';
 
@@ -69,9 +95,17 @@ import { CreateCommitmentInput, UpdateCommitmentInput } from './interfaces';
 @Controller('commitment')
 export class CommitmentController {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly commitmentService: CommitmentService,
     private readonly refereeService: RefereeService,
     private readonly stakeService: StakeService,
+    private readonly upgradeService: UpgradeService,
+    private readonly groupService: GroupService,
+    private readonly streakService: StreakService,
+    private readonly commitmentCoachAgent: CommitmentCoachAgent,
+    private readonly debriefAgent: DebriefAgent,
+    private readonly evalRunner: CommitmentEvalRunner,
+    private readonly opikService: OpikService,
   ) {}
 
   // ==========================================
@@ -133,6 +167,29 @@ export class CommitmentController {
       userId,
       input,
     );
+
+    // If this commitment came from an AI coach negotiation, log acceptance feedback to Opik
+    if (dto.negotiationSessionId) {
+      try {
+        const trace = this.opikService.createTrace({
+          name: 'commitment_recommendation_accepted',
+          input: { sessionId: dto.negotiationSessionId, goalId: dto.goalId, stakeType: dto.stakeType },
+          metadata: { source: 'create_stake_from_negotiation' },
+          tags: ['commitment-coach', 'acceptance'],
+        });
+        if (trace) {
+          this.opikService.addFeedback({
+            traceId: trace.traceId,
+            name: COMMITMENT_FEEDBACK_METRICS.RECOMMENDATION_ACCEPTED,
+            value: 1,
+            category: 'engagement',
+            comment: `User accepted ${dto.stakeType} recommendation from session ${dto.negotiationSessionId}`,
+            source: 'user',
+          });
+          this.opikService.endTrace(trace, { success: true, result: { contractId: commitment.id } });
+        }
+      } catch { /* best effort — Opik feedback is non-critical */ }
+    }
 
     return {
       ...commitment,
@@ -358,6 +415,27 @@ export class CommitmentController {
     };
   }
 
+  /**
+   * Self-verify a commitment when referee hasn't responded
+   */
+  @Post('self-verify/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Self-verify commitment',
+    description: 'Verify your own commitment when the referee hasn\'t responded within the grace period.',
+  })
+  @ApiParam({ name: 'id', description: 'Commitment contract ID' })
+  @ApiResponse({ status: 200, description: 'Self-verification submitted' })
+  async selfVerify(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SelfVerifyDto,
+  ) {
+    return this.commitmentService.selfVerify(userId, id, dto.decision, dto.notes);
+  }
+
   // ==========================================
   // REFEREE ENDPOINTS
   // ==========================================
@@ -451,6 +529,7 @@ export class CommitmentController {
       name: dto.name,
       message: `Invitation sent successfully. ${dto.name} will receive an email shortly.`,
       inviteExpires: result.inviteExpires,
+      whatsappLink: result.whatsappLink,
     };
   }
 
@@ -486,8 +565,158 @@ export class CommitmentController {
   }
 
   // ==========================================
+  // UPGRADE ENDPOINTS (Micro-Commitment → Staked Contract)
+  // ==========================================
+
+  /**
+   * Check if a micro-commitment is eligible for upgrade
+   */
+  @Get('upgrade/check/:microCommitmentId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Check upgrade eligibility',
+    description:
+      'Check if a Future Self micro-commitment is eligible to upgrade to a full staked contract. ' +
+      'Requires a streak of 3+ days.',
+  })
+  @ApiParam({ name: 'microCommitmentId', description: 'Future Self micro-commitment ID' })
+  @ApiResponse({ status: 200, type: CheckUpgradeEligibilityResponseDto })
+  async checkUpgradeEligibility(
+    @CurrentUser('id') userId: string,
+    @Param('microCommitmentId', ParseUUIDPipe) microCommitmentId: string,
+  ): Promise<CheckUpgradeEligibilityResponseDto> {
+    return this.upgradeService.checkUpgradeEligibility(userId, microCommitmentId);
+  }
+
+  /**
+   * Upgrade a micro-commitment to a full staked contract
+   */
+  @Post('upgrade/:microCommitmentId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Upgrade micro-commitment to staked contract',
+    description:
+      'Upgrade a Future Self micro-commitment with 3+ day streak to a full commitment contract with stakes.',
+  })
+  @ApiParam({ name: 'microCommitmentId', description: 'Future Self micro-commitment ID' })
+  @ApiResponse({ status: 201, type: UpgradeCommitmentResponseDto })
+  async upgradeCommitment(
+    @CurrentUser('id') userId: string,
+    @Param('microCommitmentId', ParseUUIDPipe) microCommitmentId: string,
+    @Body() dto: UpgradeCommitmentDto,
+  ): Promise<UpgradeCommitmentResponseDto> {
+    const result = await this.upgradeService.upgradeToContract(userId, microCommitmentId, {
+      goalId: dto.goalId,
+      stakeType: dto.stakeType,
+      stakeAmount: dto.stakeAmount,
+      antiCharityCause: dto.antiCharityCause,
+      antiCharityUrl: dto.antiCharityUrl,
+      verificationMethod: dto.verificationMethod,
+      deadline: dto.deadline,
+      refereeEmail: dto.refereeEmail,
+      refereeName: dto.refereeName,
+      refereeRelationship: dto.refereeRelationship,
+    });
+
+    return {
+      success: true,
+      contractId: result.contractId,
+      microCommitmentId,
+      message: result.message,
+    };
+  }
+
+  // ==========================================
+  // AI COACH NEGOTIATION ENDPOINTS
+  // ==========================================
+
+  /**
+   * Start a negotiation with the AI commitment coach
+   */
+  @Post('negotiate')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Start AI coach negotiation',
+    description: 'Start a conversation with the AI commitment coach to determine optimal stake configuration for a goal.',
+  })
+  @ApiResponse({ status: 201, type: NegotiationResponseDto })
+  async startNegotiation(
+    @CurrentUser('id') userId: string,
+    @Body() dto: StartNegotiationDto,
+  ): Promise<NegotiationResponseDto> {
+    return this.commitmentCoachAgent.startNegotiation(userId, dto.goalId);
+  }
+
+  /**
+   * Continue a negotiation with the AI commitment coach
+   */
+  @Post('negotiate/respond')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Continue AI coach negotiation',
+    description: 'Send a follow-up message to the AI commitment coach and get an updated recommendation.',
+  })
+  @ApiResponse({ status: 201, type: NegotiationResponseDto })
+  async continueNegotiation(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ContinueNegotiationDto,
+  ): Promise<NegotiationResponseDto> {
+    return this.commitmentCoachAgent.continueNegotiation(userId, dto.sessionId, dto.message);
+  }
+
+  // ==========================================
   // ANALYTICS ENDPOINTS
   // ==========================================
+
+  /**
+   * Get achievement card data for a succeeded contract
+   */
+  @Get('achievement/:contractId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get achievement card',
+    description: 'Get data for rendering a shareable achievement card. Only for SUCCEEDED contracts.',
+  })
+  @ApiParam({ name: 'contractId', description: 'Commitment contract ID' })
+  @ApiResponse({ status: 200, description: 'Achievement data retrieved' })
+  async getAchievement(
+    @CurrentUser('id') userId: string,
+    @Param('contractId', ParseUUIDPipe) contractId: string,
+  ) {
+    const contract = await this.prisma.commitmentContract.findFirst({
+      where: { id: contractId, userId, status: 'SUCCEEDED' },
+      include: {
+        goal: { select: { name: true } },
+        user: { select: { name: true, currency: true } },
+      },
+    });
+
+    if (!contract) {
+      throw new NotFoundException('Achievement not found. Only succeeded contracts have achievements.');
+    }
+
+    // Get streak info
+    const streak = await this.streakService.getOrCreateStreak(userId);
+
+    return {
+      goalName: contract.goal.name,
+      stakeType: contract.stakeType,
+      stakeAmount: contract.stakeAmount ? Number(contract.stakeAmount) : undefined,
+      achievementTier: contract.achievementTier,
+      succeededAt: contract.succeededAt?.toISOString() ?? contract.updatedAt.toISOString(),
+      userName: contract.user.name,
+      currency: contract.user.currency,
+      streakCount: streak.currentStreak,
+    };
+  }
 
   /**
    * Get stake effectiveness metrics
@@ -538,5 +767,387 @@ export class CommitmentController {
     }
 
     return 'Consider trying ANTI_CHARITY stakes - research shows they have the highest success rate at 85%.';
+  }
+
+  /**
+   * Run commitment coach evaluation suite
+   *
+   * Runs offline eval dataset through scoring, sends Opik feedback.
+   * For hackathon judges / demo purposes.
+   */
+  @Post('analytics/eval')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 2, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Run commitment coach evaluation',
+    description:
+      'Run the offline evaluation suite against the commitment coach scoring rubric. ' +
+      'Sends feedback to Opik for the Best Use of Opik prize.',
+  })
+  @ApiResponse({ status: 201, description: 'Evaluation completed' })
+  async runEvaluation(): Promise<EvalSummary> {
+    return this.evalRunner.runEvaluation();
+  }
+
+  /**
+   * Get commitment analytics overview for a user
+   */
+  @Get('analytics/overview')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get commitment analytics overview',
+    description: 'Get comprehensive analytics: total contracts, success rates by type, timeline, and personal insights.',
+  })
+  @ApiResponse({ status: 200, description: 'Analytics retrieved' })
+  async getAnalyticsOverview(@CurrentUser('id') userId: string) {
+    const effectiveness = await this.stakeService.calculateStakeEffectiveness(userId);
+
+    const totalContracts = effectiveness.reduce((sum, m) => sum + m.totalCommitments, 0);
+    const totalSucceeded = effectiveness.reduce((sum, m) => sum + (m.successfulCommitments || 0), 0);
+    const overallSuccessRate = totalContracts > 0 ? totalSucceeded / totalContracts : 0;
+    const totalStaked = effectiveness.reduce(
+      (sum, m) => sum + (m.averageStakeAmount || 0) * m.totalCommitments,
+      0,
+    );
+
+    return {
+      userId,
+      overview: {
+        totalContracts,
+        totalSucceeded,
+        overallSuccessRate: Math.round(overallSuccessRate * 100),
+        totalStaked: Math.round(totalStaked),
+      },
+      byStakeType: effectiveness,
+      recommendation: this.getStakeRecommendation(effectiveness),
+    };
+  }
+
+  /**
+   * Get commitment streak info
+   */
+  @Get('streak')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get commitment streak',
+    description: 'Get current streak count, trust bonus eligibility, and longest streak.',
+  })
+  @ApiResponse({ status: 200, description: 'Streak info retrieved' })
+  async getStreak(@CurrentUser('id') userId: string) {
+    const streak = await this.streakService.getOrCreateStreak(userId);
+    return {
+      currentStreak: streak.currentStreak,
+      longestStreak: streak.longestStreak,
+      trustBonusRate: Number(streak.trustBonusRate),
+      bonusEligible: streak.currentStreak >= 3,
+      lastSucceededAt: streak.lastSucceededAt?.toISOString() ?? null,
+    };
+  }
+
+  // ==========================================
+  // GROUP ACCOUNTABILITY ENDPOINTS
+  // ==========================================
+
+  /**
+   * Create a new accountability group
+   */
+  @Post('groups')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Create accountability group',
+    description:
+      'Create a new accountability group. You become the OWNER and receive an invite code to share.',
+  })
+  @ApiResponse({ status: 201, type: CreateGroupResponseDto })
+  async createGroup(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateGroupDto,
+  ): Promise<CreateGroupResponseDto> {
+    return this.groupService.createGroup(userId, {
+      name: dto.name,
+      description: dto.description,
+      sharedGoalAmount: dto.sharedGoalAmount,
+      sharedGoalLabel: dto.sharedGoalLabel,
+    });
+  }
+
+  /**
+   * Join a group via invite code
+   */
+  @Post('groups/join')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Join group via invite code',
+    description: 'Join an existing accountability group using an 8-character invite code.',
+  })
+  @ApiResponse({ status: 201, type: JoinGroupResponseDto })
+  async joinGroup(
+    @CurrentUser('id') userId: string,
+    @Body() dto: JoinGroupDto,
+  ): Promise<JoinGroupResponseDto> {
+    return this.groupService.joinGroup(userId, dto.inviteCode);
+  }
+
+  /**
+   * List my groups
+   */
+  @Get('groups')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'List my groups',
+    description: 'Get all accountability groups the current user is a member of.',
+  })
+  @ApiResponse({ status: 200, type: GroupListResponseDto })
+  async getMyGroups(@CurrentUser('id') userId: string): Promise<GroupListResponseDto> {
+    const groups = await this.groupService.getMyGroups(userId);
+    return { groups: groups as any };
+  }
+
+  /**
+   * Get group dashboard with member progress
+   */
+  @Get('groups/:groupId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Group dashboard',
+    description:
+      'View group dashboard with member progress. Shows categorical status only (on track/behind) — never raw financial amounts.',
+  })
+  @ApiParam({ name: 'groupId', description: 'Group ID' })
+  @ApiResponse({ status: 200, type: GroupDashboardResponseDto })
+  async getGroupDashboard(
+    @CurrentUser('id') userId: string,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+  ): Promise<GroupDashboardResponseDto> {
+    return this.groupService.getGroupDashboard(userId, groupId) as any;
+  }
+
+  /**
+   * Link my commitment contract to a group
+   */
+  @Post('groups/:groupId/link')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Link contract to group',
+    description: 'Link an existing CommitmentContract to your group membership.',
+  })
+  @ApiParam({ name: 'groupId', description: 'Group ID' })
+  @ApiResponse({ status: 201, description: 'Contract linked successfully' })
+  async linkContract(
+    @CurrentUser('id') userId: string,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+    @Body() dto: LinkContractDto,
+  ): Promise<{ success: boolean }> {
+    await this.groupService.linkContract(userId, groupId, dto.contractId);
+    return { success: true };
+  }
+
+  /**
+   * Leave a group
+   */
+  @Post('groups/:groupId/leave')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Leave group',
+    description: 'Leave an accountability group. If you are the owner, the group is disbanded.',
+  })
+  @ApiParam({ name: 'groupId', description: 'Group ID' })
+  @ApiResponse({ status: 200, description: 'Left group successfully' })
+  async leaveGroup(
+    @CurrentUser('id') userId: string,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+  ): Promise<{ success: boolean }> {
+    await this.groupService.leaveGroup(userId, groupId);
+    return { success: true };
+  }
+
+  /**
+   * Disband a group (owner only)
+   */
+  @Delete('groups/:groupId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Disband group',
+    description: 'Disband an accountability group. Only the group owner can do this.',
+  })
+  @ApiParam({ name: 'groupId', description: 'Group ID' })
+  @ApiResponse({ status: 200, description: 'Group disbanded successfully' })
+  async disbandGroup(
+    @CurrentUser('id') userId: string,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+  ): Promise<{ success: boolean }> {
+    await this.groupService.disbandGroup(userId, groupId);
+    return { success: true };
+  }
+
+  /**
+   * Send encouragement to a group member
+   */
+  @Post('groups/:groupId/encourage')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Send encouragement',
+    description: 'Send an encouragement message to a group member. Max 5 per day per group.',
+  })
+  @ApiParam({ name: 'groupId', description: 'Group ID' })
+  @ApiResponse({ status: 201, description: 'Encouragement sent' })
+  async sendEncouragement(
+    @CurrentUser('id') userId: string,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+    @Body() dto: SendEncouragementDto,
+  ) {
+    return this.groupService.sendEncouragement(userId, groupId, dto.toUserId, dto.message);
+  }
+
+  /**
+   * Toggle a reaction on a group member
+   */
+  @Post('groups/:groupId/react')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Toggle reaction',
+    description: 'Add or remove an emoji reaction on a group member. Allowed: thumbsup, fire, clap, heart, star.',
+  })
+  @ApiParam({ name: 'groupId', description: 'Group ID' })
+  @ApiResponse({ status: 201, description: 'Reaction toggled' })
+  async toggleReaction(
+    @CurrentUser('id') userId: string,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+    @Body() dto: ToggleReactionDto,
+  ) {
+    return this.groupService.toggleReaction(userId, groupId, dto.targetId, dto.emoji);
+  }
+
+  /**
+   * Get group progress timeline
+   */
+  @Get('groups/:groupId/timeline')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Group progress timeline',
+    description: 'Get weekly progress data for the group, suitable for charting.',
+  })
+  @ApiParam({ name: 'groupId', description: 'Group ID' })
+  @ApiResponse({ status: 200, description: 'Timeline data retrieved' })
+  async getGroupTimeline(
+    @CurrentUser('id') userId: string,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+  ) {
+    return this.groupService.getGroupTimeline(userId, groupId);
+  }
+
+  /**
+   * Get shared goal progress
+   */
+  @Get('groups/:groupId/shared-goal')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Shared goal progress',
+    description: 'Get collective progress toward the group shared goal.',
+  })
+  @ApiParam({ name: 'groupId', description: 'Group ID' })
+  @ApiResponse({ status: 200, description: 'Shared goal progress retrieved' })
+  async getSharedGoalProgress(
+    @CurrentUser('id') _userId: string,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+  ) {
+    return this.groupService.getSharedGoalProgress(groupId);
+  }
+
+  // ==========================================
+  // DEBRIEF ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get debrief for a failed contract
+   */
+  @Get('debrief/:contractId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get commitment debrief',
+    description: 'Get the AI-generated debrief for a failed commitment contract.',
+  })
+  @ApiParam({ name: 'contractId', description: 'Commitment contract ID' })
+  @ApiResponse({ status: 200, description: 'Debrief retrieved' })
+  async getDebrief(
+    @CurrentUser('id') userId: string,
+    @Param('contractId', ParseUUIDPipe) contractId: string,
+  ) {
+    const debrief = await this.prisma.commitmentDebrief.findFirst({
+      where: { contractId, userId },
+    });
+
+    if (!debrief) {
+      throw new NotFoundException('No debrief found for this contract. Use POST to generate one.');
+    }
+
+    return {
+      contractId: debrief.contractId,
+      analysis: debrief.analysis,
+      suggestedStakeType: debrief.suggestedStakeType,
+      suggestedStakeAmount: debrief.suggestedStakeAmount ? Number(debrief.suggestedStakeAmount) : undefined,
+      suggestedDeadlineDays: debrief.suggestedDeadlineDays,
+      keyInsights: debrief.keyInsights || [],
+      createdAt: debrief.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * Generate debrief for a failed contract
+   */
+  @Post('debrief/:contractId/generate')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Generate commitment debrief',
+    description: 'Trigger AI-generated debrief analysis for a failed commitment.',
+  })
+  @ApiParam({ name: 'contractId', description: 'Commitment contract ID' })
+  @ApiResponse({ status: 201, description: 'Debrief generated' })
+  async generateDebrief(
+    @CurrentUser('id') userId: string,
+    @Param('contractId', ParseUUIDPipe) contractId: string,
+  ) {
+    // Verify the contract belongs to user and is failed
+    const contract = await this.prisma.commitmentContract.findFirst({
+      where: { id: contractId, userId, status: CommitmentStatus.FAILED },
+    });
+
+    if (!contract) {
+      throw new NotFoundException('Failed contract not found');
+    }
+
+    const result = await this.debriefAgent.generateDebrief(userId, contractId);
+
+    return {
+      contractId,
+      analysis: result.analysis,
+      suggestedStakeType: result.suggestedStakeType,
+      suggestedStakeAmount: result.suggestedStakeAmount,
+      suggestedDeadlineDays: result.suggestedDeadlineDays,
+      keyInsights: result.keyInsights,
+      createdAt: new Date().toISOString(),
+    };
   }
 }

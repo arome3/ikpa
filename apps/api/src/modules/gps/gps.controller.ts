@@ -34,6 +34,7 @@ import { createMonetaryValue } from '../../common/utils';
 import { GpsService } from './gps.service';
 import { GpsAnalyticsService } from './gps-analytics.service';
 import { RecoveryActionService } from './recovery-action.service';
+import { BudgetService } from './budget.service';
 import {
   RecalculateRequestDto,
   RecalculateResponseDto,
@@ -52,6 +53,7 @@ import {
   ActiveAdjustmentsResponseDto,
   ActiveSavingsAdjustmentDto,
   ActiveCategoryFreezeDto,
+  ActiveBudgetRebalanceDto,
   TimelineExtensionDto,
   ActiveAdjustmentsSummaryDto,
   MonetaryValueDto,
@@ -63,6 +65,14 @@ import {
   NotificationsResponseDto,
   UnreadCountResponseDto,
   MarkReadResponseDto,
+  ForecastResponseDto,
+  BudgetForecastDto,
+  QuickRebalanceDto,
+  QuickRebalanceResponseDto,
+  RebalanceOptionsResponseDto,
+  BudgetInsightsResponseDto,
+  ApplyBudgetInsightRequestDto,
+  ApplyBudgetInsightResponseDto,
 } from './dto';
 import { BudgetStatus, GoalImpact } from './interfaces';
 import { StreakService } from './streaks';
@@ -89,11 +99,118 @@ export class GpsController {
     private readonly gpsService: GpsService,
     private readonly analyticsService: GpsAnalyticsService,
     private readonly recoveryActionService: RecoveryActionService,
+    private readonly budgetService: BudgetService,
     private readonly prisma: PrismaService,
     private readonly streakService: StreakService,
     private readonly progressService: ProgressService,
     private readonly notificationService: GpsNotificationService,
   ) {}
+
+
+  // ==========================================
+  // FORECAST ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get spending forecasts for all budgeted categories
+   *
+   * Returns projected end-of-period spending, risk levels, and suggested
+   * daily limits for each budget. Used for proactive budget alerts.
+   */
+  @Get('forecast')
+  @ApiOperation({
+    summary: 'Get spending forecasts for all budgeted categories',
+    description:
+      'Projects end-of-period spending based on current daily spending rate. ' +
+      'Returns risk levels (safe/caution/warning) and suggested daily limits. ' +
+      'Use this to warn users BEFORE they overspend.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Forecasts retrieved successfully',
+    type: ForecastResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getAllForecasts(
+    @CurrentUser('id') userId: string,
+  ): Promise<ForecastResponseDto> {
+    const forecasts = await this.budgetService.getAllProactiveForecasts(userId);
+
+    const atRiskCount = forecasts.filter(
+      (f) => f.riskLevel === 'caution' || f.riskLevel === 'warning',
+    ).length;
+
+    return {
+      forecasts,
+      atRiskCount,
+      totalCategories: forecasts.length,
+    };
+  }
+
+  /**
+   * Get spending forecast for a specific category
+   *
+   * Returns projected spending, risk level, and suggested daily limit
+   * for a single budgeted category. Accepts category ID or name.
+   */
+  @Get('forecast/:categoryId')
+  @ApiOperation({
+    summary: 'Get spending forecast for a specific category',
+    description:
+      'Returns projected end-of-period spending for one category. ' +
+      'Accepts category ID (UUID) or category name.',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category ID (UUID) or category name',
+    example: 'Food & Dining',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Forecast retrieved successfully',
+    type: BudgetForecastDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Budget not found for the specified category',
+  })
+  async getCategoryForecast(
+    @CurrentUser('id') userId: string,
+    @Param('categoryId') categoryId: string,
+  ): Promise<BudgetForecastDto | { error: string; category: string }> {
+    // Try by category ID first, then by name (follows existing pattern)
+    let budget = await this.budgetService.getBudgetByCategoryId(userId, categoryId);
+    if (!budget) {
+      budget = await this.budgetService.getBudget(userId, categoryId);
+    }
+    if (!budget) {
+      return {
+        error: 'Budget not found',
+        category: categoryId,
+      };
+    }
+
+    const forecast = await this.budgetService.getProactiveForecast(
+      userId,
+      budget.categoryId,
+    );
+
+    if (!forecast) {
+      return {
+        error: 'Insufficient data for forecast',
+        category: categoryId,
+      };
+    }
+
+    return forecast;
+  }
 
   // ==========================================
   // RECALCULATE ENDPOINTS
@@ -153,7 +270,7 @@ export class GpsController {
     return {
       sessionId: result.sessionId,
       budgetStatus: this.toBudgetStatusDto(result.budgetStatus),
-      goalImpact: this.toGoalImpactDto(result.goalImpact),
+      goalImpact: result.goalImpact ? this.toGoalImpactDto(result.goalImpact) : null,
       multiGoalImpact: result.multiGoalImpact
         ? {
             primaryGoal: this.toGoalImpactDto(result.multiGoalImpact.primaryGoal),
@@ -231,7 +348,7 @@ export class GpsController {
     name: 'pathId',
     description: 'Recovery path ID to select',
     example: 'time_adjustment',
-    enum: ['time_adjustment', 'rate_adjustment', 'freeze_protocol'],
+    enum: ['category_rebalance', 'time_adjustment', 'rate_adjustment', 'freeze_protocol'],
   })
   @ApiResponse({
     status: 200,
@@ -371,6 +488,8 @@ export class GpsController {
     // Build the base response
     const baseResponse = {
       id: session.id,
+      goalId: session.goalId,
+      goalName: session.goal?.name ?? session.category,
       category: session.category,
       overspendAmount: Number(session.overspendAmount),
       previousProbability: Number(session.previousProbability),
@@ -448,22 +567,210 @@ export class GpsController {
   }
 
   // ==========================================
+  // WEEKLY MICRO-BUDGET ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get weekly breakdown for a budget category
+   *
+   * Splits the monthly budget into calendar weeks with spending per week,
+   * daily limits for the current week, and adjusted allocations for future weeks.
+   */
+  @Get('budget/:categoryId/weekly')
+  @ApiOperation({
+    summary: 'Get weekly budget breakdown for a category',
+    description:
+      'Breaks down a monthly budget into calendar weeks (Mon-Sun). ' +
+      'Shows spending per week, daily limit for the current week, ' +
+      'and adjusted weekly budgets for remaining weeks. ' +
+      'Accepts category ID (UUID) or category name.',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category ID (UUID) or category name',
+    example: 'Food & Dining',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Weekly breakdown retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Budget not found for the specified category',
+  })
+  async getWeeklyBreakdown(
+    @CurrentUser('id') userId: string,
+    @Param('categoryId') categoryId: string,
+  ) {
+    return this.budgetService.getWeeklyBreakdown(userId, categoryId);
+  }
+
+  /**
+   * Get daily spending limits for all budgeted categories
+   *
+   * Returns today's safe spending limit per category based on
+   * remaining budget divided by remaining days in the period.
+   */
+  @Get('daily-limits')
+  @ApiOperation({
+    summary: 'Get daily spending limits for all categories',
+    description:
+      'Calculates today\'s safe spending limit for every active budget category. ' +
+      'Formula: (budget - spent) / daysRemaining. Also shows today\'s actual spending ' +
+      'and highlights categories where the daily limit has been exceeded.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Daily limits retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getDailyLimits(
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.budgetService.getDailyLimits(userId);
+  }
+
+  // ==========================================
+  // SPENDING VELOCITY ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get spending velocity analysis for a category
+   *
+   * Returns velocity ratio, projected overspend date, and course correction amount.
+   * Accepts category ID or category name.
+   */
+  @Get('spending-velocity/:categoryId')
+  @ApiOperation({
+    summary: 'Get spending velocity analysis for a category',
+    description:
+      'Analyzes spending pace relative to budget and time elapsed. ' +
+      'Returns velocity ratio, projected overspend date, and recommended daily spend. ' +
+      'Accepts category ID (UUID) or category name.',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category ID (UUID) or category name',
+    example: 'Food & Dining',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Velocity analysis completed successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Budget not found for the specified category',
+  })
+  async getSpendingVelocity(
+    @CurrentUser('id') userId: string,
+    @Param('categoryId') categoryId: string,
+  ) {
+    // Resolve category by ID or name (follows checkBudgetStatus pattern)
+    let budget = await this.budgetService.getBudgetByCategoryId(userId, categoryId);
+    if (!budget) {
+      budget = await this.budgetService.getBudget(userId, categoryId);
+    }
+    if (!budget) {
+      return {
+        error: 'Budget not found',
+        category: categoryId,
+        velocity: null,
+      };
+    }
+
+    const velocity = await this.budgetService.calculateSpendingVelocity(
+      userId,
+      budget.categoryId,
+      budget.period,
+    );
+
+    if (!velocity) {
+      return {
+        category: budget.category.name,
+        categoryId: budget.categoryId,
+        velocity: null,
+        message: 'Insufficient data for velocity analysis',
+      };
+    }
+
+    const budgetAmount = Number(budget.amount);
+    const spentAmount = await this.budgetService.getSpent(userId, budget.categoryId, budget.period);
+    const currency = budget.currency || 'USD';
+
+    // Determine velocity status
+    let status: 'on_pace' | 'slightly_ahead' | 'significantly_ahead';
+    if (velocity.velocityRatio < 1.1) {
+      status = 'on_pace';
+    } else if (velocity.velocityRatio < 1.3) {
+      status = 'slightly_ahead';
+    } else {
+      status = 'significantly_ahead';
+    }
+
+    // Build recommendations
+    const recommendations: string[] = [];
+    if (status === 'significantly_ahead') {
+      recommendations.push(
+        `Reduce daily spending to ${createMonetaryValue(Math.round(velocity.courseCorrectionDaily), currency).formatted} to stay on track`,
+      );
+      if (velocity.projectedOverspendDate) {
+        recommendations.push(
+          `At current pace, budget will be exceeded around ${velocity.projectedOverspendDate.toLocaleDateString()}`,
+        );
+      }
+    } else if (status === 'slightly_ahead') {
+      recommendations.push('Spending is slightly above pace — consider slowing down');
+    } else {
+      recommendations.push('Spending is on pace — keep it up!');
+    }
+
+    return {
+      category: budget.category.name,
+      categoryId: budget.categoryId,
+      velocity: {
+        ratio: velocity.velocityRatio,
+        status,
+        dailySpendingRate: createMonetaryValue(Math.round(velocity.spendingVelocity), currency),
+        safeDailyRate: createMonetaryValue(Math.round(velocity.safeBurnRate), currency),
+        courseCorrectionDaily: createMonetaryValue(Math.round(velocity.courseCorrectionDaily), currency),
+      },
+      timeline: {
+        daysElapsed: velocity.daysElapsed,
+        daysRemaining: velocity.daysRemaining,
+        projectedOverspendDate: velocity.projectedOverspendDate,
+        willOverspend: velocity.willOverspend,
+      },
+      budget: {
+        budgeted: createMonetaryValue(budgetAmount, currency),
+        spent: createMonetaryValue(spentAmount, currency),
+        remaining: createMonetaryValue(budgetAmount - spentAmount, currency),
+      },
+      recommendations,
+    };
+  }
+
+  // ==========================================
   // ANALYTICS ENDPOINTS
   // ==========================================
 
   /**
-   * Get system-wide analytics dashboard
+   * Get user's analytics dashboard
    *
-   * Returns aggregate metrics across all users for the specified time period.
-   * Useful for monitoring overall GPS Re-Router effectiveness.
+   * Returns aggregate metrics for the current user for the specified time period.
    */
   @Get('analytics/dashboard')
   @ApiOperation({
-    summary: 'Get system-wide GPS analytics dashboard',
+    summary: 'Get your GPS analytics dashboard',
     description:
-      'Returns aggregate analytics including path selection distribution, goal survival rate, ' +
-      'time to recovery metrics, and probability restoration metrics. Useful for monitoring ' +
-      'overall GPS Re-Router feature effectiveness.',
+      'Returns your analytics including path selection distribution, goal survival rate, ' +
+      'time to recovery metrics, and probability restoration metrics.',
   })
   @ApiResponse({
     status: 200,
@@ -475,9 +782,10 @@ export class GpsController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async getAnalyticsDashboard(
+    @CurrentUser('id') userId: string,
     @Query() query: AnalyticsQueryDto,
   ): Promise<AnalyticsDashboardDto> {
-    return this.analyticsService.getDashboard(query.days);
+    return this.analyticsService.getDashboard(userId, query.days);
   }
 
   /**
@@ -526,9 +834,10 @@ export class GpsController {
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async getCategoryAnalytics(
+    @CurrentUser('id') userId: string,
     @Query() query: AnalyticsQueryDto,
   ): Promise<CategoryAnalyticsDto[]> {
-    return this.analyticsService.getCategoryAnalytics(query.days);
+    return this.analyticsService.getCategoryAnalytics(userId, query.days);
   }
 
   // ==========================================
@@ -702,6 +1011,104 @@ export class GpsController {
   }
 
   // ==========================================
+  // RECOVERY TRACKING ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get recovery progress for an active session
+   *
+   * Returns adherence tracking, actual vs target savings, and
+   * encouraging status messages.
+   */
+  @Get('recovery-progress/:sessionId')
+  @ApiOperation({
+    summary: 'Get recovery progress for an active session',
+    description:
+      'Returns progress tracking for a recovery session including adherence percentage, ' +
+      'actual vs target savings, and encouraging messages.',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: 'Recovery session ID',
+    example: 'session-789-ghi',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Recovery progress retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session not found',
+  })
+  async getRecoveryProgress(
+    @CurrentUser('id') userId: string,
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+  ) {
+    return this.gpsService.getRecoveryProgress(userId, sessionId);
+  }
+
+  /**
+   * Get recovery history
+   *
+   * Returns past recovery sessions with outcomes - whether
+   * each recovery path actually worked.
+   */
+  @Get('recovery-history')
+  @ApiOperation({
+    summary: 'Get past recovery sessions with outcomes',
+    description:
+      'Returns a history of past recovery sessions showing the path chosen, ' +
+      'target vs actual savings, and whether each recovery was successful.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Recovery history retrieved successfully',
+  })
+  async getRecoveryHistory(
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.gpsService.getRecoveryHistory(userId);
+  }
+
+  // ==========================================
+  // SPENDING BREAKDOWN ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get spending breakdown for a category
+   *
+   * Shows where money is going within a budget category,
+   * grouped by merchant with actionable insights.
+   */
+  @Get('spending-breakdown/:categoryId')
+  @ApiOperation({
+    summary: 'Get spending breakdown for a category',
+    description:
+      'Returns a detailed breakdown of spending within a budget category, ' +
+      'grouped by merchant or description. Shows top 5 subcategories with ' +
+      'percentages and generates actionable reduction insights.',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category ID (UUID) or category name',
+    example: 'Food & Dining',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Spending breakdown retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Budget not found for the specified category',
+  })
+  async getSpendingBreakdown(
+    @CurrentUser('id') userId: string,
+    @Param('categoryId') categoryId: string,
+  ) {
+    return this.budgetService.getSpendingBreakdown(userId, categoryId);
+  }
+
+  // ==========================================
   // ACTIVE ADJUSTMENTS ENDPOINTS
   // ==========================================
 
@@ -729,11 +1136,20 @@ export class GpsController {
   async getActiveAdjustments(
     @CurrentUser('id') userId: string,
   ): Promise<ActiveAdjustmentsResponseDto> {
-    const [savingsAdjustment, categoryFreezes, timelineExtensionsData] = await Promise.all([
-      this.getActiveSavingsAdjustmentDto(userId),
-      this.getActiveCategoryFreezeDtos(userId),
-      this.gpsService.getTimelineExtensions(userId),
-    ]);
+    // Get user currency for rebalance formatting
+    const userRecord = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { currency: true },
+    });
+    const currency = userRecord?.currency || 'NGN';
+
+    const [savingsAdjustment, categoryFreezes, timelineExtensionsData, rebalancesData] =
+      await Promise.all([
+        this.getActiveSavingsAdjustmentDto(userId),
+        this.getActiveCategoryFreezeDtos(userId),
+        this.gpsService.getTimelineExtensions(userId),
+        this.recoveryActionService.getActiveBudgetRebalances(userId),
+      ]);
 
     // Convert timeline extensions to DTOs
     const timelineExtensions: TimelineExtensionDto[] = timelineExtensionsData.map((ext) => ({
@@ -743,6 +1159,17 @@ export class GpsController {
       newDeadline: ext.newDeadline,
       extensionDays: ext.extensionDays,
       sessionId: ext.sessionId,
+    }));
+
+    // Convert rebalances to DTOs
+    const budgetRebalances: ActiveBudgetRebalanceDto[] = rebalancesData.map((r) => ({
+      id: r.id,
+      fromCategoryId: r.fromCategoryId,
+      fromCategoryName: r.fromCategoryName,
+      toCategoryId: r.toCategoryId,
+      toCategoryName: r.toCategoryName,
+      amount: createMonetaryValue(r.amount, currency),
+      createdAt: r.createdAt,
     }));
 
     // Calculate summary
@@ -756,11 +1183,13 @@ export class GpsController {
       savingsAdjustment,
       categoryFreezes,
       timelineExtensions,
+      budgetRebalances,
       summary,
       hasActiveAdjustments:
         savingsAdjustment !== null ||
         categoryFreezes.length > 0 ||
-        timelineExtensions.length > 0,
+        timelineExtensions.length > 0 ||
+        budgetRebalances.length > 0,
     };
   }
 
@@ -866,6 +1295,173 @@ export class GpsController {
         daysRemaining,
         reason: `Category frozen as part of recovery action (Session: ${freezeDetails.sessionId})`,
       },
+    };
+  }
+
+
+  // ==========================================
+  // QUICK REBALANCE ENDPOINTS
+  // ==========================================
+
+  /**
+   * Quick rebalance: move budget between categories
+   *
+   * Lightweight budget move without Monte Carlo simulation or recovery sessions.
+   * User picks source category, destination category, and amount. Done.
+   */
+  @Post('quick-rebalance')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 per minute
+  @ApiOperation({
+    summary: 'Quick budget rebalance between categories',
+    description:
+      'Move budget from one category to another without creating a recovery session. ' +
+      'No simulation, no multi-step flow. Validates surplus availability and rebalance cap. ' +
+      'Rate limited to 10 requests per minute.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Budget moved successfully',
+    type: QuickRebalanceResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request (insufficient budget, same category, etc.)',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Rate limit exceeded or rebalance frequency cap reached',
+  })
+  async quickRebalance(
+    @CurrentUser('id') userId: string,
+    @Body() dto: QuickRebalanceDto,
+  ): Promise<QuickRebalanceResponseDto> {
+    return this.budgetService.quickRebalance(
+      userId,
+      dto.fromCategoryId,
+      dto.toCategoryId,
+      dto.amount,
+    );
+  }
+
+  /**
+   * Get rebalance options for a category
+   *
+   * Returns surplus categories that can be used as source for budget moves.
+   * Excludes the given category from results.
+   */
+  @Get('rebalance-options/:categoryId')
+  @ApiOperation({
+    summary: 'Get available rebalance source categories',
+    description:
+      'Returns categories with budget surplus that can be used as source for quick rebalance. ' +
+      'Excludes the specified category. Includes rebalance frequency cap status.',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category ID to exclude (the destination category)',
+    example: 'food-dining',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Rebalance options retrieved successfully',
+    type: RebalanceOptionsResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getRebalanceOptions(
+    @CurrentUser('id') userId: string,
+    @Param('categoryId') categoryId: string,
+  ): Promise<RebalanceOptionsResponseDto> {
+    return this.budgetService.getRebalanceOptions(userId, categoryId);
+  }
+
+
+  // ==========================================
+  // BUDGET HEALTH CHECK ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get budget realism insights
+   *
+   * Analyzes spending patterns over the last 3 months to detect
+   * budgets that are consistently exceeded. Returns suggestions
+   * for budget adjustments with offset categories.
+   */
+  @Get('budget-insights')
+  @ApiOperation({
+    summary: 'Get budget realism insights',
+    description:
+      'Analyzes spending patterns over the last 3 months to detect unrealistic budgets. ' +
+      'If someone overspends on a category 2+ months in a row by 15%+, the budget is ' +
+      'flagged as unrealistic with a suggested adjustment and offset category.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Budget insights retrieved successfully',
+    type: BudgetInsightsResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  async getBudgetInsights(
+    @CurrentUser('id') userId: string,
+  ): Promise<BudgetInsightsResponseDto> {
+    const insights = await this.budgetService.analyzeBudgetRealism(userId);
+
+    return {
+      insights,
+      hasUnrealisticBudgets: insights.length > 0,
+    };
+  }
+
+  /**
+   * Apply a budget insight adjustment
+   *
+   * Updates both budgets in a single transaction:
+   * increases the underfunded category and decreases the surplus category.
+   */
+  @Post('budget-insights/apply')
+  @ApiOperation({
+    summary: 'Apply a budget insight adjustment',
+    description:
+      'Applies a budget realism adjustment by increasing the underfunded category budget ' +
+      'and optionally decreasing a surplus category budget. Both changes happen atomically.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Budget adjustment applied successfully',
+    type: ApplyBudgetInsightResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request body',
+  })
+  async applyBudgetInsight(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ApplyBudgetInsightRequestDto,
+  ): Promise<ApplyBudgetInsightResponseDto> {
+    const result = await this.budgetService.applyBudgetInsight(userId, {
+      categoryId: dto.categoryId,
+      suggestedBudget: dto.suggestedBudget,
+      offsetCategoryId: dto.offsetCategoryId,
+      offsetAmount: dto.offsetAmount,
+    });
+
+    return {
+      success: true,
+      updated: result.updated,
+      message: 'Budget adjusted successfully',
     };
   }
 
@@ -1000,6 +1596,9 @@ export class GpsController {
       newProbability: impact.newProbability,
       probabilityDrop: impact.probabilityDrop,
       message: impact.message,
+      projectedDate: impact.projectedDate,
+      humanReadable: impact.humanReadable,
+      scheduleStatus: impact.scheduleStatus,
     };
   }
 
@@ -1010,11 +1609,21 @@ export class GpsController {
     id: string;
     name: string;
     description: string;
-    newProbability: number;
+    newProbability: number | null;
     effort: string;
     timelineImpact?: string;
     savingsImpact?: string;
     freezeDuration?: string;
+    rebalanceInfo?: {
+      fromCategory: string;
+      fromCategoryId: string;
+      availableSurplus: number;
+      coverageAmount: number;
+      isFullCoverage: boolean;
+    };
+    concreteActions?: string[];
+    budgetImpact?: string;
+    timelineEffect?: string;
   }): RecoveryPathDto {
     return {
       id: path.id,
@@ -1025,6 +1634,10 @@ export class GpsController {
       timelineImpact: path.timelineImpact,
       savingsImpact: path.savingsImpact,
       freezeDuration: path.freezeDuration,
+      rebalanceInfo: path.rebalanceInfo,
+      concreteActions: path.concreteActions,
+      budgetImpact: path.budgetImpact,
+      timelineEffect: path.timelineEffect,
     };
   }
 

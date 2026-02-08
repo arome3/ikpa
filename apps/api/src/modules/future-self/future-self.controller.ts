@@ -10,6 +10,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Param,
   Body,
@@ -42,10 +43,16 @@ import {
   UpdateEngagementDto,
   EngagementResponseDto,
   StatisticsResponseDto,
+  StartConversationDto,
+  ConversationResponseDto,
+  CreateCommitmentDto,
+  UpdateCommitmentDto,
+  CommitmentResponseDto,
 } from './dto';
 import {
   LETTER_RATE_LIMIT,
   SIMULATION_RATE_LIMIT,
+  CONVERSATION_RATE_LIMIT,
   MAX_PAGINATION_OFFSET,
   MAX_PAGINATION_LIMIT,
 } from './constants';
@@ -138,8 +145,14 @@ export class FutureSelfController {
     description:
       'Returns a personalized letter from the user\'s 60-year-old future self. ' +
       'The letter references the user\'s specific goals, city, and financial situation. ' +
-      'Includes simulation data used to generate the letter. ' +
+      'Use mode=regret to receive a letter from the future self who stayed on the current path. ' +
       'Letter generation is rate-limited and cached for 30 minutes.',
+  })
+  @ApiQuery({
+    name: 'mode',
+    required: false,
+    enum: ['gratitude', 'regret'],
+    description: 'Letter mode: gratitude (default, optimized path) or regret (drift path)',
   })
   @ApiResponse({
     status: 200,
@@ -164,8 +177,10 @@ export class FutureSelfController {
   })
   async getLetter(
     @CurrentUser('id') userId: string,
+    @Query('mode') mode?: 'gratitude' | 'regret',
   ): Promise<LetterResponseDto> {
-    const letter = await this.futureSelfService.getLetter(userId);
+    const letterMode = mode === 'regret' ? 'regret' : 'gratitude';
+    const letter = await this.futureSelfService.getLetter(userId, undefined, letterMode);
 
     return {
       content: letter.content,
@@ -465,5 +480,112 @@ export class FutureSelfController {
     @CurrentUser('id') userId: string,
   ): Promise<StatisticsResponseDto> {
     return this.futureSelfService.getStatistics(userId);
+  }
+
+  // ==========================================
+  // CONVERSATION ENDPOINTS
+  // ==========================================
+
+  /**
+   * Start or continue a conversation with future self
+   */
+  @Post('conversation')
+  @Throttle({ default: { limit: CONVERSATION_RATE_LIMIT.limit, ttl: CONVERSATION_RATE_LIMIT.ttl } })
+  @ApiOperation({
+    summary: 'Chat with future self',
+    description: 'Start or continue a multi-turn conversation with your future self. Based on a specific letter.',
+  })
+  @ApiResponse({ status: 201, description: 'Response generated', type: ConversationResponseDto })
+  @ApiResponse({ status: 404, description: 'Letter not found' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded (5/min)' })
+  async startConversation(
+    @CurrentUser('id') userId: string,
+    @Body() dto: StartConversationDto,
+  ) {
+    const result = await this.futureSelfService.handleConversation(userId, dto.letterId, dto.message);
+    if (!result) {
+      throw new NotFoundException('Letter not found');
+    }
+    return result;
+  }
+
+  /**
+   * Get conversation history for a letter
+   */
+  @Get('conversation/:letterId')
+  @ApiOperation({
+    summary: 'Get conversation history',
+    description: 'Get all messages from a conversation with your future self for a specific letter.',
+  })
+  @ApiParam({ name: 'letterId', description: 'Letter ID' })
+  @ApiResponse({ status: 200, description: 'Conversation history' })
+  @ApiResponse({ status: 404, description: 'No conversation found' })
+  async getConversation(
+    @CurrentUser('id') userId: string,
+    @Param('letterId') letterId: string,
+  ): Promise<{ messages: Array<{ role: string; content: string; createdAt: string }> }> {
+    const result = await this.futureSelfService.getConversation(userId, letterId);
+    if (!result) {
+      return { messages: [] };
+    }
+    return result;
+  }
+
+  // ==========================================
+  // COMMITMENT ENDPOINTS
+  // ==========================================
+
+  /**
+   * Create a micro-commitment after reading a letter
+   */
+  @Post('commitment')
+  @ApiOperation({
+    summary: 'Create micro-commitment',
+    description: 'Create a daily savings micro-commitment inspired by a letter from your future self.',
+  })
+  @ApiResponse({ status: 201, description: 'Commitment created', type: CommitmentResponseDto })
+  async createCommitment(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateCommitmentDto,
+  ): Promise<CommitmentResponseDto> {
+    return this.futureSelfService.createCommitment(userId, dto.letterId, dto.dailyAmount);
+  }
+
+  /**
+   * Get active commitments
+   */
+  @Get('commitments')
+  @ApiOperation({
+    summary: 'Get active commitments',
+    description: 'Get all active micro-commitments for the current user.',
+  })
+  @ApiResponse({ status: 200, description: 'Commitments list', type: [CommitmentResponseDto] })
+  async getCommitments(
+    @CurrentUser('id') userId: string,
+  ): Promise<CommitmentResponseDto[]> {
+    return this.futureSelfService.getCommitments(userId);
+  }
+
+  /**
+   * Update a commitment's status
+   */
+  @Patch('commitments/:id')
+  @ApiOperation({
+    summary: 'Update commitment',
+    description: 'Pause, abandon, or complete a micro-commitment.',
+  })
+  @ApiParam({ name: 'id', description: 'Commitment ID' })
+  @ApiResponse({ status: 200, description: 'Commitment updated', type: CommitmentResponseDto })
+  @ApiResponse({ status: 404, description: 'Commitment not found' })
+  async updateCommitment(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateCommitmentDto,
+  ): Promise<CommitmentResponseDto> {
+    const result = await this.futureSelfService.updateCommitment(userId, id, dto.status);
+    if (!result) {
+      throw new NotFoundException('Commitment not found');
+    }
+    return result;
   }
 }

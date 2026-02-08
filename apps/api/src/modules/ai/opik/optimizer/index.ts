@@ -59,4 +59,19 @@ export * from './circuit-breaker';
 export * from './opik-dataset';
 
 // Opik Experiment Service
-export * from './opik-experiment';
+export { OpikExperimentService } from './opik-experiment';
+export type {
+  OpikExperiment,
+  ExperimentComparison,
+  ExperimentAnalysis,
+  CreateExperimentConfig,
+  CompleteExperimentInput,
+  RecordVariantResultInput,
+  ListExperimentsOptions,
+  VariantType,
+  VariantResults,
+  ExperimentTimelineEntry,
+  IOpikExperimentService,
+} from './opik-experiment';
+// Note: ExperimentStatus and ExperimentType from opik-experiment are NOT re-exported
+// to avoid conflict with optimizer.types versions

@@ -31,6 +31,9 @@ export interface RecoveryActionDetails {
   categoryFrozen?: string; // for freeze_protocol
   previousDeadline?: Date; // for time_adjustment
   newDeadline?: Date; // for time_adjustment
+  fromCategory?: string; // for category_rebalance
+  toCategory?: string; // for category_rebalance
+  rebalanceAmount?: number; // for category_rebalance
 }
 
 /**
@@ -57,6 +60,7 @@ interface ActionContext {
   monthlyIncome: number;
   currentSavingsRate: number;
   currency: string;
+  timelineWeeks?: number; // Pre-calculated adaptive timeline weeks from path generation
 }
 
 @Injectable()
@@ -104,6 +108,9 @@ export class RecoveryActionService {
       case GPS_CONSTANTS.RECOVERY_PATH_IDS.FREEZE_PROTOCOL:
         result = await this.executeCategoryFreeze(context);
         break;
+      case GPS_CONSTANTS.RECOVERY_PATH_IDS.CATEGORY_REBALANCE:
+        result = await this.executeCategoryRebalance(context);
+        break;
       default:
         throw new InvalidRecoveryPathException(
           pathId,
@@ -136,8 +143,9 @@ export class RecoveryActionService {
   private async executeTimelineExtension(context: ActionContext): Promise<RecoveryActionResult> {
     const { userId, goalId, overspendAmount, monthlyIncome } = context;
 
-    // Calculate dynamic extension based on overspend severity
-    const weeksExtension = this.calculateTimelineExtension(overspendAmount, monthlyIncome);
+    // Use pre-calculated adaptive timeline weeks from session if available,
+    // otherwise fall back to the overspend-ratio calculation
+    const weeksExtension = context.timelineWeeks ?? this.calculateTimelineExtension(overspendAmount, monthlyIncome);
 
     // Get current goal
     const goal = await this.goalService.getGoal(userId, goalId);
@@ -165,7 +173,7 @@ export class RecoveryActionService {
         previousDeadline,
         newDeadline,
       },
-      message: `Your goal deadline has been extended by ${weeksExtension} weeks to give you more time to recover.`,
+      message: `Your ${goal.name} deadline has been extended by ${weeksExtension} weeks to give you more time to recover.`,
     };
   }
 
@@ -279,6 +287,78 @@ export class RecoveryActionService {
   }
 
   /**
+   * Execute Category Rebalance - move surplus from an under-used category to cover overspend
+   */
+  private async executeCategoryRebalance(context: ActionContext): Promise<RecoveryActionResult> {
+    const { userId, sessionId, category, categoryId, overspendAmount, currency } = context;
+
+    // Re-check frequency cap at execution time to prevent TOCTOU race condition
+    // (cap was checked at path generation time, but concurrent requests could bypass it)
+    const rebalanceCount = await this.budgetService.getRebalanceCountInPeriod(userId);
+    if (rebalanceCount >= GPS_CONSTANTS.MAX_REBALANCES_PER_PERIOD) {
+      throw new Error(
+        `Rebalance frequency cap reached (${GPS_CONSTANTS.MAX_REBALANCES_PER_PERIOD} per period)`,
+      );
+    }
+
+    // Find the best surplus category
+    const surplusCategories = await this.budgetService.findCategoriesWithSurplus(
+      userId,
+      categoryId,
+    );
+
+    if (surplusCategories.length === 0) {
+      throw new Error('No surplus categories available for rebalancing');
+    }
+
+    const bestSurplus = surplusCategories[0];
+
+    // Calculate rebalance amount: min of overspend and available surplus
+    const rebalanceAmount = Math.min(overspendAmount, bestSurplus.proratedSurplus);
+
+    const formattedAmount = formatCurrency(rebalanceAmount, currency);
+    const formattedSurplus = formatCurrency(bestSurplus.proratedSurplus, currency);
+    const isFullCoverage = bestSurplus.proratedSurplus >= overspendAmount;
+
+    // Create BudgetRebalance record
+    await this.prisma.budgetRebalance.create({
+      data: {
+        userId,
+        sessionId,
+        fromCategoryId: bestSurplus.categoryId,
+        fromCategoryName: bestSurplus.categoryName,
+        toCategoryId: categoryId,
+        toCategoryName: category,
+        amount: rebalanceAmount,
+        isActive: true,
+      },
+    });
+
+    this.logger.log(
+      `[executeCategoryRebalance] User ${userId}: moved ${formattedAmount} from ${bestSurplus.categoryName} to ${category}`,
+    );
+
+    const description = isFullCoverage
+      ? `Covered your ${category} overage with ${bestSurplus.categoryName} surplus (${formattedSurplus} available)`
+      : `Partially covered with ${bestSurplus.categoryName} surplus (${formattedAmount} of ${formatCurrency(overspendAmount, currency)})`;
+
+    return {
+      success: true,
+      pathId: GPS_CONSTANTS.RECOVERY_PATH_IDS.CATEGORY_REBALANCE,
+      action: 'BUDGET_REBALANCED',
+      details: {
+        durationWeeks: 0, // Rebalances are instant, not duration-based
+        endDate: new Date(),
+        fromCategory: bestSurplus.categoryName,
+        toCategory: category,
+        rebalanceAmount,
+        estimatedRecovery: rebalanceAmount,
+      },
+      message: description,
+    };
+  }
+
+  /**
    * Calculate dynamic timeline extension based on overspend severity
    *
    * - Minor overspend (< 10% of monthly income): 1-2 weeks
@@ -367,7 +447,7 @@ export class RecoveryActionService {
    */
   private async buildActionContext(
     userId: string,
-    session: { id: string; goalId: string | null; category: string; overspendAmount: unknown },
+    session: { id: string; goalId: string | null; category: string; overspendAmount: unknown; timelineWeeks?: number | null },
   ): Promise<ActionContext> {
     // Get goal (use session's goal or primary goal)
     const goalId = session.goalId;
@@ -401,6 +481,7 @@ export class RecoveryActionService {
       monthlyIncome: simInput.monthlyIncome,
       currentSavingsRate: simInput.currentSavingsRate,
       currency: user?.currency || 'NGN',
+      timelineWeeks: session.timelineWeeks ?? undefined,
     };
   }
 
@@ -426,6 +507,11 @@ export class RecoveryActionService {
         estimatedRecovery: result.details.estimatedRecovery,
       }),
       ...(result.details.categoryFrozen && { categoryFrozen: result.details.categoryFrozen }),
+      ...(result.details.fromCategory && { fromCategory: result.details.fromCategory }),
+      ...(result.details.toCategory && { toCategory: result.details.toCategory }),
+      ...(result.details.rebalanceAmount !== undefined && {
+        rebalanceAmount: result.details.rebalanceAmount,
+      }),
       ...(result.details.previousDeadline && {
         previousDeadline: result.details.previousDeadline.toISOString(),
       }),
@@ -555,6 +641,61 @@ export class RecoveryActionService {
       savedAmount: Number(freeze.savedAmount),
       sessionId: freeze.sessionId,
     };
+  }
+
+  /**
+   * Get active budget rebalances for a user
+   */
+  async getActiveBudgetRebalances(userId: string): Promise<
+    Array<{
+      id: string;
+      fromCategoryId: string;
+      fromCategoryName: string;
+      toCategoryId: string;
+      toCategoryName: string;
+      amount: number;
+      createdAt: Date;
+    }>
+  > {
+    const rebalances = await this.prisma.budgetRebalance.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return rebalances.map((r) => ({
+      id: r.id,
+      fromCategoryId: r.fromCategoryId,
+      fromCategoryName: r.fromCategoryName,
+      toCategoryId: r.toCategoryId,
+      toCategoryName: r.toCategoryName,
+      amount: Number(r.amount),
+      createdAt: r.createdAt,
+    }));
+  }
+
+  /**
+   * Reset rebalances from a previous period
+   * Called by GPS cron at period boundaries to deactivate old rebalances
+   */
+  async resetPeriodRebalances(periodStartDate: Date): Promise<number> {
+    const result = await this.prisma.budgetRebalance.updateMany({
+      where: {
+        isActive: true,
+        createdAt: { lt: periodStartDate },
+      },
+      data: { isActive: false },
+    });
+
+    if (result.count > 0) {
+      this.logger.log(
+        `[resetPeriodRebalances] Deactivated ${result.count} rebalances from previous period`,
+      );
+    }
+
+    return result.count;
   }
 
   /**

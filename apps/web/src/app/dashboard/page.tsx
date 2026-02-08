@@ -37,8 +37,9 @@ export default function DashboardPage() {
   const handleAskAI = () => router.push('/dashboard/gps');
   const handleShark = () => router.push('/dashboard/shark');
   const handleImport = () => router.push('/dashboard/import');
+  const handleFutureSelf = () => router.push('/dashboard/future-self');
   const handleNotifications = () => router.push('/notifications');
-  const handleSettings = () => router.push('/settings');
+  const handleSettings = () => router.push('/dashboard/settings');
 
   // AI insight handlers
   const handleInsightDismiss = (insightId: string) => {
@@ -139,6 +140,7 @@ export default function DashboardPage() {
           onAskAI={handleAskAI}
           onShark={handleShark}
           onImport={handleImport}
+          onFutureSelf={handleFutureSelf}
         />
       </section>
 

@@ -126,7 +126,7 @@ export class GpsAnalyticsService {
   /**
    * Get complete analytics dashboard for a time period
    */
-  async getDashboard(days: number = 30): Promise<GpsAnalyticsDashboard> {
+  async getDashboard(userId: string, days: number = 30): Promise<GpsAnalyticsDashboard> {
     const end = new Date();
     const start = subDays(end, days);
 
@@ -138,12 +138,12 @@ export class GpsAnalyticsService {
       totalSessions,
       totalThresholds,
     ] = await Promise.all([
-      this.getPathSelectionDistribution(start, end),
-      this.getGoalSurvivalMetrics(start, end),
-      this.getTimeToRecoveryMetrics(start, end),
-      this.getProbabilityRestorationMetrics(start, end),
-      this.getTotalSessions(start, end),
-      this.getTotalThresholdsCrossed(start, end),
+      this.getPathSelectionDistribution(start, end, userId),
+      this.getGoalSurvivalMetrics(start, end, userId),
+      this.getTimeToRecoveryMetrics(start, end, userId),
+      this.getProbabilityRestorationMetrics(start, end, userId),
+      this.getTotalSessions(start, end, userId),
+      this.getTotalThresholdsCrossed(start, end, userId),
     ]);
 
     // Round all percentages to 2 decimal places
@@ -297,9 +297,11 @@ export class GpsAnalyticsService {
   async getPathSelectionDistribution(
     start: Date,
     end: Date,
+    userId?: string,
   ): Promise<PathSelectionDistribution[]> {
     const sessions = await this.prisma.recoverySession.findMany({
       where: {
+        ...(userId && { userId }),
         createdAt: { gte: start, lte: end },
         selectedPathId: { not: null },
       },
@@ -321,6 +323,7 @@ export class GpsAnalyticsService {
     );
 
     const pathNames: Record<string, string> = {
+      [GPS_CONSTANTS.RECOVERY_PATH_IDS.CATEGORY_REBALANCE]: 'Smart Swap',
       [GPS_CONSTANTS.RECOVERY_PATH_IDS.TIME_ADJUSTMENT]: 'Timeline Flex',
       [GPS_CONSTANTS.RECOVERY_PATH_IDS.RATE_ADJUSTMENT]: 'Savings Boost',
       [GPS_CONSTANTS.RECOVERY_PATH_IDS.FREEZE_PROTOCOL]: 'Category Pause',
@@ -341,9 +344,10 @@ export class GpsAnalyticsService {
    *
    * Goal survival = user selected a recovery path (didn't abandon after slip)
    */
-  async getGoalSurvivalMetrics(start: Date, end: Date): Promise<GoalSurvivalMetrics> {
+  async getGoalSurvivalMetrics(start: Date, end: Date, userId?: string): Promise<GoalSurvivalMetrics> {
     const sessions = await this.prisma.recoverySession.findMany({
       where: {
+        ...(userId && { userId }),
         createdAt: { gte: start, lte: end },
       },
     });
@@ -374,9 +378,10 @@ export class GpsAnalyticsService {
    *
    * Time from session creation (slip detection) to path selection
    */
-  async getTimeToRecoveryMetrics(start: Date, end: Date): Promise<TimeToRecoveryMetrics> {
+  async getTimeToRecoveryMetrics(start: Date, end: Date, userId?: string): Promise<TimeToRecoveryMetrics> {
     const sessions = await this.prisma.recoverySession.findMany({
       where: {
+        ...(userId && { userId }),
         createdAt: { gte: start, lte: end },
         selectedAt: { not: null },
       },
@@ -430,9 +435,11 @@ export class GpsAnalyticsService {
   async getProbabilityRestorationMetrics(
     start: Date,
     end: Date,
+    userId?: string,
   ): Promise<ProbabilityRestorationMetrics> {
     const sessions = await this.prisma.recoverySession.findMany({
       where: {
+        ...(userId && { userId }),
         createdAt: { gte: start, lte: end },
         selectedPathId: { not: null },
       },
@@ -548,9 +555,10 @@ export class GpsAnalyticsService {
   /**
    * Get total sessions in period
    */
-  private async getTotalSessions(start: Date, end: Date): Promise<number> {
+  private async getTotalSessions(start: Date, end: Date, userId?: string): Promise<number> {
     return this.prisma.recoverySession.count({
       where: {
+        ...(userId && { userId }),
         createdAt: { gte: start, lte: end },
       },
     });
@@ -559,9 +567,10 @@ export class GpsAnalyticsService {
   /**
    * Get total budget thresholds crossed in period
    */
-  private async getTotalThresholdsCrossed(start: Date, end: Date): Promise<number> {
+  private async getTotalThresholdsCrossed(start: Date, end: Date, userId?: string): Promise<number> {
     return this.prisma.gpsAnalyticsEvent.count({
       where: {
+        ...(userId && { userId }),
         eventType: GpsEventType.BUDGET_THRESHOLD_CROSSED,
         createdAt: { gte: start, lte: end },
       },
@@ -571,7 +580,7 @@ export class GpsAnalyticsService {
   /**
    * Get category-level analytics
    */
-  async getCategoryAnalytics(days: number = 30): Promise<
+  async getCategoryAnalytics(userId: string, days: number = 30): Promise<
     Array<{
       category: string;
       categoryId: string;
@@ -595,42 +604,65 @@ export class GpsAnalyticsService {
 
     const sessions = await this.prisma.recoverySession.findMany({
       where: {
+        userId,
         createdAt: { gte: start },
       },
     });
 
-    // Group by category
+    // Group by normalized category key (lowercase + trimmed) to prevent duplicates
+    // e.g., "Food & Dining" and "food & dining" merge into one group
     const categoryData = sessions.reduce(
       (acc, s) => {
-        if (!acc[s.category]) {
-          acc[s.category] = {
+        const normalizedKey = s.category.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        if (!acc[normalizedKey]) {
+          acc[normalizedKey] = {
+            displayName: s.category,
             slips: [],
             paths: [] as string[],
             overspendAmounts: [] as number[],
+            overspendPercents: [] as number[],
           };
         }
-        acc[s.category].slips.push(s);
+        // Prefer the more readable display name (has spaces or uppercase)
+        if (s.category.includes(' ') || s.category !== s.category.toLowerCase()) {
+          acc[normalizedKey].displayName = s.category;
+        }
+        // Ensure display name is properly capitalized (e.g., "shopping" -> "Shopping")
+        if (acc[normalizedKey].displayName === acc[normalizedKey].displayName.toLowerCase()) {
+          acc[normalizedKey].displayName = acc[normalizedKey].displayName
+            .split(' ')
+            .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ');
+        }
+        acc[normalizedKey].slips.push(s);
         if (s.selectedPathId) {
-          acc[s.category].paths.push(s.selectedPathId);
+          acc[normalizedKey].paths.push(s.selectedPathId);
         }
         // Track overspend amounts from session
         const overspendAmount = Number(s.overspendAmount || 0);
         if (overspendAmount > 0) {
-          acc[s.category].overspendAmounts.push(overspendAmount);
+          acc[normalizedKey].overspendAmounts.push(overspendAmount);
+        }
+        // Track per-session overspend percentages (only for sessions with both values)
+        const budgetAmount = Number((s as { budgetAmount?: unknown }).budgetAmount || 0);
+        if (budgetAmount > 0 && overspendAmount > 0) {
+          acc[normalizedKey].overspendPercents.push((overspendAmount / budgetAmount) * 100);
         }
         return acc;
       },
       {} as Record<
         string,
         {
+          displayName: string;
           slips: typeof sessions;
           paths: string[];
           overspendAmounts: number[];
+          overspendPercents: number[];
         }
       >,
     );
 
-    const results = Object.entries(categoryData).map(([category, data]) => {
+    const results = Object.entries(categoryData).map(([normalizedKey, data]) => {
       const recovered = data.slips.filter(
         (s) => s.status !== RecoveryStatus.PENDING && s.status !== RecoveryStatus.ABANDONED,
       ).length;
@@ -657,16 +689,19 @@ export class GpsAnalyticsService {
       // Calculate total overspend amount
       const totalOverspend = data.overspendAmounts.reduce((a, b) => a + b, 0);
 
-      // For average overspend percent, we would need budget data to calculate the actual percentage
-      // Since RecoverySession only stores overspendAmount (not the budget), we return 0
-      // In a production system, this would query budget data to get the actual percentage
-      const averageOverspendPercent = 0;
+      // Calculate average overspend percent from per-session percentages
+      // Only sessions that have both overspendAmount and budgetAmount contribute
+      let averageOverspendPercent = 0;
+      if (data.overspendPercents.length > 0) {
+        const totalPercent = data.overspendPercents.reduce((a, b) => a + b, 0);
+        averageOverspendPercent = roundTo2Decimals(totalPercent / data.overspendPercents.length);
+      }
 
-      // Generate category ID from name (slug-like)
-      const categoryId = category.toLowerCase().replace(/\s+/g, '_');
+      // Generate category ID slug from normalized key
+      const categoryId = normalizedKey.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
       return {
-        category,
+        category: data.displayName,
         categoryId,
         totalSlips: data.slips.length,
         recoveryRate: roundTo2Decimals(recoveryRate),

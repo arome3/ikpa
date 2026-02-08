@@ -4,7 +4,7 @@
  * Input for inviting a new referee.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsEmail, IsEnum } from 'class-validator';
 import { RefereeRelationship } from '@prisma/client';
 
@@ -63,4 +63,10 @@ export class InviteRefereeResponseDto {
     description: 'When the invitation expires',
   })
   inviteExpires!: Date;
+
+  @ApiPropertyOptional({
+    example: 'https://wa.me/?text=Hi%20Chidi!...',
+    description: 'WhatsApp deep link for sharing the referee invitation',
+  })
+  whatsappLink?: string;
 }

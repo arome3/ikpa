@@ -35,8 +35,6 @@ import {
   Logger,
   OnModuleInit,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Opik } from 'opik';
 import { randomUUID } from 'crypto';
 
 import { OpikService } from '../../opik.service';
@@ -85,7 +83,6 @@ export class OpikDatasetService implements IOpikDatasetService, OnModuleInit {
   constructor(
     private readonly opikService: OpikService,
     private readonly datasetService: DatasetService,
-    private readonly configService: ConfigService,
   ) {}
 
   /**

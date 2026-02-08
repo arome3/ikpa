@@ -97,6 +97,17 @@ export const COMMITMENT_CONSTANTS = {
     FAILED: 'FAILED',
     CANCELLED: 'CANCELLED',
   } as const,
+
+  /**
+   * Grace period hours before offering self-verify (Task 2)
+   * After this many hours, user gets option to self-verify
+   */
+  GRACE_PERIOD_HOURS: 48,
+
+  /**
+   * Additional hours for self-verify window after grace period
+   */
+  SELF_VERIFY_EXTENSION_HOURS: 48,
 } as const;
 
 /**
@@ -213,4 +224,42 @@ export const COMMITMENT_METRICS = {
   COMMITMENT_STRENGTH: 'commitment_strength',
   RETRY_RATE: 'retry_rate',
   STAKE_TYPE_CONVERSION: 'stake_type_conversion',
+} as const;
+
+/**
+ * Group accountability constants
+ * Based on Dunbar's social group research and Kullgren's physical activity trial
+ */
+export const GROUP_CONSTANTS = {
+  MIN_MEMBERS: 2,
+  MAX_MEMBERS: 5,
+  INVITE_CODE_LENGTH: 8, // 8 hex chars from randomBytes(4)
+  WEEKLY_NUDGE_DAY: 0, // Sunday
+} as const;
+
+/**
+ * Supportive messages for group events
+ */
+export const GROUP_MESSAGES = {
+  ALL_SUCCEEDED: {
+    headlines: ['Group Champions!', 'Your squad crushed it!'],
+    subtexts: [
+      "Every member achieved their goal. That's the power of accountability.",
+    ],
+  },
+  NUDGE: {
+    headlines: ['Weekly check-in', "How's your group doing?"],
+    subtexts: ['{onTrack}/{total} members are on track this week.'],
+  },
+} as const;
+
+/**
+ * Achievement tier configuration for partial success
+ * Prevents the "cliff edge" where 93% achievement = 0% refund
+ */
+export const ACHIEVEMENT_TIERS = {
+  GOLD:   { minPercentage: 100, refundPercentage: 100, label: 'Gold' },
+  SILVER: { minPercentage: 90,  refundPercentage: 75,  label: 'Silver' },
+  BRONZE: { minPercentage: 75,  refundPercentage: 50,  label: 'Bronze' },
+  NONE:   { minPercentage: 0,   refundPercentage: 0,   label: 'Failed' },
 } as const;

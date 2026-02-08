@@ -23,6 +23,7 @@ import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { FinanceModule } from '../finance/finance.module';
+import { CommitmentModule } from '../commitment/commitment.module';
 import { RedisModule } from '../../redis';
 import { GpsService } from './gps.service';
 import { GpsController } from './gps.controller';
@@ -36,7 +37,13 @@ import { CategoryFreezeGuardService } from './category-freeze-guard.service';
 import { GpsIntegrationService } from './gps-integration.service';
 import { StreakService } from './streaks';
 import { ProgressService } from './progress';
-import { GpsNotificationService, GpsNotificationListener } from './notification';
+import {
+  GpsNotificationService,
+  GpsNotificationListener,
+  WhatsAppService,
+  GpsWhatsAppNotificationService,
+} from './notification';
+import { GpsRerouterAgent } from './agents';
 
 /**
  * Module for the GPS Re-Router budget recovery system
@@ -51,6 +58,7 @@ import { GpsNotificationService, GpsNotificationListener } from './notification'
   imports: [
     PrismaModule,
     FinanceModule,
+    CommitmentModule,
     RedisModule,
     EventEmitterModule.forRoot(),
   ],
@@ -69,6 +77,9 @@ import { GpsNotificationService, GpsNotificationListener } from './notification'
     ProgressService,
     GpsNotificationService,
     GpsNotificationListener,
+    WhatsAppService,
+    GpsWhatsAppNotificationService,
+    GpsRerouterAgent,
   ],
   exports: [
     GpsService,
@@ -83,6 +94,7 @@ import { GpsNotificationService, GpsNotificationListener } from './notification'
     StreakService,
     ProgressService,
     GpsNotificationService,
+    GpsRerouterAgent,
   ],
 })
 export class GpsModule {}

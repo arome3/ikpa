@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   CreateGoalDto,
@@ -23,7 +24,10 @@ import { GoalStatus } from '@prisma/client';
 export class GoalCrudService {
   private readonly logger = new Logger(GoalCrudService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   /**
    * Create a new financial goal
@@ -219,6 +223,18 @@ export class GoalCrudService {
       : 0;
 
     this.logger.log(`Added contribution ${contribution.id} to goal ${goalId} for user ${userId}`);
+
+    // Emit event for milestone tracking (Future Self triggered letters)
+    this.eventEmitter.emit('goal.contribution.created', {
+      userId,
+      goalId,
+      goalName: goal.name,
+      contributionAmount: dto.amount,
+      currentAmount: newCurrentAmount,
+      targetAmount,
+      progressPercent: newProgressPercent,
+      currency: goal.currency,
+    });
 
     return {
       id: contribution.id,

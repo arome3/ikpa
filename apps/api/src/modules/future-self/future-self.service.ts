@@ -22,8 +22,23 @@ import {
   LETTER_CACHE_TTL_MS,
   LETTER_IDEMPOTENCY_TTL_SEC,
   LETTER_IDEMPOTENCY_KEY_PREFIX,
+  FEEDBACK_COMMITMENT_CONVERSION,
+  TRACE_FUTURE_SELF_TRIGGERED,
+  AB_TEST_LETTER_MODE,
 } from './constants';
+import { TrackedTrace } from '../ai/opik/interfaces';
 import { LetterTrigger } from '@prisma/client';
+import { OpikService } from '../ai/opik/opik.service';
+import {
+  buildPostDecisionPrompt,
+  buildMilestonePrompt,
+  LETTER_SYSTEM_PROMPT,
+  LetterMode,
+} from './prompts/future-self.prompt';
+import { AnthropicService } from '../ai/anthropic';
+import { ContentModerationService } from './services/content-moderation.service';
+import { MetricsService } from '../ai/opik/metrics';
+import { LETTER_MAX_TOKENS } from './constants';
 
 // ==========================================
 // CACHE KEYS
@@ -45,7 +60,27 @@ export class FutureSelfService {
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
     private readonly futureSelfAgent: FutureSelfAgent,
-  ) {}
+    private readonly opikService: OpikService,
+    private readonly anthropicService: AnthropicService,
+    private readonly contentModeration: ContentModerationService,
+    private readonly metricsService: MetricsService,
+  ) {
+    // Register A/B test for letter mode framing (gratitude vs regret)
+    try {
+      const abTestManager = this.metricsService.getABTestManager();
+      abTestManager.registerTest({
+        name: AB_TEST_LETTER_MODE,
+        variants: [
+          { id: 'gratitude', weight: 50, criteria: { mode: 'gratitude', framing: 'gain' } },
+          { id: 'regret', weight: 50, criteria: { mode: 'regret', framing: 'loss' } },
+        ],
+        enabled: true,
+        description: 'A/B test: gratitude (gain framing) vs regret (loss framing) letter mode',
+      });
+    } catch {
+      // A/B test registration is best-effort
+    }
+  }
 
   // ==========================================
   // PUBLIC METHODS
@@ -111,9 +146,24 @@ export class FutureSelfService {
   async getLetter(
     userId: string,
     trigger: LetterTrigger = LetterTrigger.USER_REQUEST,
+    mode?: LetterMode,
   ): Promise<LetterFromFuture & { id: string }> {
-    const cacheKey = LETTER_CACHE_KEY(userId);
-    const idempotencyKey = `${LETTER_IDEMPOTENCY_KEY_PREFIX}:${userId}`;
+    // When user doesn't specify a mode, use A/B test to determine default
+    let letterMode: LetterMode = mode || 'gratitude';
+    if (!mode) {
+      try {
+        const variant = this.metricsService.selectABTestVariant(AB_TEST_LETTER_MODE, userId);
+        if (variant) {
+          letterMode = variant.id as LetterMode;
+          this.logger.debug(`A/B test assigned mode '${letterMode}' for user ${userId}`);
+        }
+      } catch {
+        // A/B test selection failed, use default
+      }
+    }
+
+    const cacheKey = `${LETTER_CACHE_KEY(userId)}:${letterMode}`;
+    const idempotencyKey = `${LETTER_IDEMPOTENCY_KEY_PREFIX}:${userId}:${letterMode}`;
 
     // Try Redis cache first (with graceful degradation)
     try {
@@ -167,7 +217,7 @@ export class FutureSelfService {
     }
 
     // Generate fresh letter
-    const letter = await this.futureSelfAgent.generateLetter(userId);
+    const letter = await this.futureSelfAgent.generateLetter(userId, letterMode);
 
     // Get token usage from the response (stored in agent context)
     const tokenUsage = letter.tokenUsage || { promptTokens: 0, completionTokens: 0 };
@@ -575,6 +625,451 @@ export class FutureSelfService {
       byTrigger: triggerBreakdown,
       thisMonth,
     };
+  }
+
+  // ==========================================
+  // CONVERSATION METHODS
+  // ==========================================
+
+  /**
+   * Handle a conversation message - creates or continues a conversation
+   */
+  async handleConversation(
+    userId: string,
+    letterId: string,
+    message: string,
+  ): Promise<{
+    conversationId: string;
+    response: { role: 'future_self'; content: string; createdAt: string };
+    messages: Array<{ role: string; content: string; createdAt: string }>;
+  } | null> {
+    // Verify letter ownership
+    const letter = await this.prisma.futureSelfLetter.findFirst({
+      where: { id: letterId, userId },
+    });
+    if (!letter) return null;
+
+    // Find or create conversation
+    let conversation = await this.prisma.futureSelfConversation.findFirst({
+      where: { userId, letterId },
+    });
+
+    const existingMessages: Array<{ role: string; content: string; createdAt: string }> =
+      conversation ? (conversation.messages as Array<{ role: string; content: string; createdAt: string }>) : [];
+
+    // Max 20 messages per conversation
+    if (existingMessages.length >= 20) {
+      return {
+        conversationId: conversation!.id,
+        response: {
+          role: 'future_self',
+          content: "We've had a wonderful conversation. Generate a new letter to start a fresh dialogue with me.",
+          createdAt: new Date().toISOString(),
+        },
+        messages: [...existingMessages, {
+          role: 'user',
+          content: message,
+          createdAt: new Date().toISOString(),
+        }],
+      };
+    }
+
+    // Generate response
+    const result = await this.futureSelfAgent.generateConversationResponse(
+      userId,
+      letter.content,
+      message,
+      existingMessages,
+    );
+
+    // Build new messages array
+    const now = new Date().toISOString();
+    const userMsg = { role: 'user', content: message, createdAt: now };
+    const futureMsg = { role: 'future_self', content: result.content, createdAt: now };
+    const allMessages = [...existingMessages, userMsg, futureMsg];
+
+    // Persist
+    if (conversation) {
+      await this.prisma.futureSelfConversation.update({
+        where: { id: conversation.id },
+        data: { messages: allMessages },
+      });
+    } else {
+      conversation = await this.prisma.futureSelfConversation.create({
+        data: {
+          userId,
+          letterId,
+          messages: allMessages,
+        },
+      });
+    }
+
+    return {
+      conversationId: conversation.id,
+      response: { role: 'future_self', content: result.content, createdAt: now },
+      messages: allMessages as Array<{ role: string; content: string; createdAt: string }>,
+    };
+  }
+
+  /**
+   * Get conversation history for a letter
+   */
+  async getConversation(
+    userId: string,
+    letterId: string,
+  ): Promise<{ messages: Array<{ role: string; content: string; createdAt: string }> } | null> {
+    const conversation = await this.prisma.futureSelfConversation.findFirst({
+      where: { userId, letterId },
+    });
+    if (!conversation) return null;
+    return {
+      messages: conversation.messages as Array<{ role: string; content: string; createdAt: string }>,
+    };
+  }
+
+  // ==========================================
+  // COMMITMENT METHODS
+  // ==========================================
+
+  /**
+   * Create a micro-commitment
+   */
+  async createCommitment(
+    userId: string,
+    letterId: string,
+    dailyAmount: number,
+  ): Promise<{
+    id: string;
+    letterId: string;
+    dailyAmount: number;
+    currency: string;
+    status: string;
+    startDate: Date;
+    endDate: Date | null;
+    streakDays: number;
+    createdAt: Date;
+  }> {
+    // Get user currency
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { currency: true },
+    });
+
+    const commitment = await this.prisma.futureSelfCommitment.create({
+      data: {
+        userId,
+        letterId,
+        dailyAmount,
+        currency: user?.currency || 'USD',
+      },
+    });
+
+    // Track commitment conversion as Opik feedback on the letter's trace
+    try {
+      // Find the letter to get its traceId context
+      const letter = await this.prisma.futureSelfLetter.findFirst({
+        where: { id: letterId, userId },
+      });
+      if (letter) {
+        this.opikService.addFeedback({
+          traceId: letterId, // Use letterId as trace correlation
+          name: FEEDBACK_COMMITMENT_CONVERSION,
+          value: 1,
+          category: 'engagement',
+          comment: `User committed ${dailyAmount}/day after reading letter`,
+          source: 'user-action',
+        });
+      }
+    } catch {
+      // Feedback is best-effort
+    }
+
+    // Track A/B test result — commitment is the behavioral outcome we measure
+    try {
+      const abTestManager = this.metricsService.getABTestManager();
+      // Determine which variant this user was in
+      const variant = this.metricsService.selectABTestVariant(AB_TEST_LETTER_MODE, userId);
+      if (variant) {
+        abTestManager.trackResult(AB_TEST_LETTER_MODE, variant.id, {
+          score: dailyAmount,
+          passed: true,
+          metadata: { userId, letterId, dailyAmount },
+        });
+      }
+    } catch {
+      // A/B tracking is best-effort
+    }
+
+    this.logger.log(`Commitment created for user ${userId}: ${dailyAmount}/day`);
+
+    return {
+      id: commitment.id,
+      letterId: commitment.letterId,
+      dailyAmount: Number(commitment.dailyAmount),
+      currency: commitment.currency,
+      status: commitment.status,
+      startDate: commitment.startDate,
+      endDate: commitment.endDate,
+      streakDays: commitment.streakDays,
+      createdAt: commitment.createdAt,
+    };
+  }
+
+  /**
+   * Get user's commitments
+   */
+  async getCommitments(userId: string): Promise<Array<{
+    id: string;
+    letterId: string;
+    dailyAmount: number;
+    currency: string;
+    status: string;
+    startDate: Date;
+    endDate: Date | null;
+    streakDays: number;
+    createdAt: Date;
+  }>> {
+    const commitments = await this.prisma.futureSelfCommitment.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return commitments.map(c => ({
+      id: c.id,
+      letterId: c.letterId,
+      dailyAmount: Number(c.dailyAmount),
+      currency: c.currency,
+      status: c.status,
+      startDate: c.startDate,
+      endDate: c.endDate,
+      streakDays: c.streakDays,
+      createdAt: c.createdAt,
+    }));
+  }
+
+  /**
+   * Update a commitment's status
+   */
+  async updateCommitment(
+    userId: string,
+    id: string,
+    status?: string,
+  ): Promise<{
+    id: string;
+    letterId: string;
+    dailyAmount: number;
+    currency: string;
+    status: string;
+    startDate: Date;
+    endDate: Date | null;
+    streakDays: number;
+    createdAt: Date;
+  } | null> {
+    const existing = await this.prisma.futureSelfCommitment.findFirst({
+      where: { id, userId },
+    });
+    if (!existing) return null;
+
+    const updateData: Record<string, unknown> = {};
+    if (status) {
+      updateData.status = status;
+      if (status === 'COMPLETED' || status === 'ABANDONED') {
+        updateData.endDate = new Date();
+      }
+    }
+
+    const commitment = await this.prisma.futureSelfCommitment.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return {
+      id: commitment.id,
+      letterId: commitment.letterId,
+      dailyAmount: Number(commitment.dailyAmount),
+      currency: commitment.currency,
+      status: commitment.status,
+      startDate: commitment.startDate,
+      endDate: commitment.endDate,
+      streakDays: commitment.streakDays,
+      createdAt: commitment.createdAt,
+    };
+  }
+
+  // ==========================================
+  // EVENT-TRIGGERED LETTER GENERATION
+  // ==========================================
+
+  /**
+   * Generate a triggered letter (POST_DECISION or GOAL_MILESTONE)
+   *
+   * Uses a trigger-specific prompt builder and shorter TTLs.
+   * Reuses existing caching/idempotency patterns.
+   */
+  async generateTriggeredLetter(
+    userId: string,
+    trigger: LetterTrigger,
+    eventContext: {
+      expenseDescription?: string;
+      expenseAmount?: number;
+      goalName?: string;
+      goalAmount?: number;
+      currentAmount?: number;
+      milestone?: number;
+      currency?: string;
+    },
+  ): Promise<void> {
+    // Idempotency: prevent duplicate triggered letters within 5 minutes
+    const idempotencyKey = `${LETTER_IDEMPOTENCY_KEY_PREFIX}:triggered:${userId}:${trigger}`;
+    let acquiredLock = false;
+    try {
+      acquiredLock = await this.redisService.setNx(idempotencyKey, { startedAt: Date.now() }, 300);
+    } catch {
+      acquiredLock = true; // If Redis fails, proceed anyway
+    }
+    if (!acquiredLock) {
+      this.logger.debug(`Triggered letter already in progress for user ${userId} (${trigger})`);
+      return;
+    }
+
+    // Create Opik trace for event-triggered letter
+    let trace: TrackedTrace | null = null;
+    try {
+      trace = this.opikService.createTrace({
+        name: TRACE_FUTURE_SELF_TRIGGERED,
+        input: { userId, trigger, eventContext },
+        metadata: {
+          agent: 'future_self',
+          version: '1.0',
+          triggerType: trigger,
+        },
+        tags: ['future-self', 'event-trigger', trigger],
+      });
+    } catch {
+      // Tracing is best-effort
+    }
+
+    try {
+      // Get user data for prompt context
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, currency: true },
+      });
+      if (!user) {
+        this.safeEndTrace(trace, { success: false, error: 'User not found' });
+        return;
+      }
+
+      const currency = eventContext.currency || user.currency || 'NGN';
+      const name = user.name || 'Friend';
+
+      // Build trigger-specific prompt
+      let prompt: string;
+
+      if (trigger === LetterTrigger.POST_DECISION && eventContext.expenseAmount) {
+        const dailyEquivalent = Math.round(eventContext.expenseAmount / 30);
+        prompt = buildPostDecisionPrompt(
+          name,
+          eventContext.expenseDescription || 'a purchase',
+          this.formatCurrency(eventContext.expenseAmount, currency),
+          currency,
+          this.formatCurrency(dailyEquivalent, currency),
+        );
+      } else if (trigger === LetterTrigger.GOAL_MILESTONE && eventContext.goalName) {
+        prompt = buildMilestonePrompt(
+          name,
+          eventContext.goalName,
+          eventContext.milestone || 0,
+          this.formatCurrency(eventContext.goalAmount || 0, currency),
+          this.formatCurrency(eventContext.currentAmount || 0, currency),
+          currency,
+        );
+      } else {
+        this.logger.warn(`Unknown trigger type or missing context: ${trigger}`);
+        this.safeEndTrace(trace, { success: false, error: 'Unknown trigger or missing context' });
+        return;
+      }
+
+      // Generate via Anthropic
+      const response = await this.anthropicService.generate(
+        prompt,
+        LETTER_MAX_TOKENS,
+        LETTER_SYSTEM_PROMPT,
+      );
+
+      const content = response.content;
+
+      // Run through content moderation
+      const moderation = this.contentModeration.moderate(content);
+      if (!moderation.passed) {
+        this.logger.warn(`Triggered letter failed moderation for user ${userId}: ${moderation.flags.join(', ')}`);
+        this.safeEndTrace(trace, { success: false, error: `Moderation failed: ${moderation.flags.join(', ')}` });
+        return;
+      }
+
+      // Persist to database
+      await this.prisma.futureSelfLetter.create({
+        data: {
+          userId,
+          content,
+          trigger,
+          currentSavingsRate: 0,
+          optimizedSavingsRate: 0,
+          currentNetWorth20yr: 0,
+          optimizedNetWorth20yr: 0,
+          wealthDifference20yr: 0,
+          userAge: 0,
+          futureAge: 60,
+          toneEmpathyScore: null,
+          promptTokens: response.usage?.promptTokens || 0,
+          completionTokens: response.usage?.completionTokens || 0,
+        },
+      });
+
+      this.safeEndTrace(trace, {
+        success: true,
+        result: {
+          trigger,
+          letterLength: content.length,
+          promptTokens: response.usage?.promptTokens || 0,
+        },
+      });
+      this.logger.log(`Triggered letter (${trigger}) generated for user ${userId}`);
+
+      // Invalidate letter cache so next request picks up the new letter
+      await this.invalidateCache(userId);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.safeEndTrace(trace, { success: false, error: errorMessage });
+      this.logger.error(
+        `Failed to generate triggered letter for user ${userId}: ${errorMessage}`,
+      );
+    }
+  }
+
+  /**
+   * Safely end an Opik trace with error protection
+   */
+  private safeEndTrace(
+    trace: TrackedTrace | null,
+    result: { success: boolean; result?: Record<string, unknown>; error?: string },
+  ): void {
+    if (!trace) return;
+    try {
+      this.opikService.endTrace(trace, result);
+    } catch {
+      // Trace ending failed, continue
+    }
+  }
+
+  /**
+   * Format currency for triggered letter prompts
+   */
+  private formatCurrency(amount: number, currency: string): string {
+    const symbols: Record<string, string> = {
+      NGN: '\u20A6', GHS: 'GH\u20B5', KES: 'KSh', ZAR: 'R', USD: '$', GBP: '\u00A3',
+    };
+    return `${symbols[currency] || currency}${amount.toLocaleString()}`;
   }
 
   // ==========================================

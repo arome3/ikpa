@@ -145,6 +145,13 @@ export interface CommitmentResponse {
     subtext: string;
   };
   createdAt: Date;
+  achievementTier?: string | null;
+  achievementPercentage?: number | null;
+  tierRefundPercentage?: number | null;
+  selfVerifyOfferedAt?: Date | null;
+  selfVerifyExpiresAt?: Date | null;
+  trustBonusApplied?: boolean;
+  trustBonusAmount?: number | null;
 }
 
 /**
@@ -321,4 +328,115 @@ export interface VerificationTokenPayload {
   type: 'referee_verification' | 'referee_invite';
   exp: number;
   iat: number;
+}
+
+// ============================================
+// GROUP ACCOUNTABILITY INTERFACES
+// ============================================
+
+/**
+ * Group member's categorical progress (never exposes raw financial amounts)
+ */
+export type GroupProgressCategory =
+  | 'on_track'
+  | 'behind'
+  | 'completed'
+  | 'failed'
+  | 'pending';
+
+/**
+ * Group info summary
+ */
+export interface GroupInfo {
+  id: string;
+  name: string;
+  description: string | null;
+  inviteCode: string;
+  status: string;
+  memberCount: number;
+  maxMembers: number;
+  myRole: string;
+  createdAt: Date;
+}
+
+/**
+ * Individual member progress for the group dashboard
+ * Shows categorical status only — never dollar amounts (Beshears 401k study)
+ */
+export interface GroupMemberProgress {
+  userId: string;
+  name: string;
+  role: string;
+  hasContract: boolean;
+  progress: GroupProgressCategory;
+  groupBonusAwarded: boolean;
+  joinedAt: Date;
+  encouragementCount?: number;
+  reactions?: Array<{ emoji: string; count: number; myReaction: boolean }>;
+}
+
+/**
+ * Full group dashboard response
+ */
+export interface GroupDashboard {
+  group: GroupInfo;
+  members: GroupMemberProgress[];
+  allResolved: boolean;
+  allSucceeded: boolean;
+  groupBonusAwarded: boolean;
+  sharedGoal?: {
+    target: number;
+    current: number;
+    percentage: number;
+    currency: string;
+    label: string | null;
+  } | null;
+  recentEncouragements?: Array<{
+    id: string;
+    fromName: string;
+    toName: string;
+    message: string;
+    createdAt: Date;
+  }>;
+}
+
+/**
+ * Group outcome resolution result
+ */
+export interface GroupOutcomeResult {
+  groupId: string;
+  allSucceeded: boolean;
+  bonusAwarded: boolean;
+  membersResolved: number;
+}
+
+/**
+ * Achievement tier types for partial success
+ */
+export type AchievementTier = 'GOLD' | 'SILVER' | 'BRONZE' | null;
+
+export interface TierResult {
+  tier: AchievementTier;
+  refundPercentage: number;
+  achievementPercentage: number;
+}
+
+/**
+ * Self-verify result
+ */
+export interface SelfVerifyResult {
+  success: boolean;
+  newStatus: string;
+  message: string;
+}
+
+/**
+ * Streak info
+ */
+export interface StreakInfo {
+  currentStreak: number;
+  longestStreak: number;
+  trustBonusRate: number;
+  bonusEligible: boolean;
+  lastSucceededAt: string | null;
 }

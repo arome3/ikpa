@@ -198,6 +198,7 @@ export class EmailParserService {
    */
   private looksLikeBankAlert(subject: string, body: string): boolean {
     const alertPatterns = [
+      // Nigerian patterns
       /debit\s*alert/i,
       /credit\s*alert/i,
       /transaction\s*alert/i,
@@ -209,6 +210,19 @@ export class EmailParserService {
       /NGN\s*[\d,]+/i,
       /₦[\d,]+/i,
       /\d+\.\d{2}\s*(?:debited|credited)/i,
+      // US/International patterns
+      /\$\s*[\d,]+\.\d{2}/i,
+      /USD\s*[\d,]+/i,
+      /card\s*ending\s*in\s*\d{4}/i,
+      /account\s*ending\s*in\s*\d{4}/i,
+      /new\s*transaction/i,
+      /purchase\s*(?:of|at|from)/i,
+      /charge\s*(?:of|at|from)/i,
+      /payment\s*(?:of|to|from)/i,
+      /authorization/i,
+      /transaction\s*(?:of|for|amount)/i,
+      /spent\s*\$/i,
+      /you\s*(?:spent|paid|sent)/i,
     ];
 
     const text = `${subject} ${body}`;
@@ -222,6 +236,7 @@ export class EmailParserService {
     const text = `${email.from} ${email.subject} ${email.text || ''}`.toLowerCase();
 
     const bankPatterns: Record<string, RegExp> = {
+      // Nigerian banks
       GTBank: /gtbank|guaranty\s*trust/i,
       'Access Bank': /access\s*bank|accessbank/i,
       'First Bank': /first\s*bank|firstbank/i,
@@ -230,6 +245,16 @@ export class EmailParserService {
       Kuda: /kuda/i,
       Opay: /opay/i,
       Moniepoint: /moniepoint/i,
+      // US banks
+      Chase: /chase\.com|jpmorgan\s*chase|chase\s*bank/i,
+      'Bank of America': /bankofamerica|bank\s*of\s*america|bofa/i,
+      'Wells Fargo': /wellsfargo|wells\s*fargo/i,
+      'Capital One': /capitalone|capital\s*one/i,
+      Citi: /citi\.com|citibank|citi\s*card/i,
+      'American Express': /americanexpress|amex/i,
+      Discover: /discover\.com|discover\s*card/i,
+      'US Bank': /usbank|u\.?s\.?\s*bank/i,
+      PNC: /pnc\.com|pnc\s*bank/i,
     };
 
     for (const [bank, pattern] of Object.entries(bankPatterns)) {
@@ -345,7 +370,7 @@ export class EmailParserService {
    * Normalize currency string
    */
   private normalizeCurrency(currency: string): Currency {
-    const normalized = currency?.toUpperCase();
+    const normalized = currency?.toUpperCase()?.trim();
 
     const currencyMap: Record<string, Currency> = {
       NGN: 'NGN',
@@ -355,8 +380,20 @@ export class EmailParserService {
       ZAR: 'USD',
       EGP: 'USD',
       USD: 'USD',
+      DOLLAR: 'USD',
+      DOLLARS: 'USD',
+      '$': 'USD',
     };
 
-    return currencyMap[normalized] || 'NGN';
+    if (currencyMap[normalized]) {
+      return currencyMap[normalized];
+    }
+
+    // Detect $ sign anywhere in the string
+    if (currency?.includes('$')) {
+      return 'USD';
+    }
+
+    return 'NGN';
   }
 }

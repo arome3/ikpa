@@ -139,10 +139,31 @@ export class GoalImpactDto {
   probabilityDrop!: number;
 
   @ApiProperty({
-    example: 'Your goal probability decreased by 7 percentage points',
+    example: 'Your Emergency Fund probability decreased by 7 percentage points',
     description: 'Human-readable impact message',
   })
   message!: string;
+
+  @ApiProperty({
+    example: '2026-08-15T00:00:00.000Z',
+    description: 'Projected date of goal achievement at current pace',
+    required: false,
+  })
+  projectedDate?: Date;
+
+  @ApiProperty({
+    example: "You'll likely reach Emergency Fund by August 2026",
+    description: 'Human-readable timeline projection',
+    required: false,
+  })
+  humanReadable?: string;
+
+  @ApiProperty({
+    example: '3 months behind schedule',
+    description: 'Schedule status relative to goal deadline (ahead/behind/on track)',
+    required: false,
+  })
+  scheduleStatus?: string;
 }
 
 /**
@@ -162,19 +183,20 @@ export class RecoveryPathDto {
   name!: string;
 
   @ApiProperty({
-    example: 'Extend your goal deadline by 2 weeks',
+    example: 'Extend your Emergency Fund deadline by 2 weeks',
     description: 'Human-readable description of what this path involves',
   })
   description!: string;
 
   @ApiProperty({
     example: 0.78,
-    description: 'Projected probability if this path is followed (0-1)',
+    description: 'Projected probability if this path is followed (0-1). Null in budget-only mode (no goals).',
+    nullable: true,
   })
-  newProbability!: number;
+  newProbability!: number | null;
 
   @ApiProperty({
-    enum: ['Low', 'Medium', 'High'],
+    enum: ['None', 'Low', 'Medium', 'High'],
     example: 'Low',
     description: 'Effort level required',
   })
@@ -200,6 +222,50 @@ export class RecoveryPathDto {
     required: false,
   })
   freezeDuration?: string;
+
+  @ApiProperty({
+    description: 'Rebalance info for Smart Swap path (category_rebalance only)',
+    required: false,
+    example: {
+      fromCategory: 'Transport',
+      fromCategoryId: 'abc-123',
+      availableSurplus: 5000,
+      coverageAmount: 3000,
+      isFullCoverage: true,
+    },
+  })
+  rebalanceInfo?: {
+    fromCategory: string;
+    fromCategoryId: string;
+    availableSurplus: number;
+    coverageAmount: number;
+    isFullCoverage: boolean;
+  };
+
+  @ApiProperty({
+    description: 'Concrete daily actions the user can take to save money',
+    required: false,
+    example: [
+      'Cook at home 4+ nights this week \u2192 saves ~$80/week',
+      'Pack lunch instead of eating out \u2014 saves ~$12/day \u2192 saves ~$60/week',
+    ],
+    type: [String],
+  })
+  concreteActions?: string[];
+
+  @ApiProperty({
+    example: 'Fully covers the \u20a650,000 overage',
+    description: 'Budget impact description for budget-only mode (no goals)',
+    required: false,
+  })
+  budgetImpact?: string;
+
+  @ApiProperty({
+    example: 'Moves your projected date from October to August',
+    description: 'Timeline effect description showing how this path affects projected goal date',
+    required: false,
+  })
+  timelineEffect?: string;
 }
 
 /**
@@ -296,9 +362,11 @@ export class RecalculateResponseDto {
 
   @ApiProperty({
     type: GoalImpactDto,
-    description: 'Impact on the user primary goal (for backwards compatibility)',
+    description: 'Impact on the user primary goal. Null when user has no active goals (budget-only mode).',
+    nullable: true,
+    required: false,
   })
-  goalImpact!: GoalImpactDto;
+  goalImpact?: GoalImpactDto | null;
 
   @ApiProperty({
     type: MultiGoalImpactDto,

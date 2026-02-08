@@ -171,6 +171,10 @@ export class OnboardingService {
         ...(dto.currency !== undefined && { currency: dto.currency }),
         ...(dto.employmentType !== undefined && { employmentType: dto.employmentType }),
         ...(dto.dateOfBirth !== undefined && { dateOfBirth: new Date(dto.dateOfBirth) }),
+        ...(dto.phoneNumber !== undefined && { phoneNumber: dto.phoneNumber }),
+        ...(dto.whatsappNotificationsEnabled !== undefined && {
+          whatsappNotificationsEnabled: dto.whatsappNotificationsEnabled,
+        }),
       },
     });
 
@@ -188,6 +192,8 @@ export class OnboardingService {
       currency: user.currency,
       employmentType: user.employmentType ?? undefined,
       dateOfBirth: user.dateOfBirth?.toISOString().split('T')[0],
+      phoneNumber: user.phoneNumber ?? undefined,
+      whatsappNotificationsEnabled: user.whatsappNotificationsEnabled,
       profileStepComplete,
     };
   }

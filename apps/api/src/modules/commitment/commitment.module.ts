@@ -22,8 +22,14 @@ import { CommitmentController } from './commitment.controller';
 import { CommitmentService } from './commitment.service';
 import { StakeService } from './stake.service';
 import { RefereeService } from './referee.service';
+import { UpgradeService } from './upgrade.service';
+import { GroupService } from './group.service';
+import { CommitmentCoachAgent, DebriefAgent } from './agents';
+import { CommitmentEvalRunner } from './agents/commitment-eval-runner';
+import { CommitmentRiskService } from './commitment-risk.service';
 import { MockPaymentService } from './payment.service.mock';
 import { CommitmentCronService } from './commitment.cron';
+import { StreakService } from './streak.service';
 
 /**
  * Module for the Commitment Device Engine
@@ -45,14 +51,28 @@ import { CommitmentCronService } from './commitment.cron';
     CommitmentService,
     StakeService,
     RefereeService,
+    UpgradeService,
+    GroupService,
+    CommitmentCoachAgent,
+    DebriefAgent,
+    CommitmentEvalRunner,
+    CommitmentRiskService,
     MockPaymentService,
     CommitmentCronService,
+    StreakService,
   ],
   exports: [
     CommitmentService,
     StakeService,
     RefereeService,
+    UpgradeService,
+    GroupService,
+    CommitmentCoachAgent,
+    DebriefAgent,
+    CommitmentEvalRunner,
+    CommitmentRiskService,
     CommitmentCronService,
+    StreakService,
   ],
 })
 export class CommitmentModule {}

@@ -4,8 +4,8 @@
  * DTOs for handling Resend inbound email webhooks.
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsArray, IsObject, ValidateNested } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsArray, IsObject, IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -40,6 +40,32 @@ class EmailWebhookDataDto {
   })
   @IsString()
   subject!: string;
+
+  @ApiPropertyOptional({
+    description: 'CC recipients',
+    example: [],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  cc?: string[];
+
+  @ApiPropertyOptional({
+    description: 'BCC recipients',
+    example: [],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  bcc?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Email Message-ID header (useful for deduplication)',
+    example: '<abc123@mail.gmail.com>',
+  })
+  @IsOptional()
+  @IsString()
+  message_id?: string;
 }
 
 /**

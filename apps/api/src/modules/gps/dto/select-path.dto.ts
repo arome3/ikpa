@@ -115,7 +115,7 @@ export class SelectPathResponseDto {
 
   @ApiPropertyOptional({
     example: [
-      'Your goal deadline has been automatically updated',
+      'Your "Emergency Fund" goal deadline has been automatically updated',
       'Review your updated timeline in the Goals section',
       'Consider adjusting your budget to stay on track',
     ],

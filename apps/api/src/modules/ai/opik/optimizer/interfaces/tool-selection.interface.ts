@@ -200,4 +200,4 @@ export type {
   ToolRecommendation,
 };
 
-export { RecoveryTool };
+export type { RecoveryTool };

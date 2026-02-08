@@ -11,6 +11,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { RedisService } from '../../../redis/redis.service';
 import { OpikService } from '../../ai/opik/opik.service';
 import { TrackedTrace, TrackedSpan } from '../../ai/opik/interfaces';
 import { MetricsService } from '../../ai/opik/metrics';
@@ -39,19 +40,34 @@ import {
 } from '../exceptions';
 import {
   buildLetterPrompt,
+  buildRegretLetterPrompt,
   LETTER_SYSTEM_PROMPT,
+  LetterMode,
 } from '../prompts/future-self.prompt';
+import {
+  buildConversationPrompt,
+  CONVERSATION_SYSTEM_PROMPT,
+} from '../prompts/conversation.prompt';
 import {
   FUTURE_AGE,
   LETTER_MAX_TOKENS,
   TRACE_FUTURE_SELF_SIMULATION,
-  TRACE_FUTURE_SELF_LETTER,
   SPAN_GET_USER_CONTEXT,
   SPAN_RUN_SIMULATION,
   SPAN_GENERATE_LETTER,
   SPAN_EVALUATE_TONE,
   SPAN_CONTENT_MODERATION,
+  SPAN_LOAD_CONVERSATION_CONTEXT,
+  SPAN_GENERATE_RESPONSE,
+  SPAN_MODERATE_RESPONSE,
+  SPAN_FETCH_EXPENSES,
+  SPAN_FETCH_SUBSCRIPTIONS,
+  SPAN_FETCH_CONTRIBUTIONS,
+  SPAN_FETCH_EXPENSE_AGGREGATE,
+  SPAN_FETCH_GPS_RECOVERY,
   FEEDBACK_TONE_EMPATHY,
+  FEEDBACK_LETTER_QUALITY_COMPOSITE,
+  FEEDBACK_CULTURAL_SENSITIVITY,
 } from '../constants';
 
 @Injectable()
@@ -65,6 +81,7 @@ export class FutureSelfAgent {
     private readonly anthropicService: AnthropicService,
     private readonly contentModeration: ContentModerationService,
     private readonly metricsService: MetricsService,
+    private readonly redisService: RedisService,
   ) {}
 
   // ==========================================
@@ -80,74 +97,39 @@ export class FutureSelfAgent {
    * @param userId - The user's ID
    * @returns Dual-path simulation results
    */
-  async generateSimulation(userId: string): Promise<FutureSimulation> {
-    // Create Opik trace with error protection
-    let trace: TrackedTrace | null = null;
-    try {
-      trace = this.opikService.createTrace({
-        name: TRACE_FUTURE_SELF_SIMULATION,
-        input: { userId },
-        metadata: {
-          agent: 'future_self',
-          version: '1.0',
-        },
-        tags: ['future-self', 'simulation'],
-      });
-    } catch (traceError) {
-      this.logger.warn(
-        `Failed to create Opik trace: ${traceError instanceof Error ? traceError.message : 'Unknown error'}`,
+  async generateSimulation(userId: string, parentTrace?: TrackedTrace | null): Promise<FutureSimulation> {
+    // When called from generateLetter, parentTrace is provided and spans nest under it.
+    // When called standalone (from controller), we create our own trace.
+    const isNestedCall = !!parentTrace;
+    let trace: TrackedTrace | null = parentTrace ?? null;
+
+    if (!isNestedCall) {
+      trace = this.safeCreateTrace(
+        TRACE_FUTURE_SELF_SIMULATION,
+        { userId },
+        ['future-self', 'simulation', 'monte-carlo'],
       );
     }
 
     try {
-      // Span 1: Get user data (with error protection)
-      let userDataSpan: TrackedSpan | null = null;
-      try {
-        if (trace?.trace) {
-          userDataSpan = this.opikService.createToolSpan({
-            trace: trace.trace,
-            name: 'get_user_data',
-            input: { userId },
-            metadata: {},
-          });
-        }
-      } catch {
-        // Span creation failed, continue without tracing
-      }
+      // Span 1: Get user data
+      const userDataSpan = this.safeCreateToolSpan(trace, 'get_user_data', { userId });
 
       const userData = await this.getUserFinancialData(userId);
 
-      try {
-        if (userDataSpan) {
-          this.opikService.endSpan(userDataSpan, {
-            output: {
-              hasData: true,
-              savingsRate: userData.currentSavingsRate,
-            },
-            metadata: {},
-          });
-        }
-      } catch {
-        // Span ending failed, continue
-      }
+      this.safeEndSpan(userDataSpan, {
+        output: {
+          hasData: true,
+          savingsRate: userData.currentSavingsRate,
+        },
+        metadata: {},
+      });
 
-      // Span 2: Run simulation (with error protection)
-      let simSpan: TrackedSpan | null = null;
-      try {
-        if (trace?.trace) {
-          simSpan = this.opikService.createToolSpan({
-            trace: trace.trace,
-            name: SPAN_RUN_SIMULATION,
-            input: {
-              savingsRate: userData.currentSavingsRate,
-              hasGoals: userData.goals.length > 0,
-            },
-            metadata: {},
-          });
-        }
-      } catch {
-        // Span creation failed, continue without tracing
-      }
+      // Span 2: Run Monte Carlo simulation
+      const simSpan = this.safeCreateToolSpan(trace, SPAN_RUN_SIMULATION, {
+        savingsRate: userData.currentSavingsRate,
+        hasGoals: userData.goals.length > 0,
+      });
 
       const simulationOutput = await this.simulationEngine.runDualPathSimulation(
         userId,
@@ -155,20 +137,14 @@ export class FutureSelfAgent {
         userData.currency,
       );
 
-      try {
-        if (simSpan) {
-          this.opikService.endSpan(simSpan, {
-            output: {
-              currentProbability: simulationOutput.currentPath.probability,
-              optimizedProbability: simulationOutput.optimizedPath.probability,
-              requiredSavingsRate: simulationOutput.optimizedPath.requiredSavingsRate,
-            },
-            metadata: {},
-          });
-        }
-      } catch {
-        // Span ending failed, continue
-      }
+      this.safeEndSpan(simSpan, {
+        output: {
+          currentProbability: simulationOutput.currentPath.probability,
+          optimizedProbability: simulationOutput.optimizedPath.probability,
+          requiredSavingsRate: simulationOutput.optimizedPath.requiredSavingsRate,
+        },
+        metadata: {},
+      });
 
       // Transform to FutureSimulation format
       const result: FutureSimulation = {
@@ -183,20 +159,16 @@ export class FutureSelfAgent {
         difference_20yr: simulationOutput.wealthDifference['20yr'],
       };
 
-      // End trace with success (with error protection)
-      try {
-        if (trace) {
-          this.opikService.endTrace(trace, {
-            success: true,
-            result: {
-              difference20yr: result.difference_20yr,
-              currentProbability: simulationOutput.currentPath.probability,
-              optimizedProbability: simulationOutput.optimizedPath.probability,
-            },
-          });
-        }
-      } catch {
-        // Trace ending failed, continue
+      // Only end trace if we created it (standalone call)
+      if (!isNestedCall) {
+        this.safeEndTrace(trace, {
+          success: true,
+          result: {
+            difference20yr: result.difference_20yr,
+            currentProbability: simulationOutput.currentPath.probability,
+            optimizedProbability: simulationOutput.optimizedPath.probability,
+          },
+        });
       }
 
       this.logger.log(
@@ -207,15 +179,8 @@ export class FutureSelfAgent {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      try {
-        if (trace) {
-          this.opikService.endTrace(trace, {
-            success: false,
-            error: errorMessage,
-          });
-        }
-      } catch {
-        // Trace ending failed, continue
+      if (!isNestedCall) {
+        this.safeEndTrace(trace, { success: false, error: errorMessage });
       }
 
       this.logger.error(`Simulation failed for user ${userId}: ${errorMessage}`);
@@ -237,32 +202,20 @@ export class FutureSelfAgent {
    * @param userId - The user's ID
    * @returns The letter with simulation data
    */
-  async generateLetter(userId: string): Promise<LetterFromFuture> {
-    // Create Opik trace with error protection
-    let trace: TrackedTrace | null = null;
-    try {
-      trace = this.opikService.createTrace({
-        name: TRACE_FUTURE_SELF_LETTER,
-        input: { userId },
-        metadata: {
-          agent: 'future_self',
-          version: '1.0',
-          model: this.anthropicService.getModel(),
-          provider: 'anthropic',
-        },
-        tags: ['future-self', 'letter', 'llm'],
-      });
-    } catch (traceError) {
-      this.logger.warn(
-        `Failed to create Opik trace: ${traceError instanceof Error ? traceError.message : 'Unknown error'}`,
-      );
-    }
+  async generateLetter(userId: string, mode: LetterMode = 'gratitude'): Promise<LetterFromFuture> {
+    // Create agent-specific Opik trace
+    const trace = this.safeCreateAgentTrace(userId, {
+      mode,
+      model: this.anthropicService.getModel(),
+      provider: 'anthropic',
+      letterMode: mode,
+    }, ['future-self', 'letter', 'generation', mode === 'regret' ? 'regret-mode' : 'gratitude-mode']);
 
     try {
-      // Span 1: Get user context (with error protection)
+      // Span 1: Get user context (trace passed for retrieval span tracking)
       const contextSpan = this.safeCreateToolSpan(trace, SPAN_GET_USER_CONTEXT, { userId });
 
-      const userContext = await this.getUserContext(userId);
+      const userContext = await this.getUserContext(userId, trace);
 
       // Validate user age is less than future age
       if (userContext.age >= FUTURE_AGE) {
@@ -281,26 +234,20 @@ export class FutureSelfAgent {
         metadata: {},
       });
 
-      // Span 2: Run simulation (with error protection)
-      const simSpan = this.safeCreateToolSpan(trace, SPAN_RUN_SIMULATION, {
-        savingsRate: userContext.currentSavingsRate,
-      });
+      // Spans 2-3: Run simulation (nested under this trace — no separate trace created)
+      const simulation = await this.generateSimulation(userId, trace);
 
-      const simulation = await this.generateSimulation(userId);
-
-      this.safeEndSpan(simSpan, {
-        output: { difference20yr: simulation.difference_20yr },
-        metadata: {},
-      });
-
-      // Span 3: Generate letter with LLM (with error protection)
+      // Span 4: Generate letter with LLM
       const llmSpan = this.safeCreateLLMSpan(trace, SPAN_GENERATE_LETTER, {
         promptType: 'letter_generation',
+        letterMode: mode,
         userName: userContext.name,
         userAge: userContext.age,
       });
 
-      const prompt = buildLetterPrompt(userContext, simulation);
+      const prompt = mode === 'regret'
+        ? buildRegretLetterPrompt(userContext, simulation)
+        : buildLetterPrompt(userContext, simulation);
       const response = await this.anthropicService.generate(
         prompt,
         LETTER_MAX_TOKENS,
@@ -348,8 +295,10 @@ export class FutureSelfAgent {
         letterLength: response.content.length,
       });
 
+      let safetyScore = 1; // Default: passed (normalized to 0-1 for composite)
       try {
         const safetyResult = await this.metricsService.checkSafety(response.content);
+        safetyScore = safetyResult.score > 0 ? 1 : 0;
 
         this.safeEndSpan(safetySpan, {
           output: {
@@ -428,6 +377,54 @@ export class FutureSelfAgent {
         });
       }
 
+      // Span 7: Evaluate cultural sensitivity
+      let culturalScore = 3; // Default if evaluation fails
+      try {
+        const culturalResult = await this.metricsService.evaluateCultural(
+          { input: '', output: '' },
+          response.content,
+        );
+        culturalScore = culturalResult.score;
+
+        if (trace) {
+          this.opikService.addFeedback({
+            traceId: trace.traceId,
+            name: FEEDBACK_CULTURAL_SENSITIVITY,
+            value: culturalScore,
+            category: 'quality',
+            comment: culturalResult.reason,
+            source: 'llm-as-judge',
+          });
+        }
+      } catch (culturalError) {
+        this.logger.warn(
+          `Cultural sensitivity evaluation failed: ${culturalError instanceof Error ? culturalError.message : 'Unknown error'}`,
+        );
+      }
+
+      // Compute and record composite quality score
+      // Weights: Tone (35%), Safety (25%), Cultural (10%), Engagement (15%), Commitment (15%)
+      // Engagement and commitment are 0 at generation time, updated later by the service
+      if (trace) {
+        try {
+          const toneNormalized = toneScore / 5; // Normalize 1-5 to 0-1
+          const culturalNormalized = culturalScore / 5; // Normalize 1-5 to 0-1
+          const compositeScore = (toneNormalized * 0.35) + (safetyScore * 0.25) + (culturalNormalized * 0.10);
+          // Note: engagement (0.15) and commitment (0.15) added later when user interacts
+
+          this.opikService.addFeedback({
+            traceId: trace.traceId,
+            name: FEEDBACK_LETTER_QUALITY_COMPOSITE,
+            value: Math.round(compositeScore * 100) / 100,
+            category: 'quality',
+            comment: `Partial composite: tone=${toneScore}/5 (${(toneNormalized * 0.35).toFixed(2)}), safety=${safetyScore} (${(safetyScore * 0.25).toFixed(2)}), cultural=${culturalScore}/5 (${(culturalNormalized * 0.10).toFixed(2)}). Engagement+commitment added on interaction.`,
+            source: 'system',
+          });
+        } catch {
+          // Composite feedback failed, continue
+        }
+      }
+
       // Build result with toneScore and tokenUsage for persistence
       const result: LetterFromFuture = {
         content: response.content,
@@ -496,6 +493,109 @@ export class FutureSelfAgent {
         simulation.currentBehavior.projectedNetWorth[horizonKey],
       years,
     };
+  }
+
+  /**
+   * Generate a conversational response from the user's future self
+   *
+   * @param userId - The user's ID
+   * @param letterContent - The letter that started the conversation
+   * @param message - The user's new message
+   * @param history - Previous conversation messages
+   * @returns The moderated response from the future self
+   */
+  async generateConversationResponse(
+    userId: string,
+    letterContent: string,
+    message: string,
+    history: { role: string; content: string }[],
+  ): Promise<{ content: string; usage: { promptTokens: number; completionTokens: number; totalTokens: number } }> {
+    // Create agent-specific Opik trace for conversation
+    const trace = this.safeCreateAgentTrace(userId, {
+      messageLength: message.length,
+      traceType: 'conversation',
+    }, ['future-self', 'conversation', 'chat']);
+
+    try {
+      // Span 1: Load context
+      const ctxSpan = this.safeCreateToolSpan(trace, SPAN_LOAD_CONVERSATION_CONTEXT, {
+        userId,
+        historyLength: history.length,
+      });
+
+      // Build simulation summary
+      let simulationSummary = 'Simulation data unavailable.';
+      try {
+        const simulation = await this.generateSimulation(userId);
+        const currency = 'NGN';
+        simulationSummary = `Current path 20yr: ${simulation.currentBehavior.projectedNetWorth['20yr'].toLocaleString()} ${currency}. Optimized path 20yr: ${simulation.withIKPA.projectedNetWorth['20yr'].toLocaleString()} ${currency}. Difference: ${simulation.difference_20yr.toLocaleString()} ${currency}.`;
+      } catch {
+        // Continue with unavailable summary
+      }
+
+      this.safeEndSpan(ctxSpan, {
+        output: { hasSimulation: simulationSummary !== 'Simulation data unavailable.' },
+        metadata: {},
+      });
+
+      // Span 2: Generate response
+      const genSpan = this.safeCreateLLMSpan(trace, SPAN_GENERATE_RESPONSE, {
+        messageLength: message.length,
+        historyLength: history.length,
+      });
+
+      const prompt = buildConversationPrompt(
+        letterContent,
+        history,
+        message,
+        simulationSummary,
+      );
+
+      const response = await this.anthropicService.generate(
+        prompt,
+        500, // Shorter max tokens for conversation
+        CONVERSATION_SYSTEM_PROMPT,
+      );
+
+      this.safeEndLLMSpan(genSpan, {
+        output: { responseLength: response.content.length },
+        usage: response.usage,
+        metadata: {},
+      });
+
+      // Span 3: Moderate response
+      const modSpan = this.safeCreateToolSpan(trace, SPAN_MODERATE_RESPONSE, {
+        responseLength: response.content.length,
+      });
+
+      const moderationResult = this.contentModeration.moderate(response.content);
+
+      this.safeEndSpan(modSpan, {
+        output: { passed: moderationResult.passed, flagCount: moderationResult.flags.length },
+        metadata: {},
+      });
+
+      if (!moderationResult.passed) {
+        this.logger.warn(`Conversation moderation failed for user ${userId}`);
+        // Return safe fallback instead of throwing
+        this.safeEndTrace(trace, { success: false, error: 'Content moderation failed' });
+        return {
+          content: "I want to be thoughtful with my response. Could you rephrase your question?",
+          usage: response.usage,
+        };
+      }
+
+      this.safeEndTrace(trace, { success: true, result: { responseLength: response.content.length } });
+
+      return {
+        content: response.content,
+        usage: response.usage,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.safeEndTrace(trace, { success: false, error: errorMessage });
+      throw error;
+    }
   }
 
   // ==========================================
@@ -606,7 +706,7 @@ export class FutureSelfAgent {
   /**
    * Get full user context for letter personalization
    */
-  async getUserContext(userId: string): Promise<UserContext> {
+  async getUserContext(userId: string, trace: TrackedTrace | null = null): Promise<UserContext> {
     // Get comprehensive user data for enrichment
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -684,6 +784,7 @@ export class FutureSelfAgent {
       user.debts ?? [],
       user.familySupport ?? [],
       monthlyIncome,
+      trace,
     );
 
     return {
@@ -715,12 +816,19 @@ export class FutureSelfAgent {
     debts: { name: string; type: string; remainingBalance: unknown }[],
     familySupport: { name: string; relationship: string; amount: unknown; frequency: string }[],
     monthlyIncome: number,
+    trace: TrackedTrace | null = null,
   ): Promise<{ recentDecisions: string[]; struggles: string[] }> {
     const recentDecisions: string[] = [];
     const struggles: string[] = [];
 
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const largeExpenseThreshold = monthlyIncome * 0.05;
+
+    // Create retrieval spans for all parallel DB queries
+    const expenseSpan = this.safeCreateRetrievalSpan(trace, SPAN_FETCH_EXPENSES, { userId, since: thirtyDaysAgo.toISOString() });
+    const subsSpan = this.safeCreateRetrievalSpan(trace, SPAN_FETCH_SUBSCRIPTIONS, { userId, since: thirtyDaysAgo.toISOString() });
+    const contribSpan = this.safeCreateRetrievalSpan(trace, SPAN_FETCH_CONTRIBUTIONS, { userId, since: thirtyDaysAgo.toISOString() });
+    const aggregateSpan = this.safeCreateRetrievalSpan(trace, SPAN_FETCH_EXPENSE_AGGREGATE, { userId, since: thirtyDaysAgo.toISOString() });
 
     // Batch all database queries in parallel for performance
     const [recentExpenses, cancelledSubs, recentContributions, expenseAggregate] =
@@ -768,6 +876,12 @@ export class FutureSelfAgent {
           _sum: { amount: true },
         }),
       ]);
+
+    // End retrieval spans with result counts
+    this.safeEndSpan(expenseSpan, { output: { count: recentExpenses.length }, metadata: {} });
+    this.safeEndSpan(subsSpan, { output: { count: cancelledSubs.length }, metadata: {} });
+    this.safeEndSpan(contribSpan, { output: { count: recentContributions.length }, metadata: {} });
+    this.safeEndSpan(aggregateSpan, { output: { totalExpenses: Number(expenseAggregate._sum.amount) || 0 }, metadata: {} });
 
     // Process recent expenses as decisions
     for (const expense of recentExpenses) {
@@ -821,6 +935,26 @@ export class FutureSelfAgent {
       struggles.push(
         `Low savings rate (${(savingsRate * 100).toFixed(0)}% vs recommended 15%)`,
       );
+    }
+
+    // Check for recent GPS recovery context (cross-agent coordination)
+    const gpsSpan = this.safeCreateRetrievalSpan(trace, SPAN_FETCH_GPS_RECOVERY, { userId });
+    try {
+      const cacheKey = `gps_recovery_context:${userId}`;
+      const recoveryContext = await this.redisService.get<{
+        pathName: string;
+        actionMessage: string;
+      }>(cacheKey);
+      if (recoveryContext) {
+        recentDecisions.push(
+          `Chose "${recoveryContext.pathName}" recovery path after budget overspend (${recoveryContext.actionMessage})`,
+        );
+        // Clear so it's only used once
+        await this.redisService.del(cacheKey);
+      }
+      this.safeEndSpan(gpsSpan, { output: { found: !!recoveryContext }, metadata: {} });
+    } catch {
+      this.safeEndSpan(gpsSpan, { output: { found: false, error: true }, metadata: {} });
     }
 
     return {
@@ -889,6 +1023,26 @@ export class FutureSelfAgent {
   // ==========================================
   // SAFE TRACING HELPERS
   // ==========================================
+
+  /**
+   * Safely create a trace with error protection
+   */
+  private safeCreateTrace(
+    name: string,
+    input: Record<string, unknown>,
+    tags: string[] = ['future-self', 'llm'],
+  ): TrackedTrace | null {
+    try {
+      return this.opikService.createTrace({
+        name,
+        input,
+        metadata: { agent: 'future_self', version: '1.0' },
+        tags,
+      });
+    } catch {
+      return null;
+    }
+  }
 
   /**
    * Safely create a tool span with error protection
@@ -982,6 +1136,58 @@ export class FutureSelfAgent {
       this.opikService.endTrace(trace, result);
     } catch {
       // Trace ending failed, continue
+    }
+  }
+
+  /**
+   * Safely create an agent-specific trace
+   * Uses createAgentTrace for agent identification + naming convention
+   */
+  private safeCreateAgentTrace(
+    userId: string,
+    metadata: Record<string, unknown>,
+    tags: string[] = ['future-self', 'llm'],
+  ): TrackedTrace | null {
+    try {
+      // Use createAgentTrace for agent-specific naming and metadata
+      const trace = this.opikService.createAgentTrace({
+        agentName: 'future_self',
+        userId,
+        input: { userId, ...metadata },
+        metadata: { version: '1.0', ...metadata },
+      });
+      // Enhance with tags via the underlying trace object
+      if (trace?.trace) {
+        try {
+          (trace.trace as unknown as { update(opts: { tags: string[] }): void }).update({ tags });
+        } catch {
+          // Tag update not supported, continue without tags
+        }
+      }
+      return trace;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Safely create a retrieval span for database/cache queries
+   */
+  private safeCreateRetrievalSpan(
+    trace: TrackedTrace | null,
+    name: string,
+    query: Record<string, unknown>,
+  ): TrackedSpan | null {
+    if (!trace?.trace) return null;
+    try {
+      return this.opikService.createRetrievalSpan({
+        trace: trace.trace,
+        name,
+        query,
+        metadata: {},
+      });
+    } catch {
+      return null;
     }
   }
 }

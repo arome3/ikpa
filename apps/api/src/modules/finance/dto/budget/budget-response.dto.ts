@@ -25,6 +25,9 @@ export class BudgetResponseDto {
   @ApiProperty({ example: 'uuid-here' })
   id!: string;
 
+  @ApiProperty({ example: 'uuid-here', description: 'The expense category ID' })
+  categoryId!: string;
+
   @ApiProperty({ type: BudgetCategoryDto })
   category!: BudgetCategoryDto;
 

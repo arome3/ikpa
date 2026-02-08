@@ -27,6 +27,7 @@
 
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../../prisma/prisma.service';
 import { OpikService } from '../../opik.service';
 import { AnthropicService } from '../../../anthropic';
@@ -49,8 +50,6 @@ import {
   FEEDBACK_EXPERIMENT_WINNER,
   FEEDBACK_IMPROVEMENT_PERCENTAGE,
   SIGNIFICANCE_THRESHOLD,
-  DEFAULT_FRAMING_N_SAMPLES,
-  DEFAULT_FRAMING_MAX_ROUNDS,
 } from '../optimizer.constants';
 
 /**
@@ -133,19 +132,19 @@ export class FramingOptimizerService implements IFramingOptimizer {
         config: {
           ...config,
           opikExperimentId, // Store link to Opik experiment
-        } as unknown as Record<string, unknown>,
+        } as unknown as Prisma.InputJsonValue,
         status: 'RUNNING',
         startedAt: new Date(),
       },
     });
 
-    // Get experiment tags if available
-    const baselineTags = opikExperimentId && this.opikExperimentService
-      ? this.opikExperimentService.getExperimentTags(opikExperimentId, 'baseline')
-      : [];
-    const variantTags = opikExperimentId && this.opikExperimentService
-      ? this.opikExperimentService.getExperimentTags(opikExperimentId, 'variant')
-      : [];
+    // Get experiment tags if available (currently unused, reserved for future tagging)
+    // const _baselineTags = opikExperimentId && this.opikExperimentService
+    //   ? this.opikExperimentService.getExperimentTags(opikExperimentId, 'baseline')
+    //   : [];
+    // const _variantTags = opikExperimentId && this.opikExperimentService
+    //   ? this.opikExperimentService.getExperimentTags(opikExperimentId, 'variant')
+    //   : [];
 
     // Create Opik trace with experiment metadata
     const trace = this.opikService.createTrace({
@@ -275,7 +274,7 @@ export class FramingOptimizerService implements IFramingOptimizer {
 
       if (analysisSpan) {
         this.opikService.endSpan(analysisSpan, {
-          output: analysis,
+          output: analysis as unknown as Record<string, unknown>,
         });
       }
 
@@ -298,7 +297,7 @@ export class FramingOptimizerService implements IFramingOptimizer {
           traceId: trace.traceId,
           name: FEEDBACK_EXPERIMENT_WINNER,
           value: analysis.winner === 'variant' ? 1 : analysis.winner === 'baseline' ? 0 : 0.5,
-          category: 'experiment',
+          category: 'custom',
           comment: `Winner: ${analysis.winner || 'inconclusive'}, p-value: ${analysis.pValue.toFixed(4)}`,
         });
 
@@ -306,7 +305,7 @@ export class FramingOptimizerService implements IFramingOptimizer {
           traceId: trace.traceId,
           name: FEEDBACK_IMPROVEMENT_PERCENTAGE,
           value: analysis.improvement,
-          category: 'experiment',
+          category: 'custom',
           comment: `Variant ${analysis.improvement >= 0 ? 'improved' : 'decreased'} by ${Math.abs(analysis.improvement).toFixed(2)}%`,
         });
       }
@@ -328,7 +327,7 @@ export class FramingOptimizerService implements IFramingOptimizer {
           result: {
             ...result,
             opikExperimentId,
-          } as unknown as Record<string, unknown>,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
 

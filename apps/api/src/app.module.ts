@@ -19,6 +19,7 @@ import { ImportModule } from './modules/import/import.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { OpikModule } from './modules/ai/opik';
+import { OpikEvalModule } from './modules/ai/opik/opik-eval.module';
 import { AnthropicModule } from './modules/ai/anthropic';
 
 /**
@@ -88,6 +89,7 @@ import { AnthropicModule } from './modules/ai/anthropic';
     StoryCardsModule,
     ImportModule,
     OnboardingModule,
+    OpikEvalModule,
     // AIModule,
   ],
   controllers: [],

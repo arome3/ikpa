@@ -16,10 +16,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { OpikService } from '../ai/opik/opik.service';
 import { RedisService } from '../../redis';
 import { RecoveryActionService } from './recovery-action.service';
+import { BudgetService } from './budget.service';
+import { GpsService } from './gps.service';
 import { ProgressService } from './progress';
 import { GpsNotificationService } from './notification';
-import { RecoveryStatus } from '@prisma/client';
-import { subDays } from 'date-fns';
+import { RecoveryStatus, GpsEventType } from '@prisma/client';
+import { subDays, startOfMonth } from 'date-fns';
 
 /**
  * Configuration for the cleanup job
@@ -49,6 +51,8 @@ export class GpsCronService {
     private readonly opikService: OpikService,
     private readonly redisService: RedisService,
     private readonly recoveryActionService: RecoveryActionService,
+    private readonly budgetService: BudgetService,
+    private readonly gpsService: GpsService,
     private readonly progressService: ProgressService,
     private readonly notificationService: GpsNotificationService,
   ) {}
@@ -99,6 +103,7 @@ export class GpsCronService {
 
     let deactivatedAdjustments = 0;
     let deactivatedFreezes = 0;
+    let deactivatedRebalances = 0;
     let abandonedSessions = 0;
     let milestonesChecked = 0;
     let deletedNotifications = 0;
@@ -108,6 +113,14 @@ export class GpsCronService {
       const { adjustments, freezes } = await this.recoveryActionService.deactivateExpired();
       deactivatedAdjustments = adjustments;
       deactivatedFreezes = freezes;
+
+      // 1b. Reset rebalances from previous budget periods
+      // Only run at period boundaries (first hour of the month) to avoid unnecessary DB calls
+      const now = new Date();
+      if (now.getDate() === 1 && now.getHours() === 0) {
+        const periodStart = startOfMonth(now);
+        deactivatedRebalances = await this.recoveryActionService.resetPeriodRebalances(periodStart);
+      }
 
       // 2. Mark stale PENDING sessions as ABANDONED
       abandonedSessions = await this.abandonStaleSessions();
@@ -126,6 +139,7 @@ export class GpsCronService {
         result: {
           deactivatedAdjustments,
           deactivatedFreezes,
+          deactivatedRebalances,
           abandonedSessions,
           milestonesChecked,
           deletedNotifications,
@@ -158,6 +172,334 @@ export class GpsCronService {
 
       // Flush Opik traces
       await this.opikService.flush();
+    }
+  }
+
+  /**
+   * Daily drift detection job
+   * Runs at 7 AM Africa/Lagos timezone to detect spending velocity drift
+   * across all users with active budgets.
+   *
+   * Schedule: '0 7 * * *'
+   */
+  @Cron('0 7 * * *', {
+    name: 'gps-drift-detection',
+    timeZone: 'Africa/Lagos',
+  })
+  async runDriftDetection(): Promise<void> {
+    const lockKey = 'gps:cron:drift-detection';
+    const lockValue = randomUUID();
+    const startTime = Date.now();
+
+    const lockAcquired = await this.redisService.acquireLock(
+      lockKey,
+      5 * 60 * 1000, // 5 min TTL
+      lockValue,
+    );
+
+    if (!lockAcquired) {
+      this.logger.debug('GPS drift detection job skipped: another instance is already processing');
+      return;
+    }
+
+    this.logger.log('Starting GPS drift detection job');
+
+    const trace = this.opikService.createTrace({
+      name: 'gps_drift_detection_job',
+      input: { trigger: 'cron', schedule: '0 7 * * *' },
+      metadata: { job: 'gps-drift-detection', version: '1.0' },
+      tags: ['gps', 'cron', 'drift-detection'],
+    });
+
+    let totalUsers = 0;
+    let driftsDetected = 0;
+    let notificationsSent = 0;
+
+    try {
+      // Get distinct user IDs from active budgets
+      const userBudgets = await this.prisma.budget.findMany({
+        where: { isActive: true },
+        select: { userId: true },
+        distinct: ['userId'],
+      });
+
+      totalUsers = userBudgets.length;
+
+      for (const { userId } of userBudgets) {
+        try {
+          const drifts = await this.budgetService.findCategoriesWithDrift(userId);
+
+          for (const drift of drifts) {
+            driftsDetected++;
+
+            const notification = await this.notificationService.createDriftNotification(
+              userId,
+              drift.categoryId,
+              drift.categoryName,
+              drift.velocity.velocityRatio,
+              drift.velocity.projectedOverspendDate,
+              drift.velocity.courseCorrectionDaily,
+              drift.currency,
+            );
+
+            if (notification) {
+              notificationsSent++;
+
+              // Track analytics event
+              await this.prisma.gpsAnalyticsEvent.create({
+                data: {
+                  userId,
+                  eventType: GpsEventType.DRIFT_DETECTED,
+                  eventData: {
+                    categoryId: drift.categoryId,
+                    categoryName: drift.categoryName,
+                    velocityRatio: drift.velocity.velocityRatio,
+                    projectedOverspendDate: drift.velocity.projectedOverspendDate?.toISOString() ?? null,
+                    courseCorrectionDaily: drift.velocity.courseCorrectionDaily,
+                    detectedBy: 'cron',
+                  },
+                },
+              });
+            }
+          }
+        } catch (error) {
+          // Individual user failures don't break the batch
+          this.logger.warn(
+            `[runDriftDetection] Failed for user ${userId}: ${error}`,
+          );
+        }
+      }
+
+      const duration = Date.now() - startTime;
+
+      this.opikService.endTrace(trace, {
+        success: true,
+        result: { totalUsers, driftsDetected, notificationsSent, durationMs: duration },
+      });
+
+      this.logger.log(
+        `GPS drift detection completed: ${totalUsers} users scanned, ` +
+          `${driftsDetected} drifts detected, ${notificationsSent} notifications sent (${duration}ms)`,
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.opikService.endTrace(trace, { success: false, error: errorMessage });
+      this.logger.error(`GPS drift detection job failed: ${errorMessage}`);
+    } finally {
+      await this.redisService.releaseLock(lockKey, lockValue);
+      await this.opikService.flush();
+    }
+  }
+
+
+  /**
+   * Proactive forecast check job
+   * Runs every 6 hours to check all users' spending velocity and send
+   * forecast alerts for categories where projectedTotal > budget * 0.9
+   * and daysElapsed > 5 (to avoid early-period noise).
+   *
+   * Schedule: '0 every-6-hours'
+   */
+  @Cron('0 */6 * * *', {
+    name: 'gps-forecast-check',
+    timeZone: 'Africa/Lagos',
+  })
+  async runForecastCheck(): Promise<void> {
+    const lockKey = 'gps:cron:forecast-check';
+    const lockValue = randomUUID();
+    const startTime = Date.now();
+
+    const lockAcquired = await this.redisService.acquireLock(
+      lockKey,
+      5 * 60 * 1000, // 5 min TTL
+      lockValue,
+    );
+
+    if (!lockAcquired) {
+      this.logger.debug('GPS forecast check job skipped: another instance is already processing');
+      return;
+    }
+
+    this.logger.log('Starting GPS forecast check job');
+
+    const trace = this.opikService.createTrace({
+      name: 'gps_forecast_check_job',
+      input: { trigger: 'cron', schedule: '0 */6 * * *' },
+      metadata: { job: 'gps-forecast-check', version: '1.0' },
+      tags: ['gps', 'cron', 'forecast'],
+    });
+
+    let totalUsers = 0;
+    let forecastsChecked = 0;
+    let notificationsSent = 0;
+
+    try {
+      // Get distinct user IDs from active budgets
+      const userBudgets = await this.prisma.budget.findMany({
+        where: { isActive: true },
+        select: { userId: true },
+        distinct: ['userId'],
+      });
+
+      totalUsers = userBudgets.length;
+
+      for (const { userId } of userBudgets) {
+        try {
+          const forecasts = await this.budgetService.getAllProactiveForecasts(userId);
+
+          for (const forecast of forecasts) {
+            forecastsChecked++;
+
+            // Only alert when:
+            // 1. projectedTotal > budget * 0.9 (projected to exceed 90% of budget)
+            // 2. We need to figure out daysElapsed > 5
+            const periodStart = this.budgetService.getPeriodStartDate('MONTHLY');
+            const now = new Date();
+            const daysElapsed = Math.max(1, Math.floor((now.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000)));
+
+            if (forecast.projectedTotal > forecast.budgeted * 0.9 && daysElapsed > 5) {
+              const notification = await this.notificationService.createForecastNotification(
+                userId,
+                forecast.categoryId,
+                forecast.categoryName,
+                forecast.projectedTotal,
+                forecast.budgeted,
+                forecast.suggestedDailyLimit,
+                forecast.currency,
+              );
+
+              if (notification) {
+                notificationsSent++;
+              }
+            }
+          }
+        } catch (error) {
+          // Individual user failures don't break the batch
+          this.logger.warn(
+            `[runForecastCheck] Failed for user ${userId}: ${error}`,
+          );
+        }
+      }
+
+      const duration = Date.now() - startTime;
+
+      this.opikService.endTrace(trace, {
+        success: true,
+        result: { totalUsers, forecastsChecked, notificationsSent, durationMs: duration },
+      });
+
+      this.logger.log(
+        `GPS forecast check completed: ${totalUsers} users scanned, ` +
+          `${forecastsChecked} forecasts checked, ${notificationsSent} notifications sent (${duration}ms)`,
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.opikService.endTrace(trace, { success: false, error: errorMessage });
+      this.logger.error(`GPS forecast check job failed: ${errorMessage}`);
+    } finally {
+      await this.redisService.releaseLock(lockKey, lockValue);
+      await this.opikService.flush();
+    }
+  }
+
+  /**
+   * Weekly recovery progress check
+   * Runs every Sunday at 9 AM Africa/Lagos timezone
+   *
+   * Checks all active recovery sessions for progress and:
+   * - Marks completed sessions (endDate passed) as COMPLETED or records adherence
+   * - Sends notification with results
+   *
+   * Schedule: '0 9 * * 0'
+   */
+  @Cron('0 9 * * 0', {
+    name: 'gps-recovery-progress-check',
+    timeZone: 'Africa/Lagos',
+  })
+  async runRecoveryProgressCheck(): Promise<void> {
+    const lockKey = 'gps:cron:recovery-progress';
+    const lockValue = randomUUID();
+    const startTime = Date.now();
+
+    const lockAcquired = await this.redisService.acquireLock(
+      lockKey,
+      5 * 60 * 1000,
+      lockValue,
+    );
+
+    if (!lockAcquired) {
+      this.logger.debug('GPS recovery progress check skipped: another instance is already processing');
+      return;
+    }
+
+    this.logger.log('Starting GPS weekly recovery progress check');
+
+    let sessionsChecked = 0;
+    let completedSessions = 0;
+    let notificationsSent = 0;
+
+    try {
+      // Find all active sessions (PATH_SELECTED or IN_PROGRESS) with a selected path
+      const activeSessions = await this.prisma.recoverySession.findMany({
+        where: {
+          status: { in: [RecoveryStatus.PATH_SELECTED, RecoveryStatus.IN_PROGRESS] },
+          selectedPathId: { not: null },
+          selectedAt: { not: null },
+        },
+        select: {
+          id: true,
+          userId: true,
+          category: true,
+          selectedPathId: true,
+          selectedAt: true,
+          overspendAmount: true,
+        },
+        take: 200,
+      });
+
+      for (const session of activeSessions) {
+        sessionsChecked++;
+        try {
+          const progress = await this.gpsService.getRecoveryProgress(session.userId, session.id);
+
+          // If session is completed or failed, update its status
+          if (progress.status === 'completed' || progress.status === 'failed') {
+            completedSessions++;
+            await this.prisma.recoverySession.update({
+              where: { id: session.id },
+              data: {
+                status: RecoveryStatus.COMPLETED,
+                updatedAt: new Date(),
+              },
+            });
+
+            // Send notification with results
+            await this.notificationService.createBudgetNotification(
+              session.userId,
+              session.category,
+              session.category,
+              'BUDGET_WARNING',
+              0,
+            );
+            notificationsSent++;
+          }
+        } catch (error) {
+          this.logger.warn(
+            `[runRecoveryProgressCheck] Failed for session ${session.id}: ${error}`,
+          );
+        }
+      }
+
+      const duration = Date.now() - startTime;
+      this.logger.log(
+        `GPS recovery progress check completed: ${sessionsChecked} sessions checked, ` +
+        `${completedSessions} completed, ${notificationsSent} notifications sent (${duration}ms)`,
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`GPS recovery progress check failed: ${errorMessage}`);
+    } finally {
+      await this.redisService.releaseLock(lockKey, lockValue);
     }
   }
 

@@ -86,14 +86,10 @@ export default function ImportPage() {
     }
   }, [confirmResult]);
 
-  // Default category to the first available one
+  // Default category to "auto" so the backend auto-categorizes by merchant
   useEffect(() => {
     if (!categoryId && categories.length > 0) {
-      // Prefer "General" or "Other" category, else first one
-      const general = categories.find(
-        (c) => c.name.toLowerCase() === 'general' || c.name.toLowerCase() === 'other',
-      );
-      setCategoryId(general?.id || categories[0].id);
+      setCategoryId('auto');
     }
   }, [categories, categoryId]);
 
@@ -168,7 +164,10 @@ export default function ImportPage() {
     setSelectedIds(new Set());
   }, [resetImport]);
 
-  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const autoDetectOption = { id: 'auto', name: 'Auto-detect by Merchant', icon: '🔍', color: '#6366F1' };
+  const selectedCategory = categoryId === 'auto'
+    ? autoDetectOption
+    : categories.find((c) => c.id === categoryId);
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900">
@@ -358,7 +357,7 @@ export default function ImportPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
                       >
-                        {categories.map((cat) => (
+                        {[autoDetectOption, ...categories].map((cat) => (
                           <button
                             key={cat.id}
                             type="button"
