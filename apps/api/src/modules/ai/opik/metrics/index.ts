@@ -38,6 +38,9 @@ export * from './interfaces';
 // Constants
 export * from './metrics.constants';
 
+// Online Evaluation Helper
+export { fireAndForgetEval } from './online-eval.helper';
+
 // Utilities (for advanced usage)
 export {
   llmSemaphore,

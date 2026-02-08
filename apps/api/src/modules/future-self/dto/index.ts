@@ -7,3 +7,4 @@ export * from './engagement.dto';
 export * from './statistics.dto';
 export * from './conversation.dto';
 export * from './commitment.dto';
+export * from './checkin.dto';

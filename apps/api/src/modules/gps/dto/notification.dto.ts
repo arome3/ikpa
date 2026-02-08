@@ -72,9 +72,9 @@ export class GpsNotificationDto {
   @ApiProperty({
     description: 'What triggered this notification',
     example: 'BUDGET_WARNING',
-    enum: ['BUDGET_WARNING', 'BUDGET_EXCEEDED', 'BUDGET_CRITICAL'],
+    enum: ['BUDGET_WARNING', 'BUDGET_EXCEEDED', 'BUDGET_CRITICAL', 'SLIP_DETECTED'],
   })
-  triggerType!: 'BUDGET_WARNING' | 'BUDGET_EXCEEDED' | 'BUDGET_CRITICAL';
+  triggerType!: 'BUDGET_WARNING' | 'BUDGET_EXCEEDED' | 'BUDGET_CRITICAL' | 'SLIP_DETECTED';
 
   @ApiProperty({
     description: 'Category ID related to the notification',

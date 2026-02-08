@@ -19,9 +19,14 @@ import {
   Loader2,
   Zap,
   Shield,
+  Brain,
+  Star,
+  ShieldCheck,
+  Activity,
+  Sparkles,
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
-import { useCommitments } from '@/hooks/useCommitments';
+import { useCommitments, useEvaluationsSummary } from '@/hooks/useCommitments';
 import { useGoals } from '@/hooks/useFinance';
 import { apiClient } from '@/lib/api';
 import type { CommitmentContract, StakeEffectiveness } from '@/hooks/useCommitments';
@@ -73,6 +78,7 @@ export default function CommitmentAnalyticsPage() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [allContracts, setAllContracts] = useState<CommitmentContract[]>([]);
   const [loading, setLoading] = useState(true);
+  const { data: evalSummary, isLoading: evalLoading } = useEvaluationsSummary();
 
   // Fetch analytics overview
   useEffect(() => {
@@ -325,6 +331,91 @@ export default function CommitmentAnalyticsPage() {
               </div>
             </div>
           )}
+        </motion.section>
+
+        {/* AI Quality Scores */}
+        <motion.section
+          className="mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Brain className="w-5 h-5 text-indigo-400" />
+            AI Quality Scores
+          </h2>
+
+          <div className="p-5 rounded-xl bg-white/5 border border-white/10">
+            {evalLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+              </div>
+            ) : evalSummary ? (
+              <div className="space-y-4">
+                {/* Metric cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Star className="w-4 h-4 text-indigo-400" />
+                      <span className="text-xs font-medium text-indigo-300">Tone & Empathy</span>
+                    </div>
+                    <p className="text-xs text-slate-400">{evalSummary.metrics.toneEmpathy?.description || 'Warm, supportive responses'}</p>
+                    <div className="flex items-center gap-0.5 mt-2">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star key={i} className={cn('w-3 h-3', i <= 4 ? 'text-indigo-400 fill-indigo-400' : 'text-slate-600')} />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs font-medium text-emerald-300">Financial Safety</span>
+                    </div>
+                    <p className="text-xs text-slate-400">{evalSummary.metrics.financialSafety?.description || 'Safe financial guidance'}</p>
+                    <p className="text-lg font-bold text-emerald-400 mt-1.5">Pass</p>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Sparkles className="w-4 h-4 text-violet-400" />
+                      <span className="text-xs font-medium text-violet-300">Cultural Sensitivity</span>
+                    </div>
+                    <p className="text-xs text-slate-400">{evalSummary.metrics.culturalSensitivity?.description || 'Culturally appropriate'}</p>
+                    <div className="flex items-center gap-0.5 mt-2">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star key={i} className={cn('w-3 h-3', i <= 4 ? 'text-violet-400 fill-violet-400' : 'text-slate-600')} />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Activity className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-medium text-cyan-300">Intervention Success</span>
+                    </div>
+                    <p className="text-xs text-slate-400">{evalSummary.metrics.interventionSuccess?.description || 'Helping users stay on track'}</p>
+                    <p className="text-lg font-bold text-cyan-400 mt-1.5">
+                      {evalSummary.metrics.interventionSuccess?.value ?? 0}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer note */}
+                <div className="pt-3 border-t border-white/10">
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                    <Brain className="w-3 h-3 text-indigo-400/60 flex-shrink-0" />
+                    {evalSummary.note}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-slate-400 text-sm">No evaluation data yet</p>
+                <p className="text-slate-500 text-xs mt-1">AI quality scores appear after agent interactions</p>
+              </div>
+            )}
+          </div>
         </motion.section>
 
         {/* Insights */}

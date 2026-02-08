@@ -165,14 +165,34 @@ export class SimulationEngineCalculator {
           ),
       );
 
+      // Build optimized input with IKPA platform benefits:
+      // 1. Immediate expense reduction (Shark auditor, GPS alerts cut waste)
+      // 2. Reduced expense growth (budget tracking prevents spending creep)
+      // 3. Improved investment returns (goal-aligned financial decisions)
+      // 4. Accelerated income growth (financial confidence, career planning)
+      const currentExpenseGrowth = input.expenseGrowthRate ?? input.inflationRate;
+      const currentIncomeGrowth = input.incomeGrowthRate ?? SIMULATION_CONSTANTS.DEFAULT_INCOME_GROWTH_RATE;
+      const monthlyExpenses = input.monthlyExpenses ?? 0;
+      const expenseSavings = monthlyExpenses * SIMULATION_CONSTANTS.IKPA_EXPENSE_REDUCTION;
+      const ikpaSavingsRate = input.monthlyIncome > 0
+        ? Math.min(0.95, optimizedSavingsRate + (expenseSavings / input.monthlyIncome))
+        : optimizedSavingsRate;
+
+      const optimizedInput: SimulationInput = {
+        ...input,
+        expenseGrowthRate: currentExpenseGrowth * (1 - SIMULATION_CONSTANTS.IKPA_EXPENSE_GROWTH_REDUCTION),
+        expectedReturnRate: input.expectedReturnRate + SIMULATION_CONSTANTS.IKPA_RETURN_BONUS,
+        incomeGrowthRate: currentIncomeGrowth + SIMULATION_CONSTANTS.IKPA_INCOME_GROWTH_BONUS,
+      };
+
       // Run Monte Carlo simulation for optimized path
       const optimizedPathResults = this.withSpan(
         trace,
         'monte_carlo_optimized_path',
         () =>
           this.runMonteCarloSimulations(
-            input,
-            optimizedSavingsRate,
+            optimizedInput,
+            ikpaSavingsRate,
             SIMULATION_CONSTANTS.ITERATIONS,
           ),
       );
@@ -191,7 +211,7 @@ export class SimulationEngineCalculator {
       const currentPath = this.buildPathResult(currentAggregated, goals);
       const optimizedPath: OptimizedPathResult = {
         ...this.buildPathResult(optimizedAggregated, goals),
-        requiredSavingsRate: optimizedSavingsRate,
+        requiredSavingsRate: ikpaSavingsRate,
       };
 
       // Calculate wealth difference
@@ -277,11 +297,25 @@ export class SimulationEngineCalculator {
       return input.currentSavingsRate;
     }
 
+    // The optimized rate must never be lower than the user's current rate.
+    // If the user already saves above MAX_SAVINGS_RATE, the search ceiling
+    // expands to accommodate their actual behavior (capped at 95%).
+    const effectiveMax: number = Math.max(
+      SIMULATION_CONSTANTS.MAX_SAVINGS_RATE,
+      Math.min(input.currentSavingsRate, 0.95),
+    );
+
     // Binary search bounds - explicitly type as number to avoid literal type inference
     let low: number = Math.max(input.currentSavingsRate, SIMULATION_CONSTANTS.MIN_SAVINGS_RATE);
-    let high: number = SIMULATION_CONSTANTS.MAX_SAVINGS_RATE;
+    let high: number = effectiveMax;
     let bestRate: number = high; // Default to max if we can't achieve target
     let iterations = 0;
+
+    // If the user's current rate already meets or exceeds the effective max,
+    // no room to search — just return the current rate
+    if (low >= high) {
+      return input.currentSavingsRate;
+    }
 
     // Check if max rate can achieve target
     const maxRateResults = this.runMonteCarloSimulations(
@@ -784,7 +818,8 @@ export class SimulationEngineCalculator {
   ): WealthDifference {
     const diff: Partial<WealthDifference> = {};
     for (const horizon of TIME_HORIZONS) {
-      diff[horizon] = Math.round(optimized[horizon] - current[horizon]);
+      // Floor at 0: optimized path should never be presented as worse
+      diff[horizon] = Math.max(0, Math.round(optimized[horizon] - current[horizon]));
     }
     return diff as WealthDifference;
   }

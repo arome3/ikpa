@@ -15,14 +15,16 @@ import { OpikService } from '../ai/opik/opik.service';
 import { RedisService } from '../../redis';
 import { CommitmentService } from './commitment.service';
 import { GroupService } from './group.service';
+import { SlipDetectorService } from './slip-detector.service';
 import { DebriefAgent } from './agents';
 import { CommitmentStatus, VerificationMethod } from '@prisma/client';
 import { differenceInHours } from 'date-fns';
 import {
   COMMITMENT_CONSTANTS,
   COMMITMENT_TRACE_NAMES,
+  SLIP_DETECTOR,
 } from './constants';
-import { EnforcementResult, ReminderResult, GroupOutcomeResult } from './interfaces';
+import { EnforcementResult, ReminderResult, GroupOutcomeResult, SlipDetectionScanResult } from './interfaces';
 
 @Injectable()
 export class CommitmentCronService {
@@ -34,6 +36,7 @@ export class CommitmentCronService {
   private readonly FOLLOWUP_LOCK_KEY = 'commitment:cron:followup';
   private readonly GROUP_RESOLVE_LOCK_KEY = 'commitment:cron:group_resolve';
   private readonly GROUP_NUDGE_LOCK_KEY = 'commitment:cron:group_nudge';
+  private readonly SLIP_DETECTION_LOCK_KEY = 'commitment:cron:slip_detection';
 
   /** Lock TTL in milliseconds */
   private readonly LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -45,6 +48,7 @@ export class CommitmentCronService {
     private readonly commitmentService: CommitmentService,
     private readonly groupService: GroupService,
     private readonly debriefAgent: DebriefAgent,
+    private readonly slipDetectorService: SlipDetectorService,
   ) {}
 
   /**
@@ -608,6 +612,81 @@ export class CommitmentCronService {
   }
 
   /**
+   * Daily slip detection — runs at 9 AM Africa/Lagos time
+   *
+   * Scans all ACTIVE commitment contracts, computes drift scores,
+   * and generates personalized AI nudges when risk is detected.
+   * Respects 72-hour fatigue window per contract.
+   */
+  @Cron(SLIP_DETECTOR.SCAN_CRON, {
+    name: 'commitment-slip-detection',
+    timeZone: 'Africa/Lagos',
+  })
+  async runSlipDetection(): Promise<SlipDetectionScanResult> {
+    const lockValue = randomUUID();
+
+    const lockAcquired = await this.redisService.acquireLock(
+      this.SLIP_DETECTION_LOCK_KEY,
+      this.LOCK_TTL_MS,
+      lockValue,
+    );
+
+    if (!lockAcquired) {
+      this.logger.debug('Slip detection skipped: another instance is processing');
+      return {
+        scannedContracts: 0,
+        nudgesSent: 0,
+        riskBreakdown: { none: 0, low: 0, medium: 0, high: 0 },
+        results: [],
+      };
+    }
+
+    this.logger.log('Starting slip detection scan');
+
+    const trace = this.opikService.createTrace({
+      name: 'slip_detector_scan',
+      input: { trigger: 'cron', schedule: SLIP_DETECTOR.SCAN_CRON },
+      metadata: { job: 'commitment-slip-detection', version: '1.0' },
+      tags: ['slip-detector', 'cron', 'scan'],
+    });
+
+    try {
+      const result = await this.slipDetectorService.detectSlips();
+
+      this.opikService.endTrace(trace, {
+        success: true,
+        result: {
+          scannedContracts: result.scannedContracts,
+          nudgesSent: result.nudgesSent,
+          riskBreakdown: result.riskBreakdown,
+        },
+      });
+
+      this.logger.log(
+        `Slip detection completed: ${result.scannedContracts} scanned, ` +
+          `${result.nudgesSent} nudges sent (high=${result.riskBreakdown.high}, ` +
+          `medium=${result.riskBreakdown.medium}, low=${result.riskBreakdown.low})`,
+      );
+
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.opikService.endTrace(trace, { success: false, error: errorMessage });
+      this.logger.error(`Slip detection scan failed: ${errorMessage}`);
+
+      return {
+        scannedContracts: 0,
+        nudgesSent: 0,
+        riskBreakdown: { none: 0, low: 0, medium: 0, high: 0 },
+        results: [],
+      };
+    } finally {
+      await this.redisService.releaseLock(this.SLIP_DETECTION_LOCK_KEY, lockValue);
+      await this.opikService.flush();
+    }
+  }
+
+  /**
    * Process contract failure and enforce stakes
    */
   private async processContractFailure(contract: {
@@ -700,6 +779,12 @@ export class CommitmentCronService {
         schedule: '0 10 * * 0',
         timezone: 'Africa/Lagos',
         description: 'Weekly group nudge notifications (Sundays)',
+      },
+      {
+        jobName: 'commitment-slip-detection',
+        schedule: SLIP_DETECTOR.SCAN_CRON,
+        timezone: 'Africa/Lagos',
+        description: 'Daily slip detection scan with AI nudges (9 AM WAT)',
       },
     ];
   }

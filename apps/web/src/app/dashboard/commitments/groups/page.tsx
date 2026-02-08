@@ -354,14 +354,14 @@ function CreateGroupModal({
                 type="number"
                 value={sharedGoalAmount}
                 onChange={(e) => setSharedGoalAmount(e.target.value)}
-                placeholder="Amount (e.g., 1000000)"
+                placeholder="Amount (e.g., 10000)"
                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 text-sm"
               />
               <input
                 type="text"
                 value={sharedGoalLabel}
                 onChange={(e) => setSharedGoalLabel(e.target.value)}
-                placeholder="Together we'll save ₦1M"
+                placeholder="Together we'll save $10K"
                 maxLength={200}
                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 text-sm"
               />

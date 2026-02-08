@@ -11,6 +11,7 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser, SkipEmailVerification } from '../../common/decorators';
 import { FinanceService } from './finance.service';
+import { TimeMachineService } from './services/time-machine.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ExpenseCategory } from '@prisma/client';
 import {
@@ -24,6 +25,8 @@ import {
   ValidMetric,
   SimulationInputDto,
   SimulationResponseDto,
+  TimeMachineRequestDto,
+  TimeMachineResponseDto,
 } from './dto';
 import { getScoreLabel, getScoreColor } from './interfaces';
 
@@ -48,6 +51,7 @@ export class FinanceController {
   constructor(
     private readonly financeService: FinanceService,
     private readonly prisma: PrismaService,
+    private readonly timeMachineService: TimeMachineService,
   ) {}
 
   // ==========================================
@@ -492,5 +496,34 @@ export class FinanceController {
         currency: result.metadata.currency,
       },
     };
+  }
+
+  // ==========================================
+  // TIME MACHINE VISUALIZER
+  // ==========================================
+
+  /**
+   * Calculate compound-interest opportunity cost of recurring spending
+   *
+   * Shows "If you spent ₦X/day for Y years → total ₦Z.
+   * If you invested it instead → ₦W."
+   */
+  @Post('time-machine')
+  @ApiOperation({
+    summary: 'Time Machine spending visualizer',
+    description:
+      'Calculates the long-term compound-interest opportunity cost of a recurring expense. ' +
+      'Returns year-by-year projections comparing cumulative spending vs investment growth.',
+  })
+  @ApiResponse({ status: 200, description: 'Projections calculated', type: TimeMachineResponseDto })
+  async timeMachine(
+    @Body() dto: TimeMachineRequestDto,
+  ): Promise<TimeMachineResponseDto> {
+    return this.timeMachineService.calculateImpact(
+      dto.amount,
+      dto.frequency,
+      dto.years,
+      dto.returnRate,
+    );
   }
 }

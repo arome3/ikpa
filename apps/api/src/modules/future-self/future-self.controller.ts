@@ -32,6 +32,7 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards';
 import { CurrentUser } from '../../common/decorators';
 import { FutureSelfService } from './future-self.service';
+import { LeaderboardService } from './services/leaderboard.service';
 import {
   SimulationResponseDto,
   LetterResponseDto,
@@ -48,6 +49,10 @@ import {
   CreateCommitmentDto,
   UpdateCommitmentDto,
   CommitmentResponseDto,
+  CheckinDto,
+  CheckinResponseDto,
+  CheckinStatusResponseDto,
+  CheckinHistoryResponseDto,
 } from './dto';
 import {
   LETTER_RATE_LIMIT,
@@ -72,7 +77,10 @@ import { ParseYearsPipe } from './pipes/parse-years.pipe';
 @UseGuards(JwtAuthGuard)
 @Controller('future-self')
 export class FutureSelfController {
-  constructor(private readonly futureSelfService: FutureSelfService) {}
+  constructor(
+    private readonly futureSelfService: FutureSelfService,
+    private readonly leaderboardService: LeaderboardService,
+  ) {}
 
   // ==========================================
   // SIMULATION ENDPOINTS
@@ -183,6 +191,7 @@ export class FutureSelfController {
     const letter = await this.futureSelfService.getLetter(userId, undefined, letterMode);
 
     return {
+      id: letter.id,
       content: letter.content,
       generatedAt: letter.generatedAt,
       simulationData: {
@@ -532,6 +541,68 @@ export class FutureSelfController {
   }
 
   // ==========================================
+  // CHECKIN ENDPOINTS
+  // ==========================================
+
+  /**
+   * Check in for today on a micro-commitment
+   */
+  @Post('checkin')
+  @ApiOperation({
+    summary: 'Daily check-in',
+    description: 'Record a daily check-in for a micro-commitment. Increments streak. Returns 409 if already checked in today.',
+  })
+  @ApiResponse({ status: 201, description: 'Check-in recorded', type: CheckinResponseDto })
+  @ApiResponse({ status: 404, description: 'Active commitment not found' })
+  @ApiResponse({ status: 409, description: 'Already checked in today' })
+  async checkin(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CheckinDto,
+  ): Promise<CheckinResponseDto> {
+    return this.futureSelfService.checkin(userId, dto.commitmentId, dto.note);
+  }
+
+  /**
+   * Get check-in status for today
+   */
+  @Get('checkin/status/:commitmentId')
+  @ApiOperation({
+    summary: 'Get check-in status',
+    description: 'Returns whether the user has checked in today, current streak, and longest streak.',
+  })
+  @ApiParam({ name: 'commitmentId', description: 'Commitment ID' })
+  @ApiResponse({ status: 200, description: 'Check-in status', type: CheckinStatusResponseDto })
+  @ApiResponse({ status: 404, description: 'Commitment not found' })
+  async getCheckinStatus(
+    @CurrentUser('id') userId: string,
+    @Param('commitmentId') commitmentId: string,
+  ): Promise<CheckinStatusResponseDto> {
+    return this.futureSelfService.getCheckinStatus(userId, commitmentId);
+  }
+
+  /**
+   * Get check-in history for a commitment
+   */
+  @Get('checkin/history/:commitmentId')
+  @ApiOperation({
+    summary: 'Get check-in history',
+    description: 'Returns paginated check-in history for a commitment.',
+  })
+  @ApiParam({ name: 'commitmentId', description: 'Commitment ID' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max results (default: 10, max: 50)' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset (default: 0)' })
+  @ApiResponse({ status: 200, description: 'Check-in history', type: CheckinHistoryResponseDto })
+  @ApiResponse({ status: 404, description: 'Commitment not found' })
+  async getCheckinHistory(
+    @CurrentUser('id') userId: string,
+    @Param('commitmentId') commitmentId: string,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+  ): Promise<CheckinHistoryResponseDto> {
+    return this.futureSelfService.getCheckinHistory(userId, commitmentId, limit, offset);
+  }
+
+  // ==========================================
   // COMMITMENT ENDPOINTS
   // ==========================================
 
@@ -587,5 +658,88 @@ export class FutureSelfController {
       throw new NotFoundException('Commitment not found');
     }
     return result;
+  }
+
+  // ==========================================
+  // LEADERBOARD ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get the streak leaderboard (public, opt-in users only)
+   */
+  @Get('leaderboard')
+  @ApiOperation({
+    summary: 'Get streak leaderboard',
+    description: 'Returns the top streakers by micro-commitment check-in streaks. Only shows opted-in users.',
+  })
+  @ApiResponse({ status: 200, description: 'Leaderboard retrieved' })
+  async getLeaderboard(
+    @CurrentUser('id') userId: string,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    return this.leaderboardService.getLeaderboard(userId, Math.min(limit, 50));
+  }
+
+  /**
+   * Get current user's rank
+   */
+  @Get('leaderboard/my-rank')
+  @ApiOperation({
+    summary: 'Get my leaderboard rank',
+    description: 'Returns the current user\'s rank and streak info.',
+  })
+  @ApiResponse({ status: 200, description: 'Rank retrieved' })
+  async getMyRank(
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.leaderboardService.getUserRank(userId);
+  }
+
+  /**
+   * Opt in to the leaderboard
+   */
+  @Post('leaderboard/opt-in')
+  @ApiOperation({
+    summary: 'Opt in to leaderboard',
+    description: 'Makes the user visible on the streak leaderboard.',
+  })
+  @ApiResponse({ status: 201, description: 'Opted in' })
+  async optIn(@CurrentUser('id') userId: string) {
+    await this.leaderboardService.optIn(userId);
+    return { success: true, optedIn: true };
+  }
+
+  /**
+   * Opt out of the leaderboard
+   */
+  @Post('leaderboard/opt-out')
+  @ApiOperation({
+    summary: 'Opt out of leaderboard',
+    description: 'Removes the user from the streak leaderboard.',
+  })
+  @ApiResponse({ status: 201, description: 'Opted out' })
+  async optOut(@CurrentUser('id') userId: string) {
+    await this.leaderboardService.optOut(userId);
+    return { success: true, optedIn: false };
+  }
+
+  // ==========================================
+  // WEEKLY DEBRIEF ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get weekly debriefs
+   */
+  @Get('debriefs')
+  @ApiOperation({
+    summary: 'Get weekly debriefs',
+    description: 'Returns recent weekly AI financial debrief letters.',
+  })
+  @ApiResponse({ status: 200, description: 'Debriefs retrieved' })
+  async getDebriefs(
+    @CurrentUser('id') userId: string,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.futureSelfService.getWeeklyDebriefs(userId, Math.min(limit, 50));
   }
 }

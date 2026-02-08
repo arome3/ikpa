@@ -108,6 +108,46 @@ export class GpsController {
 
 
   // ==========================================
+  // SPENDING COACH ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get the latest AI spending nudge for a specific expense
+   */
+  @Get('nudge/latest/:expenseId')
+  @ApiOperation({
+    summary: 'Get AI spending nudge for an expense',
+    description: 'Returns the AI-generated spending coach nudge associated with an expense.',
+  })
+  @ApiParam({ name: 'expenseId', description: 'Expense ID' })
+  @ApiResponse({ status: 200, description: 'Nudge retrieved' })
+  @ApiResponse({ status: 404, description: 'No nudge found for this expense' })
+  async getLatestNudge(
+    @CurrentUser('id') userId: string,
+    @Param('expenseId') expenseId: string,
+  ) {
+    const nudge = await this.prisma.spendingNudge.findFirst({
+      where: { expenseId, userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!nudge) {
+      return { success: true, data: null };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: nudge.id,
+        expenseId: nudge.expenseId,
+        nudge: nudge.nudge,
+        severity: nudge.severity,
+        createdAt: nudge.createdAt.toISOString(),
+      },
+    };
+  }
+
+  // ==========================================
   // FORECAST ENDPOINTS
   // ==========================================
 

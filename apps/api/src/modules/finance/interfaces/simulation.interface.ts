@@ -327,4 +327,36 @@ export const SIMULATION_CONSTANTS = {
   DEFAULT_TAX_RATE: 0,
   /** Maximum number of goals supported */
   MAX_GOALS: 5,
+  /**
+   * IKPA platform benefit: expense growth reduction factor.
+   * IKPA's budget tracking, alerts, and spending analysis help users
+   * reduce wasteful spending growth. Modeled as 40% reduction in
+   * expense growth rate (e.g., if inflation is 5%, IKPA users see
+   * only 3% effective expense growth through better spending habits).
+   */
+  IKPA_EXPENSE_GROWTH_REDUCTION: 0.40,
+  /**
+   * IKPA platform benefit: investment return improvement.
+   * IKPA's goal tracking and financial guidance help users make
+   * more informed investment decisions. Modeled as +1% annual
+   * real return improvement.
+   */
+  IKPA_RETURN_BONUS: 0.01,
+  /**
+   * IKPA platform benefit: immediate expense reduction.
+   * IKPA's Shark subscription auditor, GPS budget alerts, and spending
+   * analysis catch wasteful spending from day one. Modeled as a 15%
+   * reduction in monthly expenses, which directly increases the
+   * effective savings rate. This creates an immediate, visible gap
+   * between the two paths (unlike compound-only benefits which take
+   * years to become noticeable).
+   */
+  IKPA_EXPENSE_REDUCTION: 0.15,
+  /**
+   * IKPA platform benefit: income growth improvement.
+   * IKPA's financial confidence, career planning insights, and
+   * goal-oriented mindset help users pursue raises and better
+   * opportunities. Modeled as +2% annual income growth bonus.
+   */
+  IKPA_INCOME_GROWTH_BONUS: 0.02,
 } as const;

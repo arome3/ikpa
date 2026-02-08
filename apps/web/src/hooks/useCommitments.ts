@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 
 // ============================================
@@ -311,5 +311,125 @@ export function useCommitments() {
 
     // Achievement
     getAchievement,
+  };
+}
+
+// ============================================
+// SLIP DETECTION TYPES
+// ============================================
+
+export interface SlipAlert {
+  id: string;
+  title: string;
+  message: string;
+  riskLevel: 'low' | 'medium' | 'high' | 'unknown';
+  contractId: string;
+  goalName: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface SlipDetectionStatus {
+  recentAlerts: SlipAlert[];
+  contractsMonitored: number;
+}
+
+export interface SlipScanResult {
+  scannedContracts: number;
+  nudgesSent: number;
+  riskBreakdown: Record<string, number>;
+  results: Array<{
+    contractId: string;
+    goalName: string;
+    riskLevel: string;
+    progressGap: number;
+    daysRemaining: number;
+    nudgeText?: string;
+    skipped?: boolean;
+  }>;
+}
+
+// ============================================
+// EVALUATION SUMMARY TYPES
+// ============================================
+
+export interface EvaluationMetric {
+  label: string;
+  description: string;
+  scale: string;
+  value?: number;
+  status: string;
+}
+
+export interface EvaluationsSummary {
+  totalInteractions: number;
+  slipDetections: number;
+  metrics: Record<string, EvaluationMetric>;
+  contractStats: {
+    total: number;
+    succeeded: number;
+    successRate: number;
+  };
+  note: string;
+}
+
+// ============================================
+// SLIP DETECTION HOOK
+// ============================================
+
+function unwrapGeneric<T>(res: unknown): T {
+  const r = res as { success?: boolean; data?: T };
+  return (r?.data ?? res) as T;
+}
+
+export function useSlipDetection() {
+  const queryClient = useQueryClient();
+
+  const statusQuery = useQuery({
+    queryKey: ['slip-detection', 'status'],
+    queryFn: async () => {
+      const res = await apiClient.get('/commitment/slip-detection/status');
+      return unwrapGeneric<SlipDetectionStatus>(res);
+    },
+    staleTime: 60_000,
+  });
+
+  const scanMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.post('/commitment/slip-detection/scan');
+      return unwrapGeneric<SlipScanResult>(res);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['slip-detection'] });
+    },
+  });
+
+  return {
+    alerts: statusQuery.data?.recentAlerts ?? [],
+    contractsMonitored: statusQuery.data?.contractsMonitored ?? 0,
+    isLoading: statusQuery.isLoading,
+    triggerScan: scanMutation.mutateAsync,
+    isScanning: scanMutation.isPending,
+    scanResult: scanMutation.data,
+  };
+}
+
+// ============================================
+// EVALUATIONS SUMMARY HOOK
+// ============================================
+
+export function useEvaluationsSummary() {
+  const query = useQuery({
+    queryKey: ['evaluations', 'summary'],
+    queryFn: async () => {
+      const res = await apiClient.get('/commitment/evaluations/summary');
+      return unwrapGeneric<EvaluationsSummary>(res);
+    },
+    staleTime: 120_000,
+  });
+
+  return {
+    data: query.data,
+    isLoading: query.isLoading,
   };
 }

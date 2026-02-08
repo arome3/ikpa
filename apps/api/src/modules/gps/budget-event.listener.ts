@@ -21,6 +21,7 @@ import { StreakService } from './streaks';
 import { GpsNotificationService } from './notification';
 import { GPS_CONSTANTS } from './constants';
 import { BudgetTrigger, BudgetStatus } from './interfaces';
+import { SpendingCoachAgent } from './agents/spending-coach.agent';
 
 /**
  * Event payload for expense events
@@ -69,6 +70,7 @@ export class BudgetEventListener {
     private readonly eventEmitter: EventEmitter2,
     private readonly streakService: StreakService,
     private readonly notificationService: GpsNotificationService,
+    private readonly spendingCoachAgent: SpendingCoachAgent,
   ) {}
 
   /**
@@ -101,6 +103,21 @@ export class BudgetEventListener {
         `[handleExpenseCreated] Drift check failed for user ${event.userId}: ${error}`,
       );
     }
+
+    // AI Spending Coach — fire-and-forget nudge generation
+    this.spendingCoachAgent
+      .analyzeExpense(
+        event.userId,
+        event.expenseId,
+        event.categoryName,
+        event.categoryId,
+        event.amount,
+      )
+      .catch((error) => {
+        this.logger.warn(
+          `[handleExpenseCreated] Spending coach failed for user ${event.userId}: ${error}`,
+        );
+      });
   }
 
   /**

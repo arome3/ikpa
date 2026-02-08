@@ -14,7 +14,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { RedisService } from '../../../redis/redis.service';
 import { OpikService } from '../../ai/opik/opik.service';
 import { TrackedTrace, TrackedSpan } from '../../ai/opik/interfaces';
-import { MetricsService } from '../../ai/opik/metrics';
+import { MetricsService, fireAndForgetEval } from '../../ai/opik/metrics';
 import { SimulationEngineCalculator } from '../../finance/calculators';
 import {
   SimulationInput,
@@ -585,7 +585,120 @@ export class FutureSelfAgent {
         };
       }
 
+      // Online evaluation: score the conversation response
+      fireAndForgetEval(
+        this.metricsService,
+        trace,
+        {
+          input: message,
+          output: '',
+          context: { traceType: 'conversation', historyLength: history.length },
+        },
+        response.content,
+        ['ToneEmpathy', 'CulturalSensitivity', 'FinancialSafety'],
+      );
+
       this.safeEndTrace(trace, { success: true, result: { responseLength: response.content.length } });
+
+      return {
+        content: response.content,
+        usage: response.usage,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.safeEndTrace(trace, { success: false, error: errorMessage });
+      throw error;
+    }
+  }
+
+  /**
+   * Generate a weekly financial debrief letter
+   *
+   * Aggregates the user's past 7 days of financial activity and generates
+   * a personalized summary letter from their future self.
+   *
+   * @param userId - The user's ID
+   * @param weeklyData - Pre-aggregated weekly financial data
+   * @returns The debrief letter content and metadata
+   */
+  async generateWeeklyDebrief(
+    userId: string,
+    weeklyData: {
+      totalExpenses: number;
+      topCategories: Array<{ name: string; amount: number }>;
+      budgetAdherence: number; // 0-100%
+      goalProgressDelta: number; // Amount saved toward goals
+      streakDays: number;
+      currency: string;
+      userName: string;
+    },
+  ): Promise<{ content: string; usage: { promptTokens: number; completionTokens: number; totalTokens: number } }> {
+    const trace = this.safeCreateAgentTrace(userId, {
+      traceType: 'weekly_debrief',
+      model: this.anthropicService.getModel(),
+    }, ['future-self', 'weekly-debrief', 'llm']);
+
+    try {
+      // Build the debrief prompt
+      const topCats = weeklyData.topCategories
+        .slice(0, 3)
+        .map(c => `${c.name}: ${this.formatCurrencySimple(c.amount, weeklyData.currency)}`)
+        .join(', ');
+
+      const prompt = [
+        `Write a warm, concise weekly financial debrief for ${weeklyData.userName}.`,
+        `This is a letter from their future self (year 2045) reviewing the past 7 days.`,
+        '',
+        `Weekly summary:`,
+        `- Total spending: ${this.formatCurrencySimple(weeklyData.totalExpenses, weeklyData.currency)}`,
+        `- Top categories: ${topCats || 'No expenses recorded'}`,
+        `- Budget adherence: ${weeklyData.budgetAdherence}%`,
+        `- Saved toward goals: ${this.formatCurrencySimple(weeklyData.goalProgressDelta, weeklyData.currency)}`,
+        weeklyData.streakDays > 0 ? `- Current micro-commitment streak: ${weeklyData.streakDays} days` : '',
+        '',
+        `Guidelines:`,
+        `- Start with "Dear ${weeklyData.userName}," and sign as "Your Future Self"`,
+        `- Highlight 1-2 positive behaviors and 1 actionable tip`,
+        `- If budget adherence is above 80%, celebrate it. If below 60%, gently encourage.`,
+        `- Keep it under 300 words. Be warm, personal, non-judgmental.`,
+        `- Reference specific categories where possible.`,
+      ].filter(Boolean).join('\n');
+
+      const llmSpan = this.safeCreateLLMSpan(trace, 'generate_weekly_debrief', {
+        promptType: 'weekly_debrief',
+        userName: weeklyData.userName,
+        budgetAdherence: weeklyData.budgetAdherence,
+      });
+
+      const response = await this.anthropicService.generate(
+        prompt,
+        800,
+        'You are the user\'s wise, loving future self from the year 2045. You write weekly financial check-in letters. Be warm, specific, and action-oriented. Never give specific investment advice. Use the user\'s local currency naturally.',
+      );
+
+      this.safeEndLLMSpan(llmSpan, {
+        output: { responseLength: response.content.length },
+        usage: response.usage,
+        metadata: {},
+      });
+
+      // Online evaluation: score the weekly debrief
+      fireAndForgetEval(
+        this.metricsService,
+        trace,
+        {
+          input: `Weekly debrief for ${weeklyData.userName}, adherence: ${weeklyData.budgetAdherence}%`,
+          output: '',
+          context: { traceType: 'weekly_debrief', budgetAdherence: weeklyData.budgetAdherence },
+        },
+        response.content,
+        ['ToneEmpathy', 'CulturalSensitivity', 'FinancialSafety'],
+      );
+
+      this.safeEndTrace(trace, {
+        success: true,
+        result: { letterLength: response.content.length },
+      });
 
       return {
         content: response.content,
@@ -762,6 +875,10 @@ export class FutureSelfAgent {
       const monthDiff = today.getMonth() - birthDate.getMonth();
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
+      }
+      // Guard against implausible ages (bad data entry or form defaults)
+      if (age < 13 || age > 100) {
+        age = 30;
       }
     }
 
@@ -1018,6 +1135,16 @@ export class FutureSelfAgent {
     if (years <= 5) return '5yr';
     if (years <= 10) return '10yr';
     return '20yr';
+  }
+
+  /**
+   * Simple currency formatter for debrief prompts
+   */
+  private formatCurrencySimple(amount: number, currency: string): string {
+    const symbols: Record<string, string> = {
+      NGN: '\u20A6', GHS: 'GH\u20B5', KES: 'KSh', ZAR: 'R', USD: '$', GBP: '\u00A3',
+    };
+    return `${symbols[currency] || currency}${amount.toLocaleString()}`;
   }
 
   // ==========================================

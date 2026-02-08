@@ -22,6 +22,7 @@ import {
   GoalCrudService,
   BudgetCrudService,
   ExpenseService,
+  TimeMachineService,
 } from './services';
 
 /**
@@ -73,6 +74,7 @@ import {
     GoalCrudService,
     BudgetCrudService,
     ExpenseService,
+    TimeMachineService,
   ],
   exports: [
     FinanceService,
@@ -85,6 +87,7 @@ import {
     GoalCrudService,
     BudgetCrudService,
     ExpenseService,
+    TimeMachineService,
   ],
 })
 export class FinanceModule {}

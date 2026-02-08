@@ -8,7 +8,7 @@
  * - Cache invalidation when user data changes
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { FutureSelfAgent } from './agents/future-self.agent';
@@ -747,6 +747,8 @@ export class FutureSelfService {
     startDate: Date;
     endDate: Date | null;
     streakDays: number;
+    longestStreak: number;
+    lastCheckinDate: Date | null;
     createdAt: Date;
   }> {
     // Get user currency
@@ -811,6 +813,8 @@ export class FutureSelfService {
       startDate: commitment.startDate,
       endDate: commitment.endDate,
       streakDays: commitment.streakDays,
+      longestStreak: commitment.longestStreak,
+      lastCheckinDate: commitment.lastCheckinDate,
       createdAt: commitment.createdAt,
     };
   }
@@ -827,6 +831,8 @@ export class FutureSelfService {
     startDate: Date;
     endDate: Date | null;
     streakDays: number;
+    longestStreak: number;
+    lastCheckinDate: Date | null;
     createdAt: Date;
   }>> {
     const commitments = await this.prisma.futureSelfCommitment.findMany({
@@ -843,6 +849,8 @@ export class FutureSelfService {
       startDate: c.startDate,
       endDate: c.endDate,
       streakDays: c.streakDays,
+      longestStreak: c.longestStreak,
+      lastCheckinDate: c.lastCheckinDate,
       createdAt: c.createdAt,
     }));
   }
@@ -863,6 +871,8 @@ export class FutureSelfService {
     startDate: Date;
     endDate: Date | null;
     streakDays: number;
+    longestStreak: number;
+    lastCheckinDate: Date | null;
     createdAt: Date;
   } | null> {
     const existing = await this.prisma.futureSelfCommitment.findFirst({
@@ -892,8 +902,301 @@ export class FutureSelfService {
       startDate: commitment.startDate,
       endDate: commitment.endDate,
       streakDays: commitment.streakDays,
+      longestStreak: commitment.longestStreak,
+      lastCheckinDate: commitment.lastCheckinDate,
       createdAt: commitment.createdAt,
     };
+  }
+
+  // ==========================================
+  // CHECKIN METHODS
+  // ==========================================
+
+  /** Streak milestones that trigger celebration notifications */
+  private readonly STREAK_MILESTONES = [7, 14, 30, 60, 90];
+
+  /**
+   * Check in for today on a commitment
+   *
+   * Creates a check-in record for today (Africa/Lagos timezone),
+   * increments streakDays, updates longestStreak if new high.
+   * Uses $transaction for atomicity.
+   *
+   * @throws ConflictException if already checked in today
+   * @throws NotFoundException if commitment not found or not owned by user
+   */
+  async checkin(
+    userId: string,
+    commitmentId: string,
+    note?: string,
+  ): Promise<{
+    id: string;
+    commitmentId: string;
+    checkinDate: Date;
+    note: string | null;
+    createdAt: Date;
+    streakDays: number;
+    longestStreak: number;
+  }> {
+    // Verify ownership and active status
+    const commitment = await this.prisma.futureSelfCommitment.findFirst({
+      where: { id: commitmentId, userId, status: 'ACTIVE' },
+    });
+    if (!commitment) {
+      throw new NotFoundException('Active commitment not found');
+    }
+
+    // Get today's date in Africa/Lagos timezone
+    const today = this.getTodayInLagos();
+
+    // Use transaction for atomicity
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Try to create check-in (unique constraint will catch duplicates)
+      let checkin;
+      try {
+        checkin = await tx.futureSelfCheckin.create({
+          data: {
+            commitmentId,
+            checkinDate: today,
+            note: note || null,
+          },
+        });
+      } catch (error: unknown) {
+        // Prisma unique constraint violation
+        if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'P2002') {
+          throw new ConflictException('You\'ve already checked in today. Keep up the great work!');
+        }
+        throw error;
+      }
+
+      // Increment streak and update lastCheckinDate
+      const newStreakDays = commitment.streakDays + 1;
+      const newLongestStreak = Math.max(commitment.longestStreak, newStreakDays);
+
+      const updated = await tx.futureSelfCommitment.update({
+        where: { id: commitmentId },
+        data: {
+          streakDays: newStreakDays,
+          longestStreak: newLongestStreak,
+          lastCheckinDate: today,
+        },
+      });
+
+      return {
+        checkin,
+        streakDays: updated.streakDays,
+        longestStreak: updated.longestStreak,
+      };
+    });
+
+    // Check for milestone celebration (non-blocking)
+    if (this.STREAK_MILESTONES.includes(result.streakDays)) {
+      this.handleStreakMilestone(userId, commitment, result.streakDays).catch((err) => {
+        this.logger.warn(`Failed to handle streak milestone: ${err instanceof Error ? err.message : 'Unknown'}`);
+      });
+    }
+
+    this.logger.log(`Check-in recorded for user ${userId}, commitment ${commitmentId} (streak: ${result.streakDays})`);
+
+    return {
+      id: result.checkin.id,
+      commitmentId: result.checkin.commitmentId,
+      checkinDate: result.checkin.checkinDate,
+      note: result.checkin.note,
+      createdAt: result.checkin.createdAt,
+      streakDays: result.streakDays,
+      longestStreak: result.longestStreak,
+    };
+  }
+
+  /**
+   * Get check-in status for today
+   */
+  async getCheckinStatus(
+    userId: string,
+    commitmentId: string,
+  ): Promise<{
+    checkedInToday: boolean;
+    streakDays: number;
+    longestStreak: number;
+    lastCheckinDate: Date | null;
+  }> {
+    const commitment = await this.prisma.futureSelfCommitment.findFirst({
+      where: { id: commitmentId, userId },
+    });
+    if (!commitment) {
+      throw new NotFoundException('Commitment not found');
+    }
+
+    const today = this.getTodayInLagos();
+    const todayCheckin = await this.prisma.futureSelfCheckin.findUnique({
+      where: {
+        commitmentId_checkinDate: {
+          commitmentId,
+          checkinDate: today,
+        },
+      },
+    });
+
+    return {
+      checkedInToday: !!todayCheckin,
+      streakDays: commitment.streakDays,
+      longestStreak: commitment.longestStreak,
+      lastCheckinDate: commitment.lastCheckinDate,
+    };
+  }
+
+  /**
+   * Get paginated check-in history for a commitment
+   */
+  async getCheckinHistory(
+    userId: string,
+    commitmentId: string,
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{
+    checkins: Array<{
+      id: string;
+      commitmentId: string;
+      checkinDate: Date;
+      note: string | null;
+      createdAt: Date;
+    }>;
+    total: number;
+    hasMore: boolean;
+  }> {
+    // Verify ownership
+    const commitment = await this.prisma.futureSelfCommitment.findFirst({
+      where: { id: commitmentId, userId },
+    });
+    if (!commitment) {
+      throw new NotFoundException('Commitment not found');
+    }
+
+    const cappedLimit = Math.min(Math.max(1, limit), 50);
+    const cappedOffset = Math.max(0, offset);
+
+    const [checkins, total] = await Promise.all([
+      this.prisma.futureSelfCheckin.findMany({
+        where: { commitmentId },
+        orderBy: { checkinDate: 'desc' },
+        take: cappedLimit + 1,
+        skip: cappedOffset,
+      }),
+      this.prisma.futureSelfCheckin.count({
+        where: { commitmentId },
+      }),
+    ]);
+
+    const hasMore = checkins.length > cappedLimit;
+    const displayCheckins = checkins.slice(0, cappedLimit);
+
+    return {
+      checkins: displayCheckins.map(c => ({
+        id: c.id,
+        commitmentId: c.commitmentId,
+        checkinDate: c.checkinDate,
+        note: c.note,
+        createdAt: c.createdAt,
+      })),
+      total,
+      hasMore,
+    };
+  }
+
+  /**
+   * Get today's date in Africa/Lagos timezone as a Date object (midnight UTC representation)
+   */
+  private getTodayInLagos(): Date {
+    const now = new Date();
+    // Africa/Lagos is UTC+1 (WAT, no DST)
+    const lagosOffset = 1; // hours
+    const lagosTime = new Date(now.getTime() + lagosOffset * 60 * 60 * 1000);
+    const year = lagosTime.getUTCFullYear();
+    const month = lagosTime.getUTCMonth();
+    const day = lagosTime.getUTCDate();
+    return new Date(Date.UTC(year, month, day));
+  }
+
+  /**
+   * Handle streak milestone celebrations (non-blocking)
+   */
+  private async handleStreakMilestone(
+    userId: string,
+    commitment: { dailyAmount: unknown; currency: string },
+    streakDays: number,
+  ): Promise<void> {
+    const totalSaved = Number(commitment.dailyAmount) * streakDays;
+    const formattedTotal = this.formatCurrency(totalSaved, commitment.currency);
+
+    this.logger.log(
+      `Streak milestone reached! User ${userId}: ${streakDays}-day streak, ${formattedTotal} total saved`,
+    );
+
+    // Emit in-app notification event (GPS notification pattern)
+    try {
+      await this.prisma.gpsNotification.create({
+        data: {
+          userId,
+          triggerType: 'BUDGET_WARNING', // Reuse existing trigger type for milestone
+          categoryId: 'future-self',
+          categoryName: 'Future Self',
+          title: `${streakDays}-day streak!`,
+          message: `You've saved ${formattedTotal} so far. Your future self is doing a happy dance!`,
+          actionUrl: '/dashboard/future-self',
+          metadata: { type: 'FUTURE_SELF_MILESTONE', streakDays, totalSaved },
+        },
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to create milestone notification: ${err instanceof Error ? err.message : 'Unknown'}`);
+    }
+  }
+
+  // ==========================================
+  // WEEKLY DEBRIEF METHODS
+  // ==========================================
+
+  /**
+   * Get weekly debrief letters for a user
+   *
+   * Filters letter history by WEEKLY_DEBRIEF trigger type.
+   */
+  async getWeeklyDebriefs(
+    userId: string,
+    limit: number = 10,
+  ): Promise<Array<{
+    id: string;
+    content: string;
+    trigger: string;
+    generatedAt: Date;
+    readAt: Date | null;
+    toneScore: number | null;
+  }>> {
+    const letters = await this.prisma.futureSelfLetter.findMany({
+      where: {
+        userId,
+        trigger: LetterTrigger.WEEKLY_DEBRIEF,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        content: true,
+        trigger: true,
+        createdAt: true,
+        readAt: true,
+        toneEmpathyScore: true,
+      },
+    });
+
+    return letters.map(l => ({
+      id: l.id,
+      content: l.content,
+      trigger: l.trigger,
+      generatedAt: l.createdAt,
+      readAt: l.readAt,
+      toneScore: l.toneEmpathyScore,
+    }));
   }
 
   // ==========================================

@@ -29,6 +29,7 @@ import {
   buildUserFollowUpMessage,
 } from './commitment-coach.prompt';
 import { COMMITMENT_FEEDBACK_METRICS } from '../constants/eval.constants';
+import { MetricsService, fireAndForgetEval } from '../../ai/opik/metrics';
 
 /** Maximum agentic turns per API call */
 const MAX_AGENT_TURNS = 6;
@@ -82,6 +83,7 @@ export class CommitmentCoachAgent {
     private readonly opikService: OpikService,
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   /**
@@ -336,6 +338,21 @@ export class CommitmentCoachAgent {
             });
           }
         } catch { /* best effort — Opik feedback is non-critical */ }
+      }
+
+      // Online evaluation: score the coach's response with LLM-as-judge
+      if (finalText) {
+        fireAndForgetEval(
+          this.metricsService,
+          trace,
+          {
+            input: userMessage,
+            output: '',
+            context: { goalName: session.goalName, stakeType: parsed.recommendation?.stakeType?.toLowerCase() as 'social' | 'anti_charity' | 'loss_pool' | undefined },
+          },
+          finalText,
+          ['ToneEmpathy', 'CulturalSensitivity', 'FinancialSafety'],
+        );
       }
 
       this.logger.log(

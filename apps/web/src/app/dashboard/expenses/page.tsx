@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -14,11 +14,15 @@ import {
   Trash2,
   Edit3,
   Check,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import { useExpenses, CreateExpenseData, Expense } from '@/hooks/useExpenses';
 import { useCategories, useBudgets } from '@/hooks/useFinance';
 import { useCurrency } from '@/hooks';
+import { useExpenseNudge } from '@/hooks/useExpenses';
+import { TimeMachineCard } from '@/components/time-machine/TimeMachineCard';
 
 // ============================================
 // EXPENSES PAGE
@@ -31,6 +35,8 @@ export default function ExpensesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [timeMachineExpense, setTimeMachineExpense] = useState<Expense | null>(null);
+  const [lastCreatedExpenseId, setLastCreatedExpenseId] = useState<string | null>(null);
 
   const {
     expenses,
@@ -114,7 +120,8 @@ export default function ExpensesPage() {
   }, [budgets]);
 
   const handleAddExpense = async (data: CreateExpenseData) => {
-    await create(data);
+    const expense = await create(data);
+    setLastCreatedExpenseId(expense?.id ?? null);
     setIsAddModalOpen(false);
   };
 
@@ -361,6 +368,13 @@ export default function ExpensesPage() {
                           {/* Actions */}
                           <div className="flex items-center gap-1 ml-2">
                             <button
+                              onClick={() => setTimeMachineExpense(expense)}
+                              className="p-2 text-slate-500 hover:text-violet-400 transition-colors"
+                              title="Time Machine"
+                            >
+                              <Clock className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => setEditingExpense(expense)}
                               className="p-2 text-slate-500 hover:text-white transition-colors"
                             >
@@ -398,6 +412,46 @@ export default function ExpensesPage() {
               setEditingExpense(null);
             }}
             isLoading={isCreating || isUpdating}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Time Machine Bottom Sheet */}
+      <AnimatePresence>
+        {timeMachineExpense && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-end justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setTimeMachineExpense(null)}
+            />
+            <motion.div
+              className="relative w-full max-w-lg"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <TimeMachineCard
+                amount={Math.abs(timeMachineExpense.amount)}
+                currency={timeMachineExpense.currency || currency}
+                onClose={() => setTimeMachineExpense(null)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Spending Nudge */}
+      <AnimatePresence>
+        {lastCreatedExpenseId && (
+          <ExpenseNudgeToast
+            expenseId={lastCreatedExpenseId}
+            onDismiss={() => setLastCreatedExpenseId(null)}
           />
         )}
       </AnimatePresence>
@@ -689,6 +743,70 @@ function ExpenseModal({
           </button>
         </form>
       </motion.div>
+    </motion.div>
+  );
+}
+
+// ============================================
+// EXPENSE NUDGE TOAST (AI Spending Coach)
+// ============================================
+
+const severityStyles = {
+  info: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-300',
+  warning: 'from-amber-500/20 to-amber-600/10 border-amber-500/30 text-amber-300',
+  critical: 'from-red-500/20 to-red-600/10 border-red-500/30 text-red-300',
+};
+
+function ExpenseNudgeToast({
+  expenseId,
+  onDismiss,
+}: {
+  expenseId: string;
+  onDismiss: () => void;
+}) {
+  const { nudge, isLoading } = useExpenseNudge(expenseId);
+
+  // Auto-dismiss after 8 seconds if no nudge
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 12000);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
+
+  if (!nudge && !isLoading) return null;
+
+  const severity = (nudge?.severity || 'info') as keyof typeof severityStyles;
+
+  return (
+    <motion.div
+      className="fixed bottom-28 left-4 right-4 md:left-auto md:right-8 md:w-96 z-40"
+      initial={{ opacity: 0, y: 50, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 50, scale: 0.95 }}
+    >
+      <div
+        className={cn(
+          'p-4 rounded-2xl border backdrop-blur-xl bg-gradient-to-r',
+          severityStyles[severity],
+        )}
+      >
+        <div className="flex items-start gap-3">
+          <Sparkles className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium mb-0.5">AI Spending Coach</p>
+            {isLoading ? (
+              <p className="text-xs opacity-75">Analyzing your spending...</p>
+            ) : nudge ? (
+              <p className="text-xs opacity-90 leading-relaxed">{nudge.nudge}</p>
+            ) : null}
+          </div>
+          <button
+            onClick={onDismiss}
+            className="p-1 opacity-50 hover:opacity-100 transition-opacity"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </motion.div>
   );
 }

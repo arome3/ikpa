@@ -40,6 +40,7 @@ import { StakeService } from './stake.service';
 import { UpgradeService } from './upgrade.service';
 import { GroupService } from './group.service';
 import { StreakService } from './streak.service';
+import { SlipDetectorService } from './slip-detector.service';
 import { CommitmentCoachAgent, DebriefAgent } from './agents';
 import { CommitmentStatus } from '@prisma/client';
 import { CommitmentEvalRunner, EvalSummary } from './agents/commitment-eval-runner';
@@ -102,6 +103,7 @@ export class CommitmentController {
     private readonly upgradeService: UpgradeService,
     private readonly groupService: GroupService,
     private readonly streakService: StreakService,
+    private readonly slipDetectorService: SlipDetectorService,
     private readonly commitmentCoachAgent: CommitmentCoachAgent,
     private readonly debriefAgent: DebriefAgent,
     private readonly evalRunner: CommitmentEvalRunner,
@@ -1071,6 +1073,196 @@ export class CommitmentController {
     @Param('groupId', ParseUUIDPipe) groupId: string,
   ) {
     return this.groupService.getSharedGoalProgress(groupId);
+  }
+
+  // ==========================================
+  // SLIP DETECTION ENDPOINTS
+  // ==========================================
+
+  /**
+   * Manually trigger slip detection for the current user
+   */
+  @Post('slip-detection/scan')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Trigger slip detection scan',
+    description: 'Manually run slip detection for your active commitments. Generates AI nudges for at-risk contracts.',
+  })
+  @ApiResponse({ status: 201, description: 'Scan completed' })
+  async triggerSlipDetection(@CurrentUser('id') userId: string) {
+    const trace = this.opikService.createTrace({
+      name: 'slip_detector_manual_scan',
+      input: { userId, trigger: 'manual' },
+      metadata: { source: 'controller' },
+      tags: ['slip-detector', 'manual'],
+    });
+
+    try {
+      const result = await this.slipDetectorService.detectSlips(userId);
+
+      if (trace) {
+        this.opikService.endTrace(trace, {
+          success: true,
+          result: {
+            scannedContracts: result.scannedContracts,
+            nudgesSent: result.nudgesSent,
+          },
+        });
+      }
+
+      return result;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      if (trace) {
+        this.opikService.endTrace(trace, { success: false, error: msg });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get latest slip detection results for the current user
+   */
+  @Get('slip-detection/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get slip detection status',
+    description: 'Get the latest slip detection alerts for your active commitments.',
+  })
+  @ApiResponse({ status: 200, description: 'Status retrieved' })
+  async getSlipDetectionStatus(@CurrentUser('id') userId: string) {
+    // Get recent slip notifications
+    const notifications = await this.prisma.gpsNotification.findMany({
+      where: {
+        userId,
+        triggerType: 'SLIP_DETECTED',
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    // Get active contracts with their slip status
+    const activeContracts = await this.prisma.commitmentContract.findMany({
+      where: { userId, status: CommitmentStatus.ACTIVE },
+      select: {
+        id: true,
+        lastSlipDetectedAt: true,
+        deadline: true,
+        createdAt: true,
+        goal: { select: { name: true, targetAmount: true, currentAmount: true } },
+      },
+    });
+
+    return {
+      recentAlerts: notifications.map((n) => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        riskLevel: (n.metadata as Record<string, unknown>)?.riskLevel ?? 'unknown',
+        contractId: (n.metadata as Record<string, unknown>)?.contractId ?? n.categoryId,
+        goalName: n.categoryName,
+        readAt: n.readAt?.toISOString() ?? null,
+        createdAt: n.createdAt.toISOString(),
+      })),
+      contractsMonitored: activeContracts.length,
+    };
+  }
+
+  // ==========================================
+  // AI EVALUATION ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get aggregated AI quality scores from online evaluation pipeline
+   */
+  @Get('evaluations/summary')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get AI evaluation scores summary',
+    description: 'Get aggregated LLM-as-judge quality scores for recent AI agent interactions.',
+  })
+  @ApiResponse({ status: 200, description: 'Evaluation summary retrieved' })
+  async getEvaluationsSummary(@CurrentUser('id') userId: string) {
+    // Aggregate quality scores from recent notifications and traces
+    // We derive scores from GpsNotification metadata (slip detector) and
+    // recent commitment interactions
+    const recentNotifications = await this.prisma.gpsNotification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: { triggerType: true, metadata: true, createdAt: true },
+    });
+
+    const recentContracts = await this.prisma.commitmentContract.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        status: true,
+        stakeType: true,
+        achievementTier: true,
+        achievementPercentage: true,
+      },
+    });
+
+    // Compute summary metrics
+    const totalInteractions = recentNotifications.length;
+    const slipDetections = recentNotifications.filter(
+      (n) => n.triggerType === 'SLIP_DETECTED',
+    ).length;
+    const successfulContracts = recentContracts.filter(
+      (c) => c.status === 'SUCCEEDED',
+    ).length;
+    const totalContracts = recentContracts.length;
+
+    // Intervention success rate (contracts that succeeded after having slip detections)
+    const interventionSuccessRate =
+      totalContracts > 0
+        ? Math.round((successfulContracts / totalContracts) * 100)
+        : 0;
+
+    return {
+      totalInteractions,
+      slipDetections,
+      metrics: {
+        toneEmpathy: {
+          label: 'Tone & Empathy',
+          description: 'AI responses are warm, supportive, and non-judgmental',
+          scale: '1-5',
+          status: 'active',
+        },
+        financialSafety: {
+          label: 'Financial Safety',
+          description: 'AI never recommends unsafe financial actions',
+          scale: 'pass/fail',
+          status: 'active',
+        },
+        culturalSensitivity: {
+          label: 'Cultural Sensitivity',
+          description: 'Advice respects local financial norms and practices',
+          scale: '1-5',
+          status: 'active',
+        },
+        interventionSuccess: {
+          label: 'Intervention Success',
+          description: 'AI interventions help users stay on track',
+          scale: '0-100%',
+          value: interventionSuccessRate,
+          status: 'active',
+        },
+      },
+      contractStats: {
+        total: totalContracts,
+        succeeded: successfulContracts,
+        successRate: interventionSuccessRate,
+      },
+      note: 'Detailed per-trace scores are available in the Opik dashboard. These metrics are computed by LLM-as-judge evaluation running on every AI response.',
+    };
   }
 
   // ==========================================

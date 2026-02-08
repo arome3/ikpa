@@ -12,6 +12,12 @@ import { SimulationResponseDto } from './simulation-response.dto';
  */
 export class LetterResponseDto {
   @ApiProperty({
+    description: 'Unique letter identifier',
+    example: 'clxyz123-abc...',
+  })
+  id!: string;
+
+  @ApiProperty({
     description: 'The personalized letter content from future self',
     example: `Dear Aisha,
 

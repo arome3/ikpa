@@ -12,6 +12,7 @@ import { AnthropicService } from '../../ai/anthropic/anthropic.service';
 import { OpikService } from '../../ai/opik/opik.service';
 import { CommitmentStatus } from '@prisma/client';
 import { DEBRIEF_SYSTEM_PROMPT, DEBRIEF_TOOLS } from './debrief.prompt';
+import { MetricsService, fireAndForgetEval } from '../../ai/opik/metrics';
 
 const MAX_AGENT_TURNS = 5;
 const AGENT_MAX_TOKENS = 2048;
@@ -33,6 +34,7 @@ export class DebriefAgent {
     private readonly prisma: PrismaService,
     private readonly anthropicService: AnthropicService,
     private readonly opikService: OpikService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   /**
@@ -170,6 +172,19 @@ export class DebriefAgent {
           comment: `Generated ${result.keyInsights.length} insights`,
           source: 'system',
         });
+
+        // Online evaluation: score the debrief with LLM-as-judge
+        fireAndForgetEval(
+          this.metricsService,
+          trace,
+          {
+            input: `Generate debrief for contract ${contractId}`,
+            output: '',
+            context: { contractId },
+          },
+          result.analysis,
+          ['ToneEmpathy', 'FinancialSafety', 'InterventionSuccess'],
+        );
       }
 
       return result;

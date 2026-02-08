@@ -275,6 +275,10 @@ model User {
   receivedEncouragements   GroupEncouragement[]       @relation("receivedEncouragements")
   sentReactions            GroupReaction[]            @relation("sentReactions")
 
+  // Hackathon features
+  spendingNudges           SpendingNudge[]
+  leaderboardOptIn         Boolean         @default(false)
+
   @@index([email])
   @@index([country])
   @@map("users")
@@ -360,6 +364,7 @@ model Expense {
 
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   category ExpenseCategory @relation(fields: [categoryId], references: [id])
+  nudges   SpendingNudge[]
 
   @@index([userId])
   @@index([userId, date])
@@ -1079,6 +1084,9 @@ model CommitmentContract {
   trustBonusApplied      Boolean   @default(false)
   trustBonusAmount       Decimal?  @db.Decimal(15, 2)
 
+  // Slip detector fatigue tracking (max 1 nudge per 72 hours)
+  lastSlipDetectedAt     DateTime?
+
   user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   goal        Goal                    @relation(fields: [goalId], references: [id], onDelete: Cascade)
   referee     CommitmentReferee?      @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
@@ -1246,6 +1254,7 @@ model CommitmentGroupMember {
 enum LetterTrigger {
   USER_REQUEST // User manually requested a letter
   WEEKLY_SCHEDULED // Weekly automated letter
+  WEEKLY_DEBRIEF // Weekly AI financial debrief summary
   POST_DECISION // After major financial decision
   GOAL_MILESTONE // Goal progress milestone
 }
@@ -1379,15 +1388,33 @@ model FutureSelfCommitment {
   startDate     DateTime         @default(now())
   endDate       DateTime?
   streakDays    Int              @default(0)
+  longestStreak Int              @default(0)
+  lastCheckinDate DateTime?      @db.Date
   upgradedToContractId String?   // Links to CommitmentContract when upgraded from micro-commitment to staked contract
   createdAt     DateTime         @default(now())
 
-  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  letter FutureSelfLetter  @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  letter   FutureSelfLetter  @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  checkins FutureSelfCheckin[]
 
   @@index([userId])
   @@index([userId, status])
   @@map("future_self_commitments")
+}
+
+/// Future Self Check-in - Daily check-in records for micro-commitments
+/// Tracks each day the user confirms they've saved their committed amount
+model FutureSelfCheckin {
+  id           String               @id @default(uuid())
+  commitment   FutureSelfCommitment @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  commitmentId String
+  checkinDate  DateTime             @db.Date
+  note         String?
+  createdAt    DateTime             @default(now())
+
+  @@unique([commitmentId, checkinDate])
+  @@index([commitmentId])
+  @@map("future_self_checkins")
 }
 
 enum FutureSelfCommitmentStatus {
@@ -1753,6 +1780,7 @@ enum BudgetTrigger {
   BUDGET_WARNING // 80-99% spent
   BUDGET_EXCEEDED // 100-119% spent
   BUDGET_CRITICAL // 120%+ spent
+  SLIP_DETECTED // Commitment drift detected by slip detector
 }
 
 // ============================================
@@ -1962,4 +1990,27 @@ model GroupReaction {
   @@unique([groupId, userId, targetId, emoji])
   @@index([groupId, targetId])
   @@map("group_reactions")
+}
+
+// ============================================
+// SPENDING COACH MODELS (Hackathon Feature 1)
+// ============================================
+
+/// AI-generated spending nudge attached to an expense
+/// Created by the Spending Coach Agent when a new expense is logged
+model SpendingNudge {
+  id        String   @id @default(uuid())
+  userId    String
+  expenseId String
+  nudge     String   @db.Text
+  severity  String   @default("info") // info | warning | critical
+  traceId   String?
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
+  @@index([userId, createdAt])
+  @@map("spending_nudges")
 }

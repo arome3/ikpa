@@ -20,6 +20,7 @@ import { OpikService } from '../ai/opik/opik.service';
 import { RedisService } from '../../redis';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FutureSelfService } from './future-self.service';
+import { FutureSelfAgent } from './agents/future-self.agent';
 import { LetterTrigger } from '@prisma/client';
 
 // ==========================================
@@ -108,6 +109,7 @@ export class FutureSelfCronService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly futureSelfService: FutureSelfService,
+    private readonly futureSelfAgent: FutureSelfAgent,
     private readonly opikService: OpikService,
     private readonly redisService: RedisService,
   ) {}
@@ -592,6 +594,366 @@ export class FutureSelfCronService {
     } catch {
       return [];
     }
+  }
+
+  // ==========================================
+  // STREAK RESET CRON
+  // ==========================================
+
+  /** Lock key for streak reset job */
+  private readonly STREAK_RESET_LOCK_KEY = 'future_self:streak_reset:lock';
+
+  /** Lock key for daily reminder job */
+  private readonly DAILY_REMINDER_LOCK_KEY = 'future_self:daily_reminder:lock';
+
+  /**
+   * Reset missed streaks
+   * Runs daily at 8:00 AM Africa/Lagos
+   *
+   * Finds all ACTIVE commitments where lastCheckinDate < yesterday
+   * (1-day grace period) and resets their streakDays to 0.
+   */
+  @Cron('0 8 * * *', {
+    name: 'reset-missed-streaks',
+    timeZone: 'Africa/Lagos',
+  })
+  async resetMissedStreaks(): Promise<void> {
+    const lockValue = randomUUID();
+
+    const lockAcquired = await this.redisService.acquireLock(
+      this.STREAK_RESET_LOCK_KEY,
+      5 * 60 * 1000, // 5 min TTL
+      lockValue,
+    );
+
+    if (!lockAcquired) {
+      this.logger.debug('Streak reset job skipped: another instance is already processing');
+      return;
+    }
+
+    try {
+      // Calculate yesterday in Africa/Lagos timezone (UTC+1)
+      const now = new Date();
+      const lagosTime = new Date(now.getTime() + 1 * 60 * 60 * 1000);
+      const yesterday = new Date(Date.UTC(
+        lagosTime.getUTCFullYear(),
+        lagosTime.getUTCMonth(),
+        lagosTime.getUTCDate() - 1,
+      ));
+
+      // Find ACTIVE commitments with missed check-ins (streakDays > 0 and lastCheckinDate < yesterday)
+      const result = await this.prisma.futureSelfCommitment.updateMany({
+        where: {
+          status: 'ACTIVE',
+          streakDays: { gt: 0 },
+          lastCheckinDate: { lt: yesterday },
+        },
+        data: {
+          streakDays: 0,
+        },
+      });
+
+      if (result.count > 0) {
+        this.logger.log(`Reset ${result.count} missed streaks`);
+      } else {
+        this.logger.debug('No missed streaks to reset');
+      }
+    } catch (error) {
+      this.logger.error(
+        `Streak reset job failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    } finally {
+      await this.redisService.releaseLock(this.STREAK_RESET_LOCK_KEY, lockValue);
+    }
+  }
+
+  /**
+   * Send daily check-in reminders
+   * Runs daily at 8:05 AM Africa/Lagos
+   *
+   * Finds all ACTIVE commitments where user has NOT checked in today
+   * and creates an in-app notification reminder.
+   */
+  @Cron('5 8 * * *', {
+    name: 'send-daily-checkin-reminders',
+    timeZone: 'Africa/Lagos',
+  })
+  async sendDailyReminders(): Promise<void> {
+    const lockValue = randomUUID();
+
+    const lockAcquired = await this.redisService.acquireLock(
+      this.DAILY_REMINDER_LOCK_KEY,
+      5 * 60 * 1000, // 5 min TTL
+      lockValue,
+    );
+
+    if (!lockAcquired) {
+      this.logger.debug('Daily reminder job skipped: another instance is already processing');
+      return;
+    }
+
+    try {
+      // Get today in Africa/Lagos timezone
+      const now = new Date();
+      const lagosTime = new Date(now.getTime() + 1 * 60 * 60 * 1000);
+      const today = new Date(Date.UTC(
+        lagosTime.getUTCFullYear(),
+        lagosTime.getUTCMonth(),
+        lagosTime.getUTCDate(),
+      ));
+
+      // Find ACTIVE commitments where lastCheckinDate != today (haven't checked in today)
+      const commitments = await this.prisma.futureSelfCommitment.findMany({
+        where: {
+          status: 'ACTIVE',
+          OR: [
+            { lastCheckinDate: null },
+            { lastCheckinDate: { lt: today } },
+          ],
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, currency: true },
+          },
+        },
+      });
+
+      if (commitments.length === 0) {
+        this.logger.debug('No users need daily reminders');
+        return;
+      }
+
+      let sentCount = 0;
+      for (const commitment of commitments) {
+        try {
+          const amount = Number(commitment.dailyAmount);
+          const currency = commitment.currency || commitment.user.currency || 'NGN';
+          const name = commitment.user.name || 'there';
+
+          await this.prisma.gpsNotification.create({
+            data: {
+              userId: commitment.userId,
+              triggerType: 'BUDGET_WARNING',
+              categoryId: 'future-self',
+              categoryName: 'Future Self',
+              title: 'Daily savings reminder',
+              message: `Hey ${name}! Your future self is counting on you. Have you saved your ${this.formatCurrencySimple(amount, currency)} today?`,
+              actionUrl: '/dashboard/future-self',
+              metadata: {
+                type: 'FUTURE_SELF_REMINDER',
+                commitmentId: commitment.id,
+                dailyAmount: amount,
+              },
+            },
+          });
+          sentCount++;
+        } catch (err) {
+          this.logger.warn(
+            `Failed to send reminder for user ${commitment.userId}: ${err instanceof Error ? err.message : 'Unknown'}`,
+          );
+        }
+      }
+
+      this.logger.log(`Sent ${sentCount} daily check-in reminders`);
+    } catch (error) {
+      this.logger.error(
+        `Daily reminder job failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    } finally {
+      await this.redisService.releaseLock(this.DAILY_REMINDER_LOCK_KEY, lockValue);
+    }
+  }
+
+  // ==========================================
+  // WEEKLY DEBRIEF CRON
+  // ==========================================
+
+  /** Lock key for weekly debrief job */
+  private readonly WEEKLY_DEBRIEF_LOCK_KEY = 'future_self:weekly_debrief:lock';
+
+  /**
+   * Send weekly AI financial debriefs
+   * Runs every Sunday at 6:00 PM Africa/Lagos (WAT)
+   *
+   * For each active user with weekly reports enabled:
+   * 1. Aggregates last 7 days: expenses by category, budget adherence, goal contributions, streak
+   * 2. Calls FutureSelfAgent.generateWeeklyDebrief()
+   * 3. Stores as FutureSelfLetter (trigger: WEEKLY_DEBRIEF)
+   * 4. Creates a GpsNotification with actionUrl to /dashboard/future-self
+   */
+  @Cron('0 17 * * 0', {
+    name: 'send-weekly-debrief',
+    timeZone: 'Africa/Lagos',
+  })
+  async sendWeeklyDebrief(): Promise<void> {
+    const lockValue = randomUUID();
+
+    const lockAcquired = await this.redisService.acquireLock(
+      this.WEEKLY_DEBRIEF_LOCK_KEY,
+      15 * 60 * 1000, // 15 min TTL
+      lockValue,
+    );
+
+    if (!lockAcquired) {
+      this.logger.debug('Weekly debrief job skipped: another instance is already processing');
+      return;
+    }
+
+    try {
+      const users = await this.getEligibleUsers();
+      this.logger.log(`Starting weekly debrief for ${users.length} eligible users`);
+
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const user of users) {
+        try {
+          await this.processUserDebrief(user.id, user.name || 'Friend', sevenDaysAgo);
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          this.logger.warn(
+            `Failed to generate debrief for user ${user.id}: ${error instanceof Error ? error.message : 'Unknown'}`,
+          );
+        }
+      }
+
+      this.logger.log(`Weekly debrief completed: ${successCount} success, ${errorCount} errors`);
+    } catch (error) {
+      this.logger.error(
+        `Weekly debrief job failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    } finally {
+      await this.redisService.releaseLock(this.WEEKLY_DEBRIEF_LOCK_KEY, lockValue);
+    }
+  }
+
+  /**
+   * Process a single user's weekly debrief
+   */
+  private async processUserDebrief(
+    userId: string,
+    userName: string,
+    since: Date,
+  ): Promise<void> {
+    // Get user's currency
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { currency: true },
+    });
+    const currency = user?.currency || 'NGN';
+
+    // Aggregate weekly data in parallel
+    const [expensesByCategory, totalExpenseAgg, goalContributions, activeCommitment, budgets, categories] =
+      await Promise.all([
+        // Expenses by category
+        this.prisma.expense.groupBy({
+          by: ['categoryId'],
+          where: { userId, date: { gte: since } },
+          _sum: { amount: true },
+          orderBy: { _sum: { amount: 'desc' } },
+          take: 5,
+        }),
+        // Total expenses
+        this.prisma.expense.aggregate({
+          where: { userId, date: { gte: since } },
+          _sum: { amount: true },
+        }),
+        // Goal contributions
+        this.prisma.goalContribution.aggregate({
+          where: { goal: { userId }, date: { gte: since } },
+          _sum: { amount: true },
+        }),
+        // Active commitment (for streak)
+        this.prisma.futureSelfCommitment.findFirst({
+          where: { userId, status: 'ACTIVE' },
+          orderBy: { longestStreak: 'desc' },
+        }),
+        // Budgets for adherence calculation
+        this.prisma.budget.findMany({
+          where: { userId, isActive: true },
+          select: { categoryId: true, amount: true },
+        }),
+        // Expense categories for name lookup
+        this.prisma.expenseCategory.findMany({
+          select: { id: true, name: true },
+        }),
+      ]);
+
+    const totalExpenses = Number(totalExpenseAgg._sum.amount) || 0;
+    const goalProgressDelta = Number(goalContributions._sum.amount) || 0;
+
+    // Map categories by ID for name lookup
+    const categoryMap = new Map(categories.map((c: { id: string; name: string }) => [c.id, c.name]));
+
+    // Calculate top categories with names
+    const topCategories = expensesByCategory.map((e: { categoryId: string; _sum: { amount: unknown } }) => ({
+      name: categoryMap.get(e.categoryId) || 'Other',
+      amount: Number(e._sum.amount) || 0,
+    }));
+
+    // Calculate budget adherence: sum of budget amounts vs sum of spending
+    const totalBudgetLimit = budgets.reduce((sum: number, b: { amount: unknown }) => sum + Number(b.amount || 0), 0);
+    // Weekly budget = monthly / 4.33
+    const weeklyBudget = totalBudgetLimit / 4.33;
+    const budgetAdherence = weeklyBudget > 0
+      ? Math.round(Math.max(0, Math.min(100, ((weeklyBudget - totalExpenses) / weeklyBudget) * 100)))
+      : 50; // Default 50% if no budget set
+
+    // Generate AI debrief
+    const result = await this.futureSelfAgent.generateWeeklyDebrief(userId, {
+      totalExpenses,
+      topCategories,
+      budgetAdherence,
+      goalProgressDelta,
+      streakDays: activeCommitment?.streakDays || 0,
+      currency,
+      userName,
+    });
+
+    // Store as FutureSelfLetter
+    await this.prisma.futureSelfLetter.create({
+      data: {
+        userId,
+        content: result.content,
+        trigger: LetterTrigger.WEEKLY_DEBRIEF,
+        currentSavingsRate: 0,
+        optimizedSavingsRate: 0,
+        currentNetWorth20yr: 0,
+        optimizedNetWorth20yr: 0,
+        wealthDifference20yr: 0,
+        userAge: 0,
+        futureAge: 60,
+        toneEmpathyScore: null,
+        promptTokens: result.usage?.promptTokens || 0,
+        completionTokens: result.usage?.completionTokens || 0,
+      },
+    });
+
+    // Create in-app notification
+    await this.prisma.gpsNotification.create({
+      data: {
+        userId,
+        triggerType: 'BUDGET_WARNING',
+        categoryId: 'future-self',
+        categoryName: 'Future Self',
+        title: 'Your weekly financial debrief is ready',
+        message: `Hey ${userName}! Your future self has reviewed your week. Check out your personalized debrief.`,
+        actionUrl: '/dashboard/future-self',
+        metadata: { type: 'WEEKLY_DEBRIEF' },
+      },
+    });
+  }
+
+  /**
+   * Simple currency formatter for cron job messages
+   */
+  private formatCurrencySimple(amount: number, currency: string): string {
+    const symbols: Record<string, string> = {
+      NGN: '\u20A6', GHS: 'GH\u20B5', KES: 'KSh', ZAR: 'R', USD: '$', GBP: '\u00A3',
+    };
+    return `${symbols[currency] || currency}${amount.toLocaleString()}`;
   }
 
   // ==========================================

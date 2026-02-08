@@ -43,7 +43,7 @@ import {
   WhatsAppService,
   GpsWhatsAppNotificationService,
 } from './notification';
-import { GpsRerouterAgent } from './agents';
+import { GpsRerouterAgent, SpendingCoachAgent } from './agents';
 
 /**
  * Module for the GPS Re-Router budget recovery system
@@ -80,6 +80,7 @@ import { GpsRerouterAgent } from './agents';
     WhatsAppService,
     GpsWhatsAppNotificationService,
     GpsRerouterAgent,
+    SpendingCoachAgent,
   ],
   exports: [
     GpsService,

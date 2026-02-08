@@ -252,7 +252,7 @@ function StakeConfigStep({
               className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30"
             />
           </div>
-          <p className="text-xs text-slate-500 mt-1">Recommended: 5-15% of your monthly discretionary spend</p>
+          <p className="text-xs text-slate-500 mt-1">Min: {currencySymbol}1 · Max: {currencySymbol}500,000 · Recommended: 5-15% of monthly discretionary spend</p>
         </div>
       )}
 
@@ -396,11 +396,10 @@ function RefereeStep({
             className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30 [color-scheme:dark]"
           >
             <option value="">Select relationship</option>
-            <option value="spouse">Spouse / Partner</option>
-            <option value="friend">Close Friend</option>
-            <option value="family">Family Member</option>
-            <option value="mentor">Mentor / Coach</option>
-            <option value="colleague">Colleague</option>
+            <option value="FAMILY">Spouse / Family</option>
+            <option value="FRIEND">Close Friend</option>
+            <option value="COLLEAGUE">Colleague</option>
+            <option value="COACH">Mentor / Coach</option>
           </select>
         </div>
       </div>

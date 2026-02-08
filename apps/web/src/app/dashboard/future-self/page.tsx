@@ -11,7 +11,6 @@ import {
   Sparkles,
   ChevronRight,
   Loader2,
-  HandHeart,
   CheckCircle2,
   Minus,
   Plus,
@@ -21,6 +20,9 @@ import {
   Eye,
   Pause,
   Play,
+  Flame,
+  Trophy,
+  ScrollText,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -30,6 +32,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
@@ -144,9 +147,15 @@ export default function FutureSelfPage() {
     isCreatingCommitment,
     updateCommitment,
     isUpdatingCommitment,
+    checkinStatus,
+    isLoadingCheckinStatus,
+    checkin,
+    isCheckingIn,
+    debriefs,
+    isLoadingDebriefs,
   } = useFutureSelf();
 
-  const [selectedHorizon, setSelectedHorizon] = useState<number>(4); // Default: 20yr
+  const [selectedHorizon, setSelectedHorizon] = useState<number>(2); // Default: 5yr
   const [letterContent, setLetterContent] = useState<string | null>(null);
   const [letterLetterId, setLetterLetterId] = useState<string | null>(null);
   const [letterMode, setLetterMode] = useState<'gratitude' | 'regret'>('gratitude');
@@ -161,7 +170,7 @@ export default function FutureSelfPage() {
 
   // Commitment state
   const [showCommitment, setShowCommitment] = useState(false);
-  const [commitmentAmount, setCommitmentAmount] = useState(500);
+  const [commitmentAmount, setCommitmentAmount] = useState(10);
   const [commitmentCreated, setCommitmentCreated] = useState(false);
 
   // Letter detail modal
@@ -175,9 +184,11 @@ export default function FutureSelfPage() {
   // Conversation history loading
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
 
-  // Build chart data from simulation
+  // Build chart data from simulation, scoped to selected horizon
+  // This ensures the y-axis auto-scales to the visible range,
+  // making differences visible at shorter horizons
   const chartData = simulation
-    ? TIME_HORIZONS.map(h => ({
+    ? TIME_HORIZONS.slice(0, selectedHorizon + 1).map(h => ({
         name: h.label,
         currentPath: simulation.currentBehavior.projectedNetWorth[h.key as HorizonKey],
         optimizedPath: simulation.withIKPA.projectedNetWorth[h.key as HorizonKey],
@@ -195,7 +206,7 @@ export default function FutureSelfPage() {
     try {
       const result = await generateLetter();
       setLetterContent(result.content);
-      setLetterLetterId((result as unknown as { id?: string }).id ?? null);
+      setLetterLetterId(result.id ?? null);
       setLetterMode('gratitude');
       setTypewriterDone(false);
       setReadStartTime(Date.now());
@@ -204,11 +215,14 @@ export default function FutureSelfPage() {
       setShowCommitment(false);
       setCommitmentCreated(false);
 
-      // Compute default commitment amount from simulation data
+      // Compute default commitment amount from the 6-month projected wealth gap
       if (simulation) {
-        const gap = (simulation.withIKPA.savingsRate - simulation.currentBehavior.savingsRate) * 100;
-        const dailyGap = Math.ceil((gap * 100) / 30 / 100) * 100;
-        setCommitmentAmount(Math.max(dailyGap, 500));
+        const sixMonthGap =
+          (simulation.withIKPA.projectedNetWorth['6mo'] ?? 0) -
+          (simulation.currentBehavior.projectedNetWorth['6mo'] ?? 0);
+        const dailyAmount = Math.round(sixMonthGap / 180);
+        // Round up to nearest $5, minimum $5
+        setCommitmentAmount(Math.max(Math.ceil(dailyAmount / 5) * 5, 5));
       }
     } catch {
       // Error handled by React Query
@@ -220,7 +234,7 @@ export default function FutureSelfPage() {
     try {
       const result = await generateRegretLetter();
       setLetterContent(result.content);
-      setLetterLetterId((result as unknown as { id?: string }).id ?? null);
+      setLetterLetterId(result.id ?? null);
       setLetterMode('regret');
       setTypewriterDone(false);
       setReadStartTime(Date.now());
@@ -364,7 +378,7 @@ export default function FutureSelfPage() {
           </button>
         </motion.header>
 
-        {/* Active Commitment Banner */}
+        {/* Active Commitment Check-in Card */}
         {activeCommitment && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -376,42 +390,132 @@ export default function FutureSelfPage() {
                 : 'bg-white/5 border-white/10',
             )}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <HandHeart className="w-5 h-5 text-emerald-400" />
-                <div>
-                  <p className="text-sm font-medium text-emerald-400">
-                    {activeCommitment.status === 'ACTIVE' ? 'Active Commitment' : 'Commitment Paused'}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {formatCurrency(activeCommitment.dailyAmount, activeCommitment.currency)}/day
-                    {activeCommitment.streakDays > 0 && ` \u2022 ${activeCommitment.streakDays} day streak`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => updateCommitment({
-                    id: activeCommitment.id,
-                    status: activeCommitment.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
-                  })}
-                  disabled={isUpdatingCommitment}
-                  className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50"
-                  title={activeCommitment.status === 'ACTIVE' ? 'Pause commitment' : 'Resume commitment'}
-                >
-                  {activeCommitment.status === 'ACTIVE'
-                    ? <Pause className="w-3.5 h-3.5 text-slate-400" />
-                    : <Play className="w-3.5 h-3.5 text-emerald-400" />
+            {/* Streak header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <motion.div
+                  key={checkinStatus?.streakDays ?? activeCommitment.streakDays}
+                  initial={{ scale: 1 }}
+                  animate={
+                    (checkinStatus?.streakDays ?? activeCommitment.streakDays) > 0
+                      ? { scale: [1, 1.2, 1] }
+                      : {}
                   }
-                </button>
-                <div className="text-2xl font-bold text-emerald-400">
-                  {activeCommitment.streakDays}
-                  <span className="text-xs text-slate-400 ml-1">days</span>
-                </div>
+                  transition={{ duration: 0.3 }}
+                >
+                  <Flame className={cn(
+                    'w-5 h-5',
+                    (checkinStatus?.streakDays ?? activeCommitment.streakDays) > 0
+                      ? 'text-orange-400'
+                      : 'text-slate-500',
+                  )} />
+                </motion.div>
+                <span className="text-lg font-bold text-white">
+                  {checkinStatus?.streakDays ?? activeCommitment.streakDays}-day streak
+                </span>
               </div>
+              <button
+                onClick={() => updateCommitment({
+                  id: activeCommitment.id,
+                  status: activeCommitment.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
+                })}
+                disabled={isUpdatingCommitment}
+                className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50"
+                title={activeCommitment.status === 'ACTIVE' ? 'Pause commitment' : 'Resume commitment'}
+              >
+                {activeCommitment.status === 'ACTIVE'
+                  ? <Pause className="w-3.5 h-3.5 text-slate-400" />
+                  : <Play className="w-3.5 h-3.5 text-emerald-400" />
+                }
+              </button>
+            </div>
+
+            {/* Commitment amount */}
+            <p className="text-sm text-slate-400 mb-3">
+              {formatCurrency(activeCommitment.dailyAmount, activeCommitment.currency)}/day micro-commitment
+            </p>
+
+            {/* Check-in button */}
+            {activeCommitment.status === 'ACTIVE' && (
+              <div className="mb-3">
+                {isLoadingCheckinStatus ? (
+                  <div className="flex justify-center py-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                  </div>
+                ) : checkinStatus?.checkedInToday ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
+                  >
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    <span className="text-sm font-medium text-emerald-400">Done for today!</span>
+                  </motion.div>
+                ) : (
+                  <motion.button
+                    onClick={() => checkin({ commitmentId: activeCommitment.id })}
+                    disabled={isCheckingIn}
+                    className={cn(
+                      'w-full py-2.5 rounded-lg font-medium text-sm transition-all',
+                      'bg-emerald-500 text-white',
+                      'hover:bg-emerald-600',
+                      'disabled:opacity-50 disabled:cursor-not-allowed',
+                      'shadow-lg shadow-emerald-500/20',
+                    )}
+                    animate={{ boxShadow: ['0 0 0 0 rgba(34,197,94,0.2)', '0 0 0 8px rgba(34,197,94,0)', '0 0 0 0 rgba(34,197,94,0.2)'] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    {isCheckingIn ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Checking in...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        I saved today
+                      </span>
+                    )}
+                  </motion.button>
+                )}
+              </div>
+            )}
+
+            {/* Longest streak */}
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>
+                Longest streak: {checkinStatus?.longestStreak ?? activeCommitment.longestStreak} days
+              </span>
+              {activeCommitment.status === 'PAUSED' && (
+                <span className="text-amber-400">Paused</span>
+              )}
             </div>
           </motion.div>
         )}
+
+        {/* Leaderboard Link */}
+        <Link href="/dashboard/future-self/leaderboard">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/20 transition-colors flex items-center gap-3 cursor-pointer"
+          >
+            <Trophy className="w-5 h-5 text-amber-400" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white">Streak Leaderboard</p>
+              <p className="text-[10px] text-slate-400">See how your streak ranks</p>
+            </div>
+            {activeCommitment && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10">
+                <Flame className="w-3 h-3 text-orange-400" />
+                <span className="text-xs font-medium text-amber-400">
+                  {checkinStatus?.streakDays ?? activeCommitment.streakDays}d
+                </span>
+              </div>
+            )}
+            <ChevronRight className="w-4 h-4 text-slate-500" />
+          </motion.div>
+        </Link>
 
         {/* Dual-Path Chart */}
         <motion.section
@@ -463,15 +567,18 @@ export default function FutureSelfPage() {
                       dataKey="currentPath"
                       stroke="#6b7280"
                       strokeWidth={2}
+                      strokeDasharray="6 3"
                       fill="url(#grayGradient)"
+                      dot={{ r: 4, fill: '#6b7280', strokeWidth: 0 }}
                       name="Current Path"
                     />
                     <Area
                       type="monotone"
                       dataKey="optimizedPath"
                       stroke="#22c55e"
-                      strokeWidth={2}
+                      strokeWidth={3}
                       fill="url(#greenGradient)"
+                      dot={{ r: 5, fill: '#22c55e', strokeWidth: 0 }}
                       name="With IKPA"
                     />
                   </AreaChart>
@@ -578,7 +685,7 @@ export default function FutureSelfPage() {
         >
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-400" />
-            Letter from 2045
+            Letter from Your Future Self
           </h2>
 
           {!letterContent ? (
@@ -603,7 +710,7 @@ export default function FutureSelfPage() {
                     Your future self is writing...
                   </span>
                 ) : (
-                  'Generate Letter from 2045'
+                  'Generate Letter'
                 )}
               </button>
             </div>
@@ -654,7 +761,7 @@ export default function FutureSelfPage() {
                         </p>
                         <div className="flex items-center justify-center gap-4 mb-3">
                           <button
-                            onClick={() => setCommitmentAmount(prev => Math.max(100, prev - 100))}
+                            onClick={() => setCommitmentAmount(prev => Math.max(5, prev - 5))}
                             className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                           >
                             <Minus className="w-4 h-4" />
@@ -666,7 +773,7 @@ export default function FutureSelfPage() {
                             <p className="text-xs text-slate-400">per day</p>
                           </div>
                           <button
-                            onClick={() => setCommitmentAmount(prev => prev + 100)}
+                            onClick={() => setCommitmentAmount(prev => prev + 5)}
                             className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                           >
                             <Plus className="w-4 h-4" />
@@ -704,7 +811,7 @@ export default function FutureSelfPage() {
                         <div>
                           <p className="text-sm font-medium text-emerald-400">Commitment set!</p>
                           <p className="text-xs text-slate-400">
-                            {formatCurrency(commitmentAmount, 'USD')}/day — your future self is proud.
+                            {formatCurrency(commitmentAmount, 'USD')}/day — check in daily to build your streak!
                           </p>
                         </div>
                       </motion.div>
@@ -935,6 +1042,60 @@ export default function FutureSelfPage() {
           ) : (
             <p className="text-sm text-slate-500 text-center py-4">
               No letters yet. Generate your first letter above.
+            </p>
+          )}
+        </motion.section>
+
+        {/* Weekly Debriefs */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="p-4 rounded-2xl bg-white/5 border border-white/10"
+        >
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <ScrollText className="w-5 h-5 text-amber-400" />
+            Weekly Debriefs
+          </h2>
+
+          {isLoadingDebriefs ? (
+            <div className="space-y-3">
+              {[1, 2].map(i => (
+                <div key={i} className="h-20 rounded-lg bg-white/5 animate-pulse" />
+              ))}
+            </div>
+          ) : debriefs?.length ? (
+            <div className="space-y-2">
+              {debriefs.map((debrief) => (
+                <motion.div
+                  key={debrief.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 font-medium">
+                      WEEKLY DEBRIEF
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      {new Date(debrief.generatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">
+                    {debrief.content.slice(0, 250)}
+                    {debrief.content.length > 250 ? '...' : ''}
+                  </p>
+                  {!debrief.readAt && (
+                    <span className="text-[10px] text-amber-400 font-medium mt-1 inline-block">
+                      New
+                    </span>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 text-center py-4">
+              No weekly debriefs yet. They arrive every Sunday evening.
             </p>
           )}
         </motion.section>

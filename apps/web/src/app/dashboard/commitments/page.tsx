@@ -21,11 +21,13 @@ import {
   Award,
   Flame,
   Share2,
+  AlertTriangle,
+  Scan,
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
-import { useCommitments } from '@/hooks/useCommitments';
+import { useCommitments, useSlipDetection } from '@/hooks/useCommitments';
 import { useGoals } from '@/hooks/useFinance';
-import type { CommitmentContract, StakeEffectiveness } from '@/hooks/useCommitments';
+import type { CommitmentContract, StakeEffectiveness, SlipAlert } from '@/hooks/useCommitments';
 
 // ============================================
 // STAKE TYPE CONFIG
@@ -53,6 +55,7 @@ export default function CommitmentDashboard() {
   const router = useRouter();
   const { getStakesByGoal, cancelStake, isCancellingStake, getEffectiveness } = useCommitments();
   const { items: goals, isLoading: goalsLoading } = useGoals();
+  const { alerts: slipAlerts, triggerScan, isScanning } = useSlipDetection();
 
   const [allContracts, setAllContracts] = useState<CommitmentContract[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,6 +181,44 @@ export default function CommitmentDashboard() {
             </div>
           </div>
         </motion.section>
+
+        {/* Slip Detection Alerts */}
+        {activeContracts.length > 0 && (
+          <motion.section
+            className="mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+                Slip Detection
+              </h2>
+              <button
+                onClick={() => triggerScan()}
+                disabled={isScanning}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-white/10 hover:bg-white/15 rounded-lg transition-all border border-white/10 disabled:opacity-50"
+              >
+                <Scan className={cn('w-3.5 h-3.5', isScanning && 'animate-spin')} />
+                {isScanning ? 'Scanning...' : 'Run Scan'}
+              </button>
+            </div>
+            {slipAlerts.length > 0 ? (
+              <div className="space-y-2">
+                {slipAlerts.filter((a) => !a.readAt).slice(0, 3).map((alert, i) => (
+                  <SlipAlertCard key={alert.id} alert={alert} index={i} />
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
+                <p className="text-sm text-slate-400">
+                  {isScanning ? 'Scanning your contracts for drift...' : 'No slip alerts yet. Click "Run Scan" to check if any goals are falling behind.'}
+                </p>
+              </div>
+            )}
+          </motion.section>
+        )}
 
         {/* Active Contracts */}
         <motion.section
@@ -429,6 +470,52 @@ function ContractCard({
             <Users className="w-3 h-3" /> {contract.referee.name}
           </span>
         )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ============================================
+// SLIP ALERT CARD COMPONENT
+// ============================================
+
+const RISK_COLORS = {
+  high: { bg: 'bg-red-500/15', border: 'border-red-500/30', text: 'text-red-400', badge: 'bg-red-500/20 text-red-300' },
+  medium: { bg: 'bg-amber-500/15', border: 'border-amber-500/30', text: 'text-amber-400', badge: 'bg-amber-500/20 text-amber-300' },
+  low: { bg: 'bg-blue-500/15', border: 'border-blue-500/30', text: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-300' },
+  unknown: { bg: 'bg-slate-500/15', border: 'border-slate-500/30', text: 'text-slate-400', badge: 'bg-slate-500/20 text-slate-300' },
+} as const;
+
+function SlipAlertCard({ alert, index }: { alert: SlipAlert; index: number }) {
+  const colors = RISK_COLORS[alert.riskLevel] || RISK_COLORS.unknown;
+
+  return (
+    <motion.div
+      className={cn(
+        'p-3.5 rounded-xl border backdrop-blur-sm',
+        colors.bg,
+        colors.border,
+      )}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.05 * index }}
+    >
+      <div className="flex items-start gap-3">
+        <div className={cn('p-1.5 rounded-lg mt-0.5', colors.badge)}>
+          <AlertTriangle className={cn('w-4 h-4', colors.text)} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-sm font-semibold text-white">{alert.title}</p>
+            <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase', colors.badge)}>
+              {alert.riskLevel}
+            </span>
+          </div>
+          <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">{alert.message}</p>
+          <p className="text-[10px] text-slate-500 mt-1.5">
+            {alert.goalName} &middot; {new Date(alert.createdAt).toLocaleDateString()}
+          </p>
+        </div>
       </div>
     </motion.div>
   );

@@ -11,9 +11,9 @@
 export const COMMITMENT_CONSTANTS = {
   /**
    * Minimum stake amount for ANTI_CHARITY and LOSS_POOL types
-   * Set to 1000 NGN (roughly $1-2 USD equivalent)
+   * Currency-agnostic floor: low enough for USD ($1), reasonable for NGN (₦1)
    */
-  MINIMUM_STAKE_AMOUNT: 1000,
+  MINIMUM_STAKE_AMOUNT: 1,
 
   /**
    * Maximum stake amount (safety limit)
@@ -251,6 +251,26 @@ export const GROUP_MESSAGES = {
     headlines: ['Weekly check-in', "How's your group doing?"],
     subtexts: ['{onTrack}/{total} members are on track this week.'],
   },
+} as const;
+
+/**
+ * Slip Detector configuration
+ * Proactive AI intervention before a commitment fails
+ */
+export const SLIP_DETECTOR = {
+  /** Daily scan at 9 AM WAT */
+  SCAN_CRON: '0 9 * * *',
+  /** Minimum hours between nudges per contract (prevents notification fatigue) */
+  FATIGUE_HOURS: 72,
+  /** Progress gap thresholds for risk level assignment */
+  RISK_THRESHOLDS: {
+    /** <10% gap = low risk */
+    LOW: 0.10,
+    /** 10-25% gap = medium risk */
+    MEDIUM: 0.25,
+  },
+  /** Days remaining below this = high risk regardless of gap */
+  URGENT_DAYS: 7,
 } as const;
 
 /**

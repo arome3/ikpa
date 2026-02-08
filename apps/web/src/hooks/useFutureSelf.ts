@@ -34,6 +34,7 @@ export interface TimelineProjection {
 }
 
 export interface LetterResponse {
+  id: string;
   content: string;
   generatedAt: string;
   simulationData: FutureSimulation;
@@ -113,7 +114,35 @@ export interface Commitment {
   startDate: string;
   endDate: string | null;
   streakDays: number;
+  longestStreak: number;
+  lastCheckinDate: string | null;
   createdAt: string;
+}
+
+export interface CheckinStatus {
+  checkedInToday: boolean;
+  streakDays: number;
+  longestStreak: number;
+  lastCheckinDate: string | null;
+}
+
+export interface CheckinResponse {
+  id: string;
+  commitmentId: string;
+  checkinDate: string;
+  note: string | null;
+  createdAt: string;
+  streakDays: number;
+  longestStreak: number;
+}
+
+export interface DebriefLetter {
+  id: string;
+  content: string;
+  trigger: string;
+  generatedAt: string;
+  readAt: string | null;
+  toneScore: number | null;
 }
 
 // ============================================
@@ -278,6 +307,36 @@ export function useFutureSelf() {
     },
   });
 
+  // Get active commitment ID for checkin queries
+  const activeCommitmentId = commitments?.find(
+    c => c.status === 'ACTIVE',
+  )?.id;
+
+  // Get checkin status for active commitment
+  const {
+    data: checkinStatus,
+    isLoading: isLoadingCheckinStatus,
+  } = useQuery({
+    queryKey: ['future-self', 'checkin-status', activeCommitmentId],
+    queryFn: async () => {
+      const res = await apiClient.get(`/future-self/checkin/status/${activeCommitmentId}`);
+      return unwrap<CheckinStatus>(res);
+    },
+    enabled: !!activeCommitmentId,
+  });
+
+  // Checkin mutation
+  const checkinMutation = useMutation({
+    mutationFn: async ({ commitmentId, note }: { commitmentId: string; note?: string }) => {
+      const res = await apiClient.post('/future-self/checkin', { commitmentId, note });
+      return unwrap<CheckinResponse>(res);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['future-self', 'checkin-status'] });
+      queryClient.invalidateQueries({ queryKey: ['future-self', 'commitments'] });
+    },
+  });
+
   // Update commitment mutation
   const updateCommitmentMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -286,6 +345,18 @@ export function useFutureSelf() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['future-self', 'commitments'] });
+    },
+  });
+
+  // Weekly debriefs
+  const {
+    data: debriefs,
+    isLoading: isLoadingDebriefs,
+  } = useQuery({
+    queryKey: ['future-self', 'debriefs'],
+    queryFn: async () => {
+      const res = await apiClient.get('/future-self/debriefs?limit=5');
+      return unwrap<DebriefLetter[]>(res);
     },
   });
 
@@ -381,6 +452,16 @@ export function useFutureSelf() {
     isCreatingCommitment: createCommitmentMutation.isPending,
     updateCommitment: updateCommitmentMutation.mutateAsync,
     isUpdatingCommitment: updateCommitmentMutation.isPending,
+
+    // Checkin
+    checkinStatus,
+    isLoadingCheckinStatus,
+    checkin: checkinMutation.mutateAsync,
+    isCheckingIn: checkinMutation.isPending,
+
+    // Weekly debriefs
+    debriefs,
+    isLoadingDebriefs,
 
     // Upgrade to staked contract
     checkUpgradeEligibility,

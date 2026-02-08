@@ -515,8 +515,15 @@ export class StakeService {
     const metrics: StakeEffectivenessMetrics[] = [];
 
     for (const stakeType of stakeTypes) {
-      const [total, successful, amountStats] = await Promise.all([
-        // Total commitments
+      const [total, resolved, successful, amountStats] = await Promise.all([
+        // Total commitments (all statuses)
+        this.prisma.commitmentContract.count({
+          where: {
+            ...whereClause,
+            stakeType,
+          },
+        }),
+        // Resolved commitments (for success rate calculation)
         this.prisma.commitmentContract.count({
           where: {
             ...whereClause,
@@ -543,7 +550,7 @@ export class StakeService {
         }),
       ]);
 
-      const successRate = total > 0 ? successful / total : 0;
+      const successRate = resolved > 0 ? successful / resolved : 0;
 
       metrics.push({
         stakeType,

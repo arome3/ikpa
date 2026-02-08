@@ -440,3 +440,39 @@ export interface StreakInfo {
   bonusEligible: boolean;
   lastSucceededAt: string | null;
 }
+
+// ============================================
+// SLIP DETECTOR INTERFACES
+// ============================================
+
+/**
+ * Risk level for slip detection
+ */
+export type SlipRiskLevel = 'none' | 'low' | 'medium' | 'high';
+
+/**
+ * Result of slip detection for a single contract
+ */
+export interface SlipDetectionResult {
+  contractId: string;
+  userId: string;
+  goalName: string;
+  riskLevel: SlipRiskLevel;
+  progressGap: number;
+  daysRemaining: number;
+  stakeType: string;
+  stakeAmount: number | null;
+  nudgeText?: string;
+  skipped?: boolean;
+  skipReason?: string;
+}
+
+/**
+ * Summary of a slip detection scan
+ */
+export interface SlipDetectionScanResult {
+  scannedContracts: number;
+  nudgesSent: number;
+  riskBreakdown: Record<SlipRiskLevel, number>;
+  results: SlipDetectionResult[];
+}

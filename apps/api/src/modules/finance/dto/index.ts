@@ -4,6 +4,7 @@ export * from './score-history-query.dto';
 export * from './financial-snapshot.dto';
 export * from './simulation-input.dto';
 export * from './simulation-output.dto';
+export * from './time-machine.dto';
 
 // Financial CRUD DTOs
 export * from './income';

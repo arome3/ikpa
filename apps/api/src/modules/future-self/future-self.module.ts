@@ -28,6 +28,7 @@ import { FutureSelfAgent } from './agents/future-self.agent';
 import { ContentModerationService } from './services/content-moderation.service';
 import { FutureSelfCronService } from './future-self.cron';
 import { FutureSelfCacheListener } from './future-self-cache.listener';
+import { LeaderboardService } from './services/leaderboard.service';
 
 @Module({
   imports: [
@@ -43,7 +44,8 @@ import { FutureSelfCacheListener } from './future-self-cache.listener';
     ContentModerationService,
     FutureSelfCronService,
     FutureSelfCacheListener,
+    LeaderboardService,
   ],
-  exports: [FutureSelfService],
+  exports: [FutureSelfService, LeaderboardService],
 })
 export class FutureSelfModule {}

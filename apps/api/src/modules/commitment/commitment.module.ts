@@ -30,6 +30,7 @@ import { CommitmentRiskService } from './commitment-risk.service';
 import { MockPaymentService } from './payment.service.mock';
 import { CommitmentCronService } from './commitment.cron';
 import { StreakService } from './streak.service';
+import { SlipDetectorService } from './slip-detector.service';
 
 /**
  * Module for the Commitment Device Engine
@@ -60,6 +61,7 @@ import { StreakService } from './streak.service';
     MockPaymentService,
     CommitmentCronService,
     StreakService,
+    SlipDetectorService,
   ],
   exports: [
     CommitmentService,
@@ -73,6 +75,7 @@ import { StreakService } from './streak.service';
     CommitmentRiskService,
     CommitmentCronService,
     StreakService,
+    SlipDetectorService,
   ],
 })
 export class CommitmentModule {}

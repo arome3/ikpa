@@ -132,7 +132,7 @@ export const UNSAFE_FINANCIAL_PATTERNS: Array<{ pattern: RegExp; reason: string 
     reason: 'Promotes speculative crypto',
   },
   {
-    pattern: /(pyramid|mlm|network\s+marketing|multi-level)/i,
+    pattern: /(pyramid\s+scheme|mlm\s+(opportunity|business|company)|network\s+marketing|multi-level\s+marketing)/i,
     reason: 'Promotes MLM/pyramid schemes',
   },
   {
@@ -302,6 +302,23 @@ export const MAX_OUTPUT_LENGTH = 50000;
 
 /** Default timeout for single-flight requests (ms) */
 export const SINGLE_FLIGHT_TIMEOUT_MS = 30000;
+
+// ==========================================
+// SEMAPHORE BACKPRESSURE CONFIGURATION
+// ==========================================
+
+// ==========================================
+// ONLINE EVALUATION PIPELINE
+// ==========================================
+
+/** Span name for the online evaluation pipeline parent span */
+export const SPAN_EVAL_ONLINE_PIPELINE = 'eval_online_pipeline';
+
+/** Feedback name prefix for online evaluation scores */
+export const FEEDBACK_ONLINE_EVAL = 'online_eval';
+
+/** Metric label for slip detector intervention scoring */
+export const METRIC_SLIP_INTERVENTION = 'SlipIntervention';
 
 // ==========================================
 // SEMAPHORE BACKPRESSURE CONFIGURATION

@@ -46,5 +46,11 @@ export class CommitmentResponseDto {
   streakDays!: number;
 
   @ApiProperty()
+  longestStreak!: number;
+
+  @ApiProperty({ nullable: true })
+  lastCheckinDate!: Date | null;
+
+  @ApiProperty()
   createdAt!: Date;
 }

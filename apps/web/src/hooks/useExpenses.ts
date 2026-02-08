@@ -163,3 +163,43 @@ export function useExpenses(filters?: ExpenseFilters) {
     isDeleting: deleteMutation.isPending,
   };
 }
+
+// ============================================
+// EXPENSE NUDGE HOOK (AI Spending Coach)
+// ============================================
+
+export interface SpendingNudge {
+  id: string;
+  expenseId: string;
+  nudge: string;
+  severity: 'info' | 'warning' | 'critical';
+  createdAt: string;
+}
+
+/**
+ * Polls for an AI spending nudge after expense creation.
+ * Retries up to 3 times at 1.5s intervals.
+ */
+export function useExpenseNudge(expenseId: string | null) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['expense-nudge', expenseId],
+    queryFn: async () => {
+      const res = await apiClient.get(`/gps/nudge/latest/${expenseId}`);
+      return unwrap<SpendingNudge>(res);
+    },
+    enabled: !!expenseId,
+    refetchInterval: (query) => {
+      // Stop polling after getting data or after 3 attempts
+      if (query.state.data) return false;
+      if ((query.state.dataUpdateCount ?? 0) >= 3) return false;
+      return 1500;
+    },
+    retry: false,
+    staleTime: Infinity,
+  });
+
+  return {
+    nudge: data ?? null,
+    isLoading: isLoading && !!expenseId,
+  };
+}
