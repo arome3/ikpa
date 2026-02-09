@@ -549,7 +549,7 @@ export class MfaService {
         );
       }
 
-      const bcrypt = await import('bcrypt');
+      const bcrypt = await import('bcryptjs');
       const isValid = await bcrypt.compare(password, user.passwordHash);
 
       if (!isValid) {
@@ -722,7 +722,7 @@ export class MfaService {
    * Hash backup codes for storage
    */
   private async hashBackupCodes(codes: string[]): Promise<string[]> {
-    const bcrypt = await import('bcrypt');
+    const bcrypt = await import('bcryptjs');
     return Promise.all(codes.map((code) => bcrypt.hash(code, 10)));
   }
 
@@ -733,7 +733,7 @@ export class MfaService {
     code: string,
     hashedCode: string,
   ): Promise<boolean> {
-    const bcrypt = await import('bcrypt');
+    const bcrypt = await import('bcryptjs');
     return bcrypt.compare(code, hashedCode);
   }
 
