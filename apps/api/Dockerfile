@@ -6,7 +6,7 @@ RUN corepack enable && corepack prepare pnpm@10.0.0 --activate
 WORKDIR /app
 
 # Copy root workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/ ./packages/
 
 # Copy API package
@@ -23,7 +23,7 @@ COPY apps/api/ ./apps/api/
 RUN cd apps/api && npx prisma generate
 
 # Build
-RUN cd apps/api && npx tsc -p tsconfig.json --skipLibCheck
+RUN cd apps/api && npx nest build
 
 # Production stage
 FROM node:20-slim AS production
