@@ -9,6 +9,8 @@ const navLinks = [
   { href: '#faq', label: 'FAQ' },
 ];
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+
 export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -51,7 +53,7 @@ export function Navigation() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <a href="http://localhost:3000/signin">
+            <a href={`${appUrl}/signin`}>
               <Button size="sm" className="bg-[#064E3B] hover:bg-[#053D2E] shadow-lg shadow-[#064E3B]/20">Login</Button>
             </a>
           </div>
@@ -85,7 +87,7 @@ export function Navigation() {
                 </a>
               ))}
               <div className="pt-4 border-t border-sage-100">
-                <a href="http://localhost:3000/signin">
+                <a href={`${appUrl}/signin`}>
                   <Button fullWidth className="bg-[#064E3B] hover:bg-[#053D2E] shadow-lg shadow-[#064E3B]/20">Login</Button>
                 </a>
               </div>
