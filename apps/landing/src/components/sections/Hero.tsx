@@ -50,7 +50,7 @@ export function Hero() {
 
             {/* Custom buttons */}
             <FadeIn delay={0.3} duration={1.5}>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
                 {/* Primary — deep green with arrow circle */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}
