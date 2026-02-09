@@ -23,7 +23,7 @@ COPY apps/api/ ./apps/api/
 RUN cd apps/api && npx prisma generate
 
 # Build
-RUN cd apps/api && pnpm build
+RUN cd apps/api && npx tsc -p tsconfig.json --skipLibCheck
 
 # Production stage
 FROM node:20-slim AS production
