@@ -59,6 +59,9 @@ apps/api/uploads/
 *.md
 !README.md
 
+# Claude
+.claude/
+
 # Misc
 *.tsbuildinfo
 .eslintcache
