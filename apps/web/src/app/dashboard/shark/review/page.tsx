@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Bot, Send, AlertCircle, Scale, Flame, Heart, Undo2, ChevronRight, Check, X } from 'lucide-react';
+import { ClipboardCheck, Send, AlertCircle, Scale, Flame, Heart, Undo2, ChevronRight, Check, X } from 'lucide-react';
 import { useShark } from '@/hooks/useShark';
 import { useSharkChat } from '@/hooks/useSharkChat';
 import type { ChatMode } from '@/hooks/useSharkChat';
@@ -22,10 +22,10 @@ import type { Subscription, SwipeAction } from '@/hooks/useShark';
 const KEEP_PATTERN = /^(keep|keep it|i('ll| will| want to) keep( it)?|keeping( it)?|yes,? keep)[.!]?$/i;
 const CANCEL_PATTERN = /^(cancel|cancel it|i('ll| will| want to) cancel( it)?|cancelling( it)?|yes,? cancel|get rid of it|drop it|remove it)[.!]?$/i;
 
-const MODE_CONFIG: Record<ChatMode, { icon: typeof Scale; label: string; color: string }> = {
-  advisor: { icon: Scale, label: 'Advisor', color: 'text-cyan-400' },
-  roast: { icon: Flame, label: 'Roast', color: 'text-orange-400' },
-  supportive: { icon: Heart, label: 'Support', color: 'text-pink-400' },
+const MODE_CONFIG: Record<ChatMode, { icon: typeof Scale; label: string; activeColor: string }> = {
+  advisor: { icon: Scale, label: 'Advisor', activeColor: 'bg-stone-800 text-white' },
+  roast: { icon: Flame, label: 'Roast', activeColor: 'bg-orange-600 text-white' },
+  supportive: { icon: Heart, label: 'Support', activeColor: 'bg-rose-600 text-white' },
 };
 
 export default function SharkAIReviewPage() {
@@ -263,100 +263,89 @@ export default function SharkAIReviewPage() {
     [decisionLog],
   );
 
-  // Loading state
+  // ─── Loading state ──────────────────────────
   if (isLoadingSubscriptions) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-950 to-slate-900 flex items-center justify-center">
-        <motion.div
-          className="text-slate-400"
+      <div className="flex items-center justify-center py-24">
+        <motion.p
+          className="font-serif text-stone-400"
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          Loading subscriptions...
+          Loading audit items...
+        </motion.p>
+      </div>
+    );
+  }
+
+  // ─── Empty state ────────────────────────────
+  if (totalToReview === 0 && !allDone) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-6 safe-top">
+        <button
+          onClick={() => router.push('/dashboard/shark')}
+          className="text-stone-500 hover:text-[#1A2E22] font-serif text-sm transition-colors mb-8"
+        >
+          &larr; Back to Audit List
+        </button>
+        <div className="text-center py-12">
+          <div className="inline-flex p-4 bg-stone-100 rounded-full mb-4">
+            <ClipboardCheck className="w-10 h-10 text-stone-400" />
+          </div>
+          <p className="font-serif text-[#1A2E22] font-medium mb-1">Nothing to review</p>
+          <p className="text-sm text-stone-500">
+            All your subscriptions have been reviewed. Run a new scan to check for changes.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── All-done state ─────────────────────────
+  if (allDone) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-6 safe-top overflow-y-auto">
+        <CompletionCelebration
+          totalReviewed={totalToReview}
+          totalSaved={totalSaved}
+          currency={summary?.currency ?? 'USD'}
+          cancelledCount={cancelledCount}
+          keptCount={keptCount}
+        />
+
+        {/* Action items — tabbed card-by-card walkthrough */}
+        <ActionItemsWalkthrough
+          cancelledSubs={cancelledSubs}
+          keptSubs={keptSubs}
+          fetchGuide={cachedFetchGuide}
+          fetchTips={cachedFetchTips}
+        />
+
+        <motion.div
+          className="mt-8 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+        >
+          <button
+            onClick={() => router.push('/dashboard/shark')}
+            className="px-6 py-3 rounded-lg bg-[#064E3B] text-white hover:bg-[#053D2E] transition-colors font-medium text-sm"
+          >
+            Back to Shark Auditor
+          </button>
         </motion.div>
       </div>
     );
   }
 
-  // No subscriptions to review
-  if (totalToReview === 0 && !allDone) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-950 to-slate-900">
-        <div className="max-w-lg mx-auto px-4 py-6 safe-top">
-          <button
-            onClick={() => router.push('/dashboard/shark')}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-8"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back
-          </button>
-          <div className="text-center py-12">
-            <div className="inline-flex p-4 bg-cyan-500/10 rounded-full mb-4">
-              <Bot className="w-10 h-10 text-cyan-400/60" />
-            </div>
-            <p className="text-white font-medium mb-1">Nothing to review</p>
-            <p className="text-sm text-slate-400">
-              All your subscriptions have been reviewed. Run a new scan to check for changes.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Completion celebration + accumulated background results
-  if (allDone) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-950 to-slate-900">
-        <div className="max-w-lg mx-auto px-4 py-6 safe-top overflow-y-auto">
-          <CompletionCelebration
-            totalReviewed={totalToReview}
-            totalSaved={totalSaved}
-            currency={summary?.currency ?? 'USD'}
-            cancelledCount={cancelledCount}
-            keptCount={keptCount}
-          />
-
-          {/* Action items — tabbed card-by-card walkthrough */}
-          <ActionItemsWalkthrough
-            cancelledSubs={cancelledSubs}
-            keptSubs={keptSubs}
-            fetchGuide={cachedFetchGuide}
-            fetchTips={cachedFetchTips}
-          />
-
-          <motion.div
-            className="mt-8 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-          >
-            <button
-              onClick={() => router.push('/dashboard/shark')}
-              className="px-6 py-3 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/30 transition-colors font-medium text-sm"
-            >
-              Back to Shark Auditor
-            </button>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
-
-  // Main chat view
+  // ─── Main chat view ─────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-950 to-slate-900 flex flex-col">
-      {/* Ambient background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -left-20 w-96 h-96 bg-cyan-500/8 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 -right-20 w-80 h-80 bg-teal-500/8 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative max-w-lg mx-auto w-full flex flex-col flex-1 safe-top">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+      <div className="relative max-w-3xl mx-auto w-full flex flex-col flex-1 safe-top">
         {/* Progress bar */}
-        <div className="h-1 bg-white/5">
+        <div className="h-1 bg-stone-200">
           <motion.div
-            className="h-full bg-gradient-to-r from-cyan-500 to-teal-400"
+            className="h-full bg-[#064E3B]"
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -364,17 +353,16 @@ export default function SharkAIReviewPage() {
         </div>
 
         {/* Top header bar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="flex items-center justify-between px-4 py-3">
           <button
             onClick={() => router.push('/dashboard/shark')}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm"
+            className="text-stone-500 hover:text-[#1A2E22] font-serif text-sm transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back
+            &larr; Back to Audit List
           </button>
 
-          {/* Mode selector */}
-          <div className="flex items-center gap-1">
+          {/* Mode selector — segmented control */}
+          <div className="flex items-center bg-stone-100 rounded-lg p-0.5">
             {(Object.keys(MODE_CONFIG) as ChatMode[]).map((m) => {
               const config = MODE_CONFIG[m];
               const Icon = config.icon;
@@ -383,37 +371,38 @@ export default function SharkAIReviewPage() {
                 <button
                   key={m}
                   onClick={() => chat.setMode(m)}
-                  className={`p-1.5 rounded-lg transition-all ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
                     isActive
-                      ? `bg-white/10 ${config.color}`
-                      : 'text-slate-600 hover:text-slate-400'
+                      ? config.activeColor
+                      : 'text-stone-400 hover:text-stone-600'
                   }`}
                   title={config.label}
                 >
                   <Icon className="w-3.5 h-3.5" />
+                  {isActive && <span>{config.label}</span>}
                 </button>
               );
             })}
           </div>
 
-          <span className="text-xs text-slate-500">
-            {currentIndex + 1} of {totalToReview}
+          <span className="font-mono text-xs text-stone-400">
+            {currentIndex + 1} of {totalToReview} Detected
           </span>
         </div>
 
         {/* Savings counter */}
         {totalSaved > 0 && (
           <motion.div
-            className="flex items-center justify-center gap-2 py-2 bg-teal-500/10 border-b border-teal-500/20"
+            className="flex items-center justify-center gap-2 py-2 bg-emerald-50 border-b border-emerald-100"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
           >
-            <span className="text-xs text-teal-400">Saved so far:</span>
+            <span className="text-xs text-stone-400 uppercase tracking-wider">Saved so far</span>
             <SavingsTicker
               amount={totalSaved}
               currency={summary?.currency ?? 'USD'}
               size="sm"
-              className="text-teal-300 !text-sm"
+              className="text-[#064E3B] font-serif !text-sm"
               duration={800}
             />
           </motion.div>
@@ -423,7 +412,6 @@ export default function SharkAIReviewPage() {
         {currentSub && (
           <ChatSubscriptionHeader
             subscription={currentSub}
-            onBack={() => router.push('/dashboard/shark')}
           />
         )}
 
@@ -437,7 +425,7 @@ export default function SharkAIReviewPage() {
         <AnimatePresence>
           {decisionError && (
             <motion.div
-              className="mx-4 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-xs"
+              className="mx-4 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
@@ -446,7 +434,7 @@ export default function SharkAIReviewPage() {
               <span>{decisionError}</span>
               <button
                 onClick={() => setDecisionError(null)}
-                className="ml-auto text-red-400 hover:text-red-200"
+                className="ml-auto text-red-500 hover:text-red-700"
               >
                 dismiss
               </button>
@@ -458,17 +446,17 @@ export default function SharkAIReviewPage() {
         <AnimatePresence>
           {undoAction && (
             <motion.div
-              className="mx-4 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/80 border border-slate-600/50 backdrop-blur-sm"
+              className="mx-4 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-stone-200 shadow-md"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
             >
-              <span className="text-xs text-slate-300 flex-1">
+              <span className="text-xs text-stone-600 flex-1">
                 {undoAction.action === 'CANCEL' ? 'Cancelled' : 'Keeping'} {undoAction.sub.name}
               </span>
               <button
                 onClick={handleUndo}
-                className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 text-xs text-white hover:bg-white/20 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-stone-100 text-xs text-[#1A2E22] hover:bg-stone-200 transition-colors"
               >
                 <Undo2 className="w-3 h-3" />
                 Undo
@@ -477,7 +465,7 @@ export default function SharkAIReviewPage() {
           )}
         </AnimatePresence>
 
-        {/* Confetti overlay */}
+        {/* Confetti replacement → editorial stamp animation */}
         <AnimatePresence>
           {showConfetti && (
             <motion.div
@@ -486,31 +474,24 @@ export default function SharkAIReviewPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {[...Array(8)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-3 h-3 rounded-full"
-                  style={{
-                    background: ['#22d3ee', '#14b8a6', '#f59e0b', '#ec4899', '#8b5cf6', '#10b981', '#06b6d4', '#f97316'][i],
-                  }}
-                  initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-                  animate={{
-                    x: Math.cos((i * 45 * Math.PI) / 180) * 120,
-                    y: Math.sin((i * 45 * Math.PI) / 180) * 120,
-                    opacity: 0,
-                    scale: 0,
-                  }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                />
-              ))}
-              <motion.p
-                className="text-2xl font-bold text-teal-300"
-                initial={{ scale: 0 }}
-                animate={{ scale: [0, 1.2, 1] }}
+              {/* Radial emerald pulse */}
+              <motion.div
+                className="absolute w-48 h-48 rounded-full bg-emerald-100"
+                initial={{ scale: 0, opacity: 0.6 }}
+                animate={{ scale: 3, opacity: 0 }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+              />
+              {/* Stamp card */}
+              <motion.div
+                className="bg-white border border-stone-200 shadow-lg rounded-lg px-6 py-4 text-center"
+                initial={{ scale: 0, rotate: -5 }}
+                animate={{ scale: [0, 1.1, 1], rotate: [0, 2, 0] }}
                 transition={{ duration: 0.5 }}
               >
-                Cancelled!
-              </motion.p>
+                <p className="font-serif text-lg text-[#064E3B] font-medium">
+                  Marked for cancellation
+                </p>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -519,16 +500,16 @@ export default function SharkAIReviewPage() {
         {pendingIntent && currentSub ? (
           /* Single-action confirmation — user typed "keep" or "cancel" */
           <motion.div
-            className="border-t border-white/10 bg-slate-900/50 backdrop-blur-sm px-4 py-4"
+            className="border-t border-stone-200 px-4 py-4"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <button
               onClick={() => { handleDecision(pendingIntent); setPendingIntent(null); }}
-              className={`w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+              className={`w-full py-3.5 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
                 pendingIntent === 'KEEP'
-                  ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white'
-                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                  ? 'bg-[#064E3B] text-white'
+                  : 'bg-orange-600 text-white'
               }`}
             >
               {pendingIntent === 'KEEP' ? (
@@ -539,7 +520,7 @@ export default function SharkAIReviewPage() {
             </button>
             <button
               onClick={() => setPendingIntent(null)}
-              className="w-full mt-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              className="w-full mt-2 text-xs text-stone-400 hover:text-stone-600 transition-colors"
             >
               Never mind, keep chatting
             </button>
@@ -556,18 +537,18 @@ export default function SharkAIReviewPage() {
             isProcessing={chat.isSending}
           />
         ) : chat.phase === 'decided' ? null : (
-          <div className="border-t border-white/10 bg-slate-900/50 backdrop-blur-sm">
+          <div className="border-t border-stone-200 bg-[#FDFCF8]">
             {/* Decision prompt — shown after first full exchange (AI → user → AI) */}
             {chat.phase === 'chatting' && chat.messages.length >= 3 && !chat.isSending && (
               <motion.div
-                className="mx-4 mt-3 p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-between"
+                className="mx-4 mt-3 p-2.5 rounded-lg bg-stone-50 border border-stone-200 flex items-center justify-between"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <span className="text-xs text-cyan-300/80">Made up your mind?</span>
+                <span className="text-sm font-serif italic text-stone-500">Ready to record your verdict?</span>
                 <button
                   onClick={() => chat.forceDeciding()}
-                  className="px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-xs text-cyan-300 font-medium hover:bg-cyan-500/30 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-[#064E3B] text-xs text-white font-medium hover:bg-[#053D2E] transition-colors flex items-center gap-1"
                 >
                   Record Decision
                   <ChevronRight className="w-3 h-3" />
@@ -584,8 +565,8 @@ export default function SharkAIReviewPage() {
               />
             )}
 
-            {/* Text input */}
-            <div className="flex items-center gap-2 px-4 py-3">
+            {/* Text input — "Field Note Input" */}
+            <div className="flex items-center gap-3 px-4 py-3">
               <input
                 ref={inputRef}
                 type="text"
@@ -597,16 +578,16 @@ export default function SharkAIReviewPage() {
                     handleSend();
                   }
                 }}
-                placeholder="Type your reply..."
+                placeholder="Add a note for the record..."
                 disabled={chat.isSending || chat.phase === 'loading'}
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/40 disabled:opacity-50 transition-colors"
+                className="flex-1 border-b-2 border-stone-200 focus:border-[#1A2E22] bg-transparent text-lg font-serif outline-none placeholder:text-stone-300 placeholder:italic text-[#1A2E22] py-2 disabled:opacity-50 transition-colors"
               />
               <button
                 onClick={handleSend}
                 disabled={!inputValue.trim() || chat.isSending}
-                className="p-2.5 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="p-2 text-[#064E3B] hover:text-[#053D2E] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-5 h-5" />
               </button>
             </div>
           </div>

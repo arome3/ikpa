@@ -131,43 +131,43 @@ export function ActionItemsWalkthrough({
       {/* Header — tabs when both categories, plain header for single category */}
       {hasBoth ? (
         <>
-          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider text-center mb-4">
+          <h3 className="text-sm font-semibold text-stone-400 uppercase tracking-wider text-center mb-4">
             Your Action Items
           </h3>
           <div className="flex gap-2 mb-4 px-4">
             <button
               onClick={() => switchTab('cancelled')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'cancelled'
-                  ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
-                  : 'bg-white/5 border border-white/10 text-slate-500 hover:text-slate-300'
+                  ? 'bg-stone-800 text-white'
+                  : 'bg-white border border-stone-200 text-stone-500 hover:text-stone-700'
               }`}
             >
               Cancelled ({cancelledSubs.length})
-              {cancelledFinished && <Check className="w-3.5 h-3.5 text-amber-400" />}
+              {cancelledFinished && <Check className="w-3.5 h-3.5" />}
             </button>
             <button
               onClick={() => switchTab('kept')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 activeTab === 'kept'
-                  ? 'bg-teal-500/20 border border-teal-500/40 text-teal-300'
-                  : 'bg-white/5 border border-white/10 text-slate-500 hover:text-slate-300'
+                  ? 'bg-[#064E3B] text-white'
+                  : 'bg-white border border-stone-200 text-stone-500 hover:text-stone-700'
               }`}
             >
               Kept ({keptSubs.length})
-              {keptFinished && <Check className="w-3.5 h-3.5 text-teal-400" />}
+              {keptFinished && <Check className="w-3.5 h-3.5" />}
             </button>
           </div>
         </>
       ) : (
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider text-center mb-4">
+        <h3 className="text-sm font-semibold text-stone-400 uppercase tracking-wider text-center mb-4">
           {hasCancelled ? 'Cancellation Guides' : 'Savings Tips'}
         </h3>
       )}
 
       {/* Counter */}
       {currentTotal > 1 && (
-        <p className="text-center text-xs text-slate-500 mb-3">
+        <p className="text-center font-mono text-xs text-stone-400 mb-3">
           {currentIndex + 1} of {currentTotal}
         </p>
       )}
@@ -218,10 +218,10 @@ export function ActionItemsWalkthrough({
                   width: isActive ? 16 : 6,
                   height: 6,
                   backgroundColor: isActive
-                    ? (activeTab === 'cancelled' ? 'rgba(251, 191, 36, 0.6)' : 'rgba(45, 212, 191, 0.6)')
+                    ? (activeTab === 'cancelled' ? 'rgb(41, 37, 36)' : 'rgb(6, 78, 59)')
                     : isViewed
-                      ? 'rgba(255, 255, 255, 0.3)'
-                      : 'rgba(255, 255, 255, 0.1)',
+                      ? 'rgb(168, 162, 158)'
+                      : 'rgb(214, 211, 209)',
                 }}
                 transition={{ duration: 0.2 }}
               />
@@ -233,10 +233,10 @@ export function ActionItemsWalkthrough({
         <button
           onClick={handleGotIt}
           disabled={allFinished}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
             allFinished
-              ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
-              : 'bg-white/10 border border-white/15 text-white hover:bg-white/15 active:scale-[0.97]'
+              ? 'bg-emerald-50 border border-emerald-200 text-[#064E3B]'
+              : 'bg-[#064E3B] text-white hover:bg-[#053D2E] active:scale-[0.97]'
           }`}
         >
           {allFinished ? (

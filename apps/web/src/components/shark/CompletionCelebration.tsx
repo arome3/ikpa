@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { PartyPopper, TrendingDown, Check, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { SavingsTicker } from './SavingsTicker';
 
 interface CompletionCelebrationProps {
@@ -26,72 +26,52 @@ export function CompletionCelebration({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: 'spring', stiffness: 200, damping: 20 }}
     >
-      {/* Celebration icon */}
+      {/* Audit complete icon */}
       <motion.div
         className="relative mb-6"
-        initial={{ rotate: -10 }}
-        animate={{ rotate: [0, -5, 5, 0] }}
-        transition={{ delay: 0.3, duration: 0.5 }}
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
       >
-        <div className="p-5 bg-gradient-to-br from-cyan-500/20 to-teal-500/20 rounded-full">
-          <PartyPopper className="w-12 h-12 text-cyan-300" />
+        <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-full">
+          <Check className="w-12 h-12 text-[#064E3B]" />
         </div>
-        {/* Burst particles */}
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 rounded-full bg-cyan-400"
-            style={{
-              top: '50%',
-              left: '50%',
-            }}
-            initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-            animate={{
-              x: Math.cos((i * 60 * Math.PI) / 180) * 60,
-              y: Math.sin((i * 60 * Math.PI) / 180) * 60,
-              opacity: 0,
-              scale: 0,
-            }}
-            transition={{ delay: 0.5, duration: 0.8, ease: 'easeOut' }}
-          />
-        ))}
       </motion.div>
 
       <motion.h2
-        className="text-2xl font-bold text-white mb-2"
+        className="text-3xl font-serif text-[#1A2E22] mb-2"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.3 }}
       >
-        All Reviewed!
+        Audit Complete
       </motion.h2>
 
       <motion.p
-        className="text-slate-400 mb-6 max-w-xs"
+        className="text-stone-500 mb-6 max-w-xs"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.4 }}
       >
         You reviewed {totalReviewed} subscription{totalReviewed !== 1 ? 's' : ''}
       </motion.p>
 
-      {/* Savings counter */}
+      {/* Savings card */}
       {totalSaved > 0 && (
         <motion.div
-          className="mb-6 px-6 py-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 to-teal-500/10 border border-teal-500/20"
+          className="mb-6 px-8 py-5 rounded-lg bg-white border border-stone-200 shadow-sm"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
         >
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingDown className="w-4 h-4 text-teal-400" />
-            <p className="text-sm text-teal-300/70">Annual Savings</p>
-          </div>
+          <p className="text-xs uppercase tracking-wider text-stone-400 mb-1">
+            Annual Savings
+          </p>
           <SavingsTicker
             amount={totalSaved}
             currency={currency}
             size="lg"
-            className="text-teal-300"
+            className="text-[#064E3B] font-serif"
             duration={1500}
           />
         </motion.div>
@@ -99,26 +79,18 @@ export function CompletionCelebration({
 
       {/* Stats */}
       <motion.div
-        className="flex gap-6"
+        className="flex gap-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.6 }}
       >
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-teal-500/20 rounded-full">
-            <Check className="w-3.5 h-3.5 text-teal-400" />
-          </div>
-          <span className="text-sm text-slate-300">
-            <span className="font-semibold text-white">{keptCount}</span> kept
-          </span>
+        <div className="px-6 py-3 bg-white border border-stone-200 rounded-lg shadow-sm">
+          <p className="text-2xl font-serif text-[#1A2E22]">{keptCount}</p>
+          <p className="text-xs uppercase tracking-wider text-stone-400 mt-1">Kept</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-amber-500/20 rounded-full">
-            <X className="w-3.5 h-3.5 text-amber-400" />
-          </div>
-          <span className="text-sm text-slate-300">
-            <span className="font-semibold text-white">{cancelledCount}</span> cancelled
-          </span>
+        <div className="px-6 py-3 bg-white border border-stone-200 rounded-lg shadow-sm">
+          <p className="text-2xl font-serif text-[#1A2E22]">{cancelledCount}</p>
+          <p className="text-xs uppercase tracking-wider text-stone-400 mt-1">Cancelled</p>
         </div>
       </motion.div>
     </motion.div>

@@ -42,69 +42,69 @@ export function SubscriptionDetailSheet({
         <CategoryBadge category={subscription.category} size="md" />
         <StatusBadge status={subscription.status} />
         {subscription.lastDecision && (
-          <span className="text-xs text-slate-500 ml-auto">
+          <span className="text-xs text-stone-400 ml-auto">
             Last decision: {subscription.lastDecision.action}
           </span>
         )}
       </div>
 
       {/* Cost card */}
-      <div className="p-5 rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10">
+      <div className="p-5 rounded-lg bg-white border border-stone-200 shadow-sm">
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="text-xs text-slate-400 mb-1">Monthly</p>
-            <p className="text-2xl font-bold text-white tabular-nums">
+            <p className="text-xs uppercase tracking-wider text-stone-400 mb-1">Monthly</p>
+            <p className="text-2xl font-serif font-medium text-[#1A2E22] tabular-nums">
               {formatCurrency(subscription.monthlyCost, subscription.currency)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-slate-400 mb-1">Annual</p>
-            <p className="text-2xl font-bold text-white/80 tabular-nums">
+            <p className="text-xs uppercase tracking-wider text-stone-400 mb-1">Annual</p>
+            <p className="text-2xl font-serif font-medium text-stone-500 tabular-nums">
               {subscription.framing.annual}
             </p>
           </div>
         </div>
-        <div className="px-3 py-2.5 rounded-lg bg-white/5 text-sm text-slate-300">
+        <div className="px-3 py-2.5 rounded-lg bg-stone-50 border border-stone-200 text-sm text-stone-600">
           {subscription.framing.context}
         </div>
         {subscription.status === 'ZOMBIE' && (
-          <div className="mt-3 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/15 text-sm text-amber-200/90">
+          <div className="mt-3 px-3 py-2.5 rounded-lg bg-orange-50 border border-orange-200 text-sm text-orange-700">
             {subscription.framing.impact}
           </div>
         )}
       </div>
 
       {/* Timeline */}
-      <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
-        <h3 className="text-sm font-medium text-white mb-3">Timeline</h3>
+      <div className="p-4 rounded-lg bg-white border border-stone-200 shadow-sm space-y-3">
+        <h3 className="text-sm font-serif font-medium text-[#1A2E22] mb-3">Timeline</h3>
         {subscription.firstChargeDate && (
           <div className="flex items-center gap-3 text-sm">
-            <Calendar className="w-4 h-4 text-slate-500" />
-            <span className="text-slate-400">First charge</span>
-            <span className="ml-auto text-white">
+            <Calendar className="w-4 h-4 text-stone-400" />
+            <span className="text-stone-500">First charge</span>
+            <span className="ml-auto font-mono text-[#1A2E22]">
               {new Date(subscription.firstChargeDate).toLocaleDateString()}
             </span>
           </div>
         )}
         {subscription.lastChargeDate && (
           <div className="flex items-center gap-3 text-sm">
-            <Calendar className="w-4 h-4 text-slate-500" />
-            <span className="text-slate-400">Last charge</span>
-            <span className="ml-auto text-white">
+            <Calendar className="w-4 h-4 text-stone-400" />
+            <span className="text-stone-500">Last charge</span>
+            <span className="ml-auto font-mono text-[#1A2E22]">
               {new Date(subscription.lastChargeDate).toLocaleDateString()}
             </span>
           </div>
         )}
         <div className="flex items-center gap-3 text-sm">
-          <Hash className="w-4 h-4 text-slate-500" />
-          <span className="text-slate-400">Total charges</span>
-          <span className="ml-auto text-white">{subscription.chargeCount}</span>
+          <Hash className="w-4 h-4 text-stone-400" />
+          <span className="text-stone-500">Total charges</span>
+          <span className="ml-auto font-mono text-[#1A2E22]">{subscription.chargeCount}</span>
         </div>
         {subscription.lastUsageDate && (
           <div className="flex items-center gap-3 text-sm">
-            <Clock className="w-4 h-4 text-slate-500" />
-            <span className="text-slate-400">Last used</span>
-            <span className="ml-auto text-white">
+            <Clock className="w-4 h-4 text-stone-400" />
+            <span className="text-stone-500">Last used</span>
+            <span className="ml-auto font-mono text-[#1A2E22]">
               {new Date(subscription.lastUsageDate).toLocaleDateString()}
             </span>
           </div>
@@ -118,9 +118,9 @@ export function SubscriptionDetailSheet({
             onClick={handleCancel}
             disabled={isProcessing}
             className={cn(
-              'flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all',
-              'bg-amber-500/15 border border-amber-500/30 text-amber-300',
-              'hover:bg-amber-500/25',
+              'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all',
+              'bg-orange-50 border border-orange-200 text-orange-700',
+              'hover:bg-orange-100',
               isProcessing && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -130,9 +130,9 @@ export function SubscriptionDetailSheet({
             onClick={onReviewLater}
             disabled={isProcessing}
             className={cn(
-              'px-4 py-3 rounded-xl font-medium text-sm transition-all',
-              'bg-white/10 border border-white/10 text-slate-300',
-              'hover:bg-white/15',
+              'px-4 py-3 rounded-lg font-medium text-sm transition-all',
+              'bg-white border border-stone-200 text-stone-500',
+              'hover:bg-stone-50',
               isProcessing && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -142,9 +142,9 @@ export function SubscriptionDetailSheet({
             onClick={onKeep}
             disabled={isProcessing}
             className={cn(
-              'flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all',
-              'bg-teal-500/15 border border-teal-500/30 text-teal-300',
-              'hover:bg-teal-500/25',
+              'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all',
+              'bg-emerald-50 border border-emerald-200 text-[#064E3B]',
+              'hover:bg-emerald-100',
               isProcessing && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -157,14 +157,14 @@ export function SubscriptionDetailSheet({
       <AnimatePresence>
         {showCancelModal && (
           <motion.div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowCancelModal(false)}
           >
             <motion.div
-              className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl p-6"
+              className="w-full max-w-md bg-white border border-stone-200 rounded-xl shadow-xl p-6"
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
@@ -172,23 +172,23 @@ export function SubscriptionDetailSheet({
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-400" />
-                  <h3 className="text-lg font-semibold text-white">Confirm Cancellation</h3>
+                  <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  <h3 className="text-lg font-serif font-medium text-[#1A2E22]">Confirm Cancellation</h3>
                 </div>
                 <button
                   onClick={() => setShowCancelModal(false)}
-                  className="p-1 rounded-lg hover:bg-white/10"
+                  className="p-1 rounded-lg hover:bg-stone-100 transition-colors"
                 >
-                  <X className="w-5 h-5 text-slate-400" />
+                  <X className="w-5 h-5 text-stone-400" />
                 </button>
               </div>
 
-              <p className="text-sm text-slate-300 mb-2">
-                Cancel <span className="font-medium text-white">{subscription.name}</span>?
+              <p className="text-sm text-stone-600 mb-2">
+                Cancel <span className="font-medium text-[#1A2E22]">{subscription.name}</span>?
               </p>
-              <div className="px-3 py-2 rounded-lg bg-teal-500/10 border border-teal-500/20 mb-4">
-                <p className="text-xs text-teal-300/70">Annual savings</p>
-                <p className="text-lg font-bold text-teal-300">
+              <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 mb-4">
+                <p className="text-xs uppercase tracking-wider text-stone-400">Annual savings</p>
+                <p className="text-lg font-serif font-medium text-[#064E3B]">
                   {subscription.framing.annual}
                 </p>
               </div>
@@ -197,14 +197,14 @@ export function SubscriptionDetailSheet({
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 placeholder="Reason (optional)"
-                className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-white/20 resize-none mb-4"
+                className="w-full px-3 py-2.5 rounded-lg bg-stone-50 border border-stone-200 text-[#1A2E22] text-sm placeholder-stone-400 focus:outline-none focus:border-[#1A2E22] resize-none mb-4 transition-colors"
                 rows={2}
               />
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowCancelModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-white/10 text-slate-300 font-medium text-sm hover:bg-white/15 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-white border border-stone-200 text-stone-600 font-medium text-sm hover:bg-stone-50 transition-colors"
                 >
                   Nevermind
                 </button>
@@ -212,8 +212,8 @@ export function SubscriptionDetailSheet({
                   onClick={confirmCancel}
                   disabled={isProcessing}
                   className={cn(
-                    'flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all',
-                    'bg-amber-500 text-white hover:bg-amber-400',
+                    'flex-1 px-4 py-2.5 rounded-lg font-medium text-sm transition-all',
+                    'bg-orange-600 text-white hover:bg-orange-500',
                     isProcessing && 'opacity-50 cursor-not-allowed'
                   )}
                 >

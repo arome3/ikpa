@@ -40,11 +40,11 @@ export function KeepRecommendation({
   if (isLoading) {
     return (
       <motion.div
-        className="mx-4 mb-4 p-4 rounded-xl bg-teal-500/10 border border-teal-500/20"
+        className="mx-4 mb-4 p-4 rounded-lg bg-white border border-stone-200 shadow-sm"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center gap-2 text-teal-300 text-sm">
+        <div className="flex items-center gap-2 text-stone-500 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
           Finding ways to save on {subscriptionName}...
         </div>
@@ -56,14 +56,14 @@ export function KeepRecommendation({
 
   return (
     <motion.div
-      className="mx-4 mb-4 p-4 rounded-xl bg-teal-500/10 border border-teal-500/20"
+      className="mx-4 mb-4 p-4 rounded-lg bg-white border border-stone-200 shadow-sm"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Lightbulb className="w-4 h-4 text-teal-400" />
-        <h3 className="text-sm font-medium text-teal-300">
+        <Lightbulb className="w-4 h-4 text-stone-500" />
+        <h3 className="text-sm font-medium text-[#1A2E22]">
           Smart tips for {recommendation.subscriptionName}
         </h3>
       </div>
@@ -78,15 +78,15 @@ export function KeepRecommendation({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 }}
           >
-            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 text-xs flex items-center justify-center mt-0.5 font-medium">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#064E3B] text-white text-xs flex items-center justify-center mt-0.5 font-medium">
               {i + 1}
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-200">{tip.title}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{tip.description}</p>
+              <p className="text-sm font-medium text-[#1A2E22]">{tip.title}</p>
+              <p className="text-xs text-stone-500 mt-0.5">{tip.description}</p>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 {tip.estimatedSavings && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-xs text-emerald-300">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-xs text-[#064E3B]">
                     <TrendingDown className="w-3 h-3" />
                     {tip.estimatedSavings}
                   </span>
@@ -96,7 +96,7 @@ export function KeepRecommendation({
                     href={tip.actionUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs text-[#064E3B] hover:text-[#053D2E] transition-colors"
                   >
                     <ExternalLink className="w-3 h-3" />
                     View plans
@@ -110,8 +110,8 @@ export function KeepRecommendation({
 
       {/* Summary */}
       {recommendation.summary && (
-        <div className="p-2.5 rounded-lg bg-teal-500/10 border border-teal-500/15">
-          <p className="text-xs text-teal-300/80">{recommendation.summary}</p>
+        <div className="p-2.5 rounded-lg bg-stone-50 border border-stone-200">
+          <p className="text-xs text-stone-600">{recommendation.summary}</p>
         </div>
       )}
     </motion.div>

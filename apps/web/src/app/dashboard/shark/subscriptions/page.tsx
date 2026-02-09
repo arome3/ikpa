@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Search, Fish } from 'lucide-react';
+import { Search, ClipboardCheck } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useShark, type SubscriptionStatus } from '@/hooks/useShark';
 import { SubscriptionCard } from '@/components/shark';
@@ -36,123 +36,118 @@ export default function SharkSubscriptionsPage() {
     : subscriptions;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-950 to-slate-900">
-      {/* Ambient */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -left-20 w-96 h-96 bg-cyan-500/8 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative max-w-lg mx-auto px-4 py-6 safe-top">
-        {/* Header */}
-        <motion.header
-          className="flex items-center gap-3 mb-6"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
+    <div className="max-w-3xl mx-auto px-4 py-6 safe-top">
+      {/* Header */}
+      <motion.header
+        className="mb-6"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <button
+          onClick={() => router.push('/dashboard/shark')}
+          className="text-stone-500 hover:text-[#1A2E22] font-serif text-sm transition-colors mb-6"
         >
-          <button
-            onClick={() => router.push('/dashboard/shark')}
-            className="p-2 -ml-2 rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-400" />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-white">Subscriptions</h1>
-            <p className="text-xs text-slate-400">
-              {subscriptions.length} tracked
-            </p>
-          </div>
-        </motion.header>
+          &larr; Back to Shark Auditor
+        </button>
+        <div>
+          <h1 className="text-3xl md:text-4xl font-serif text-[#1A2E22] tracking-tight">
+            Subscriptions
+          </h1>
+          <p className="text-sm text-stone-500 mt-1">
+            {subscriptions.length} tracked
+          </p>
+        </div>
+      </motion.header>
 
-        {/* Summary mini */}
-        {summary && (
-          <motion.div
-            className="mb-4 px-4 py-3 rounded-xl bg-white/5 border border-white/10"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
+      {/* Summary mini */}
+      {summary && (
+        <motion.div
+          className="mb-5 px-5 py-4 rounded-lg bg-white border border-stone-200 shadow-sm"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+        >
+          <p className="text-xs uppercase tracking-wider text-stone-400 mb-0.5">Total monthly cost</p>
+          <p className="text-xl font-serif font-medium text-[#1A2E22] tabular-nums">
+            {formatCurrency(summary.totalMonthlyCost, summary.currency)}
+          </p>
+        </motion.div>
+      )}
+
+      {/* Search */}
+      <motion.div
+        className="relative mb-4"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+        <input
+          type="text"
+          placeholder="Search subscriptions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-stone-200 text-[#1A2E22] text-sm placeholder-stone-400 focus:outline-none focus:border-[#1A2E22] transition-colors"
+        />
+      </motion.div>
+
+      {/* Filter pills */}
+      <motion.div
+        className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-none"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+      >
+        {FILTER_OPTIONS.map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setStatusFilter(value)}
+            className={cn(
+              'flex-shrink-0 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all border',
+              statusFilter === value
+                ? 'bg-stone-800 border-stone-800 text-white'
+                : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700'
+            )}
           >
-            <p className="text-xs text-slate-400 mb-0.5">Total monthly cost</p>
-            <p className="text-xl font-bold text-white tabular-nums">
-              {formatCurrency(summary.totalMonthlyCost, summary.currency)}
+            {label}
+          </button>
+        ))}
+      </motion.div>
+
+      {/* Subscription list */}
+      <div>
+        {isLoadingSubscriptions ? (
+          [...Array(5)].map((_, i) => (
+            <div key={i} className="h-20 bg-stone-100 animate-pulse rounded-lg mb-2" />
+          ))
+        ) : filtered.length === 0 ? (
+          <motion.div
+            className="text-center py-12"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <div className="inline-flex p-4 bg-stone-100 rounded-full mb-4">
+              <ClipboardCheck className="w-8 h-8 text-stone-400" />
+            </div>
+            <p className="font-serif text-[#1A2E22] font-medium mb-1">
+              {searchQuery ? 'No matches found' : 'No subscriptions'}
+            </p>
+            <p className="text-sm text-stone-500">
+              {searchQuery
+                ? 'Try a different search term'
+                : 'Run a scan to detect recurring charges'}
             </p>
           </motion.div>
+        ) : (
+          filtered.map((sub, i) => (
+            <SubscriptionCard
+              key={sub.id}
+              subscription={sub}
+              onClick={() => router.push(`/dashboard/shark/subscriptions/${sub.id}`)}
+              delay={0.02 * i}
+            />
+          ))
         )}
-
-        {/* Search */}
-        <motion.div
-          className="relative mb-4"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input
-            type="text"
-            placeholder="Search subscriptions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-white/20"
-          />
-        </motion.div>
-
-        {/* Filter pills */}
-        <motion.div
-          className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
-          {FILTER_OPTIONS.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setStatusFilter(value)}
-              className={cn(
-                'flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium transition-all border',
-                statusFilter === value
-                  ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
-                  : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </motion.div>
-
-        {/* Subscription list */}
-        <div className="space-y-2">
-          {isLoadingSubscriptions ? (
-            [...Array(5)].map((_, i) => (
-              <div key={i} className="h-20 bg-white/5 animate-pulse rounded-xl" />
-            ))
-          ) : filtered.length === 0 ? (
-            <motion.div
-              className="text-center py-12"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <div className="inline-flex p-4 bg-cyan-500/10 rounded-full mb-4">
-                <Fish className="w-8 h-8 text-cyan-400/60" />
-              </div>
-              <p className="text-white font-medium mb-1">
-                {searchQuery ? 'No matches found' : 'No subscriptions'}
-              </p>
-              <p className="text-sm text-slate-400">
-                {searchQuery
-                  ? 'Try a different search term'
-                  : 'Run a scan to detect recurring charges'}
-              </p>
-            </motion.div>
-          ) : (
-            filtered.map((sub, i) => (
-              <SubscriptionCard
-                key={sub.id}
-                subscription={sub}
-                onClick={() => router.push(`/dashboard/shark/subscriptions/${sub.id}`)}
-                delay={0.02 * i}
-              />
-            ))
-          )}
-        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { ClipboardCheck } from 'lucide-react';
 import type { ChatMessage } from '@/hooks/useSharkChat';
 
 interface ChatBubbleProps {
@@ -25,7 +25,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
       elements.push(
         <ul key={`list-${elements.length}`} className="list-disc list-inside space-y-0.5 my-1.5">
           {listItems.items.map((item, i) => (
-            <li key={i} className="text-slate-200">{item}</li>
+            <li key={i} className="text-stone-700">{item}</li>
           ))}
         </ul>
       );
@@ -33,7 +33,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
       elements.push(
         <ol key={`list-${elements.length}`} className="list-decimal list-inside space-y-0.5 my-1.5">
           {listItems.items.map((item, i) => (
-            <li key={i} className="text-slate-200">{item}</li>
+            <li key={i} className="text-stone-700">{item}</li>
           ))}
         </ol>
       );
@@ -88,40 +88,74 @@ function renderMarkdown(text: string): React.ReactNode[] {
   return elements;
 }
 
-/** Render inline markdown: **bold** */
+/** Render inline markdown: **bold** and $X,XXX dollar highlights */
 function renderInline(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*.*?\*\*)/);
-  return parts.map((part, i) => {
+  // First pass: split on **bold**
+  const boldParts = text.split(/(\*\*.*?\*\*)/);
+  return boldParts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
-        <strong key={i} className="font-semibold text-white">
-          {part.slice(2, -2)}
+        <strong key={i} className="font-semibold text-[#1A2E22]">
+          {highlightDollars(part.slice(2, -2), `b${i}`)}
         </strong>
       );
     }
-    return <span key={i}>{part}</span>;
+    return <React.Fragment key={i}>{highlightDollars(part, `t${i}`)}</React.Fragment>;
+  });
+}
+
+/** Wrap $X,XXX amounts in monospace emerald */
+function highlightDollars(text: string, keyPrefix: string): React.ReactNode {
+  const dollarPattern = /(\$[\d,]+(?:\.\d{2})?)/g;
+  const parts = text.split(dollarPattern);
+  if (parts.length === 1) return text;
+  return parts.map((seg, j) => {
+    if (dollarPattern.test(seg)) {
+      // Reset regex lastIndex since we reuse it
+      dollarPattern.lastIndex = 0;
+      return (
+        <span key={`${keyPrefix}-${j}`} className="font-mono font-semibold text-[#064E3B]">
+          {seg}
+        </span>
+      );
+    }
+    return <React.Fragment key={`${keyPrefix}-${j}`}>{seg}</React.Fragment>;
   });
 }
 
 export function ChatBubble({ message }: ChatBubbleProps) {
   const isUser = message.role === 'user';
 
+  if (isUser) {
+    return (
+      <motion.div
+        className="max-w-2xl mx-auto my-4 flex justify-end"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+      >
+        <div className="max-w-[70%] px-5 py-3 rounded-lg bg-stone-50 border border-stone-200 text-sm text-stone-600 font-sans italic">
+          {message.content}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // AI message — "Analyst Briefing Note"
   return (
     <motion.div
-      className={cn('flex', isUser ? 'justify-end' : 'justify-start')}
-      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+      className="max-w-2xl mx-auto my-6"
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <div
-        className={cn(
-          'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
-          isUser
-            ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-50 rounded-tr-sm'
-            : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-sm',
-        )}
-      >
-        {isUser ? message.content : renderMarkdown(message.content)}
+      <div className="relative bg-white border border-stone-200 rounded-lg p-6 md:p-8 shadow-sm">
+        {/* Stamp icon */}
+        <ClipboardCheck className="absolute top-4 left-4 w-5 h-5 text-stone-200" />
+        {/* Body */}
+        <div className="pl-8 font-serif text-lg leading-relaxed text-stone-800">
+          {renderMarkdown(message.content)}
+        </div>
       </div>
     </motion.div>
   );

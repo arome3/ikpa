@@ -18,7 +18,7 @@ export function ChatMessageList({ messages, isTyping }: ChatMessageListProps) {
   }, [messages.length, isTyping]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scrollbar-thin scrollbar-thumb-white/10">
+    <div className="flex-1 overflow-y-auto px-4 md:px-0 py-6 space-y-2 scrollbar-thin scrollbar-thumb-stone-200">
       {messages.map((msg) => (
         <ChatBubble key={msg.id} message={msg} />
       ))}
