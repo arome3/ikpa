@@ -14,7 +14,7 @@ const navItems = [
   { href: '/dashboard/expenses', label: 'Spend', icon: Wallet },
   { href: '/dashboard/gps', label: 'GPS', icon: Navigation },
   { href: '/dashboard/finance/goals', label: 'Goals', icon: Target },
-  { href: '/dashboard/opik', label: 'Opik', icon: Gauge },
+  // { href: '/dashboard/opik', label: 'Opik', icon: Gauge },
 ];
 
 /**

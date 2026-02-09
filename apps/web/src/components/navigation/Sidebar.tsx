@@ -27,7 +27,7 @@ const navItems = [
   { href: '/dashboard/shark', label: 'Shark', icon: Fish },
   { href: '/dashboard/future-self', label: 'Future Self', icon: Clock },
   { href: '/dashboard/commitments', label: 'Stakes', icon: ShieldCheck },
-  { href: '/dashboard/opik', label: 'Opik', icon: Gauge },
+  // { href: '/dashboard/opik', label: 'Opik', icon: Gauge },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 

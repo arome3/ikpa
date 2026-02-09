@@ -172,6 +172,7 @@ class ApiClient {
       }
       // Refresh failed — session is dead
       onAuthExpired?.();
+      throw new ApiError('Session expired', 401, responseData);
     }
 
     if (!response.ok) {
@@ -246,6 +247,7 @@ class ApiClient {
         return this.upload<T>(endpoint, formData, { ...options, _skipRefresh: true });
       }
       onAuthExpired?.();
+      throw new ApiError('Session expired', 401, responseData);
     }
 
     if (!response.ok) {
