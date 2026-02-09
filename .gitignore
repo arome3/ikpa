@@ -55,6 +55,10 @@ sensitive/
 # Uploads
 apps/api/uploads/
 
+# Markdown docs (keep only README)
+*.md
+!README.md
+
 # Misc
 *.tsbuildinfo
 .eslintcache
