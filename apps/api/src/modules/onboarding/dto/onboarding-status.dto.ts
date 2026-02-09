@@ -31,10 +31,10 @@ export class OnboardingStepDto {
  * User profile data relevant to onboarding
  */
 export class OnboardingProfileDto {
-  @ApiPropertyOptional({ enum: Country, example: 'NIGERIA' })
+  @ApiPropertyOptional({ enum: Country, example: 'US' })
   country?: Country;
 
-  @ApiPropertyOptional({ enum: Currency, example: 'NGN' })
+  @ApiPropertyOptional({ enum: Currency, example: 'USD' })
   currency?: Currency;
 
   @ApiPropertyOptional({ enum: EmploymentType, example: 'EMPLOYED' })

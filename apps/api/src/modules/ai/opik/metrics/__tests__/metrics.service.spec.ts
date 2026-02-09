@@ -292,7 +292,7 @@ describe('MetricsService', () => {
       const datasetItem: DatasetItem = {
         input: 'I send money home',
         output: '',
-        context: { country: 'Nigeria' },
+        context: { country: 'US' },
       };
 
       const result = await service.evaluateCultural(

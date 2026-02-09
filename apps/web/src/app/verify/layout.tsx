@@ -1,5 +1,3 @@
-import { cn } from '@/lib/utils';
-
 export const metadata = {
   title: 'Verify Commitment | IKPA',
   description: 'Verify a commitment as a referee',

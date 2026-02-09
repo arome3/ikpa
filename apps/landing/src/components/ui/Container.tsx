@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils';
+
 interface ContainerProps {
   children: React.ReactNode;
   className?: string;
@@ -11,9 +13,9 @@ const sizeStyles = {
   xl: 'max-w-7xl',
 };
 
-export function Container({ children, className = '', size = 'lg' }: ContainerProps) {
+export function Container({ children, className, size = 'lg' }: ContainerProps) {
   return (
-    <div className={`mx-auto px-4 sm:px-6 lg:px-8 ${sizeStyles[size]} ${className}`}>
+    <div className={cn('mx-auto px-4 sm:px-6 lg:px-8', sizeStyles[size], className)}>
       {children}
     </div>
   );

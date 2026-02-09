@@ -127,7 +127,7 @@ export class FutureSelfCronService {
    */
   @Cron('0 9 * * 1', {
     name: 'weekly-future-self-letter-generation',
-    timeZone: 'Africa/Lagos', // WAT timezone for Africa-focused app
+    timeZone: 'UTC', // UTC timezone
   })
   async generateWeeklyLetters(): Promise<void> {
     const lockValue = randomUUID();
@@ -395,7 +395,7 @@ export class FutureSelfCronService {
    */
   @Cron('0 * * * *', {
     name: 'retry-failed-future-self-letters',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async retryFailedLetters(): Promise<void> {
     const lockValue = randomUUID();
@@ -608,14 +608,14 @@ export class FutureSelfCronService {
 
   /**
    * Reset missed streaks
-   * Runs daily at 8:00 AM Africa/Lagos
+   * Runs daily at 8:00 AM UTC
    *
    * Finds all ACTIVE commitments where lastCheckinDate < yesterday
    * (1-day grace period) and resets their streakDays to 0.
    */
   @Cron('0 8 * * *', {
     name: 'reset-missed-streaks',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async resetMissedStreaks(): Promise<void> {
     const lockValue = randomUUID();
@@ -632,13 +632,12 @@ export class FutureSelfCronService {
     }
 
     try {
-      // Calculate yesterday in Africa/Lagos timezone (UTC+1)
+      // Calculate yesterday in UTC
       const now = new Date();
-      const lagosTime = new Date(now.getTime() + 1 * 60 * 60 * 1000);
       const yesterday = new Date(Date.UTC(
-        lagosTime.getUTCFullYear(),
-        lagosTime.getUTCMonth(),
-        lagosTime.getUTCDate() - 1,
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - 1,
       ));
 
       // Find ACTIVE commitments with missed check-ins (streakDays > 0 and lastCheckinDate < yesterday)
@@ -669,14 +668,14 @@ export class FutureSelfCronService {
 
   /**
    * Send daily check-in reminders
-   * Runs daily at 8:05 AM Africa/Lagos
+   * Runs daily at 8:05 AM UTC
    *
    * Finds all ACTIVE commitments where user has NOT checked in today
    * and creates an in-app notification reminder.
    */
   @Cron('5 8 * * *', {
     name: 'send-daily-checkin-reminders',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async sendDailyReminders(): Promise<void> {
     const lockValue = randomUUID();
@@ -693,13 +692,12 @@ export class FutureSelfCronService {
     }
 
     try {
-      // Get today in Africa/Lagos timezone
+      // Get today in UTC
       const now = new Date();
-      const lagosTime = new Date(now.getTime() + 1 * 60 * 60 * 1000);
       const today = new Date(Date.UTC(
-        lagosTime.getUTCFullYear(),
-        lagosTime.getUTCMonth(),
-        lagosTime.getUTCDate(),
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
       ));
 
       // Find ACTIVE commitments where lastCheckinDate != today (haven't checked in today)
@@ -773,7 +771,7 @@ export class FutureSelfCronService {
 
   /**
    * Send weekly AI financial debriefs
-   * Runs every Sunday at 6:00 PM Africa/Lagos (WAT)
+   * Runs every Sunday at 6:00 PM UTC (WAT)
    *
    * For each active user with weekly reports enabled:
    * 1. Aggregates last 7 days: expenses by category, budget adherence, goal contributions, streak
@@ -783,7 +781,7 @@ export class FutureSelfCronService {
    */
   @Cron('0 17 * * 0', {
     name: 'send-weekly-debrief',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async sendWeeklyDebrief(): Promise<void> {
     const lockValue = randomUUID();
@@ -973,8 +971,8 @@ export class FutureSelfCronService {
     return {
       jobName: 'weekly-future-self-letter-generation',
       schedule: '0 9 * * 1',
-      timezone: 'Africa/Lagos',
-      description: 'Generates personalized Future Self letters for subscribed users every Monday at 9 AM WAT',
+      timezone: 'UTC',
+      description: 'Generates personalized Future Self letters for subscribed users every Monday at 9 AM UTC',
       batchConfig: this.batchConfig,
     };
   }

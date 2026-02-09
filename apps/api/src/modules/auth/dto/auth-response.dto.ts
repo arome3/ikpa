@@ -14,16 +14,16 @@ export class UserResponseDto {
   @ApiProperty({ example: 'user@example.com' })
   email!: string;
 
-  @ApiProperty({ example: 'Chidi Okonkwo' })
+  @ApiProperty({ example: 'Alex Johnson' })
   name!: string;
 
-  @ApiProperty({ enum: Country, example: 'NIGERIA' })
+  @ApiProperty({ enum: Country, example: 'US' })
   country!: Country;
 
-  @ApiProperty({ enum: Currency, example: 'NGN' })
+  @ApiProperty({ enum: Currency, example: 'USD' })
   currency!: Currency;
 
-  @ApiProperty({ example: 'Africa/Lagos' })
+  @ApiProperty({ example: 'UTC' })
   timezone!: string;
 
   @ApiProperty({ required: false, enum: EmploymentType })

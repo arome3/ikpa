@@ -79,7 +79,7 @@ export class FinanceCronService {
    */
   @Cron('0 2 * * *', {
     name: 'daily-cash-flow-score-calculation',
-    timeZone: 'Africa/Lagos', // WAT timezone for Africa-focused app
+    timeZone: 'UTC',
   })
   async calculateDailyScores(): Promise<void> {
     const lockValue = randomUUID();
@@ -328,8 +328,8 @@ export class FinanceCronService {
     return {
       jobName: 'daily-cash-flow-score-calculation',
       schedule: '0 2 * * *',
-      timezone: 'Africa/Lagos',
-      description: 'Calculates Cash Flow Score for all active users daily at 2 AM WAT',
+      timezone: 'UTC',
+      description: 'Calculates Cash Flow Score for all active users daily at 2 AM UTC',
       batchConfig: this.batchConfig,
     };
   }

@@ -303,7 +303,7 @@ describe('FutureSelfCronService', () => {
       expect(status).toEqual({
         jobName: 'weekly-future-self-letter-generation',
         schedule: '0 9 * * 1',
-        timezone: 'Africa/Lagos',
+        timezone: 'UTC',
         description: expect.any(String),
         batchConfig: expect.objectContaining({
           concurrency: expect.any(Number),

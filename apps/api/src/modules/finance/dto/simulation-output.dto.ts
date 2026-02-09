@@ -243,7 +243,7 @@ export class SimulationMetadataDto {
 
   @ApiProperty({
     description: 'Currency used for all monetary values',
-    example: 'NGN',
+    example: 'USD',
   })
   currency!: string;
 }

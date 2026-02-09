@@ -19,7 +19,7 @@ import { DebtType, Currency } from '@prisma/client';
  *
  * Supports various debt types:
  * - Bank loans, credit cards
- * - BNPL (Buy Now Pay Later) - common in Africa
+ * - BNPL (Buy Now Pay Later)
  * - Personal loans, mortgages
  * - Student loans, business loans
  */
@@ -142,7 +142,7 @@ export class CreateDebtDto {
 
   @ApiPropertyOptional({
     enum: Currency,
-    example: 'NGN',
+    example: 'USD',
     description: 'Currency (defaults to user currency)',
   })
   @IsEnum(Currency)

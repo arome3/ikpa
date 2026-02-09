@@ -52,7 +52,7 @@ export class CommitmentCronService {
   ) {}
 
   /**
-   * Daily enforcement check - runs at 6 AM Africa/Lagos time
+   * Daily enforcement check - runs at 6 AM UTC time
    *
    * Processes commitments where:
    * 1. Deadline has passed
@@ -73,7 +73,7 @@ export class CommitmentCronService {
    */
   @Cron('0 6 * * *', {
     name: 'commitment-enforcement',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async runEnforcement(): Promise<EnforcementResult> {
     const lockValue = randomUUID();
@@ -299,7 +299,7 @@ export class CommitmentCronService {
    */
   @Cron('0 * * * *', {
     name: 'commitment-reminders',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async sendReminders(): Promise<ReminderResult> {
     const lockValue = randomUUID();
@@ -402,7 +402,7 @@ export class CommitmentCronService {
   }
 
   /**
-   * Weekly referee follow-up - runs Monday at 9 AM Africa/Lagos time
+   * Weekly referee follow-up - runs Monday at 9 AM UTC time
    *
    * Sends follow-up emails to referees who haven't verified pending commitments.
    *
@@ -413,7 +413,7 @@ export class CommitmentCronService {
    */
   @Cron('0 9 * * 1', {
     name: 'commitment-referee-followup',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async followUpReferees(): Promise<{ followupsSent: number; skipped: number }> {
     const lockValue = randomUUID();
@@ -497,14 +497,14 @@ export class CommitmentCronService {
   }
 
   /**
-   * Daily group outcome resolution - runs at 7 AM Africa/Lagos time
+   * Daily group outcome resolution - runs at 7 AM UTC time
    *
    * Checks all ACTIVE groups where all member contracts are resolved.
    * If all succeeded, awards the group bonus badge.
    */
   @Cron('0 7 * * *', {
     name: 'commitment-group-resolve',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async resolveGroupOutcomes(): Promise<GroupOutcomeResult[]> {
     const lockValue = randomUUID();
@@ -547,14 +547,14 @@ export class CommitmentCronService {
   }
 
   /**
-   * Weekly group nudge - runs Sunday at 10 AM Africa/Lagos time
+   * Weekly group nudge - runs Sunday at 10 AM UTC time
    *
    * Sends a summary nudge for each ACTIVE group:
    * "3/4 members are on track this week!"
    */
   @Cron('0 10 * * 0', {
     name: 'commitment-group-nudge',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async sendGroupWeeklyNudges(): Promise<{ nudgesSent: number }> {
     const lockValue = randomUUID();
@@ -612,7 +612,7 @@ export class CommitmentCronService {
   }
 
   /**
-   * Daily slip detection — runs at 9 AM Africa/Lagos time
+   * Daily slip detection — runs at 9 AM UTC time
    *
    * Scans all ACTIVE commitment contracts, computes drift scores,
    * and generates personalized AI nudges when risk is detected.
@@ -620,7 +620,7 @@ export class CommitmentCronService {
    */
   @Cron(SLIP_DETECTOR.SCAN_CRON, {
     name: 'commitment-slip-detection',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async runSlipDetection(): Promise<SlipDetectionScanResult> {
     const lockValue = randomUUID();
@@ -753,38 +753,38 @@ export class CommitmentCronService {
       {
         jobName: 'commitment-enforcement',
         schedule: '0 6 * * *',
-        timezone: 'Africa/Lagos',
+        timezone: 'UTC',
         description: 'Daily enforcement check for expired commitments',
       },
       {
         jobName: 'commitment-reminders',
         schedule: '0 * * * *',
-        timezone: 'Africa/Lagos',
+        timezone: 'UTC',
         description: 'Hourly deadline reminders (7d, 1d, 1h before)',
       },
       {
         jobName: 'commitment-referee-followup',
         schedule: '0 9 * * 1',
-        timezone: 'Africa/Lagos',
+        timezone: 'UTC',
         description: 'Weekly referee follow-up for pending verifications',
       },
       {
         jobName: 'commitment-group-resolve',
         schedule: '0 7 * * *',
-        timezone: 'Africa/Lagos',
+        timezone: 'UTC',
         description: 'Daily group outcome resolution (bonus awards)',
       },
       {
         jobName: 'commitment-group-nudge',
         schedule: '0 10 * * 0',
-        timezone: 'Africa/Lagos',
+        timezone: 'UTC',
         description: 'Weekly group nudge notifications (Sundays)',
       },
       {
         jobName: 'commitment-slip-detection',
         schedule: SLIP_DETECTOR.SCAN_CRON,
-        timezone: 'Africa/Lagos',
-        description: 'Daily slip detection scan with AI nudges (9 AM WAT)',
+        timezone: 'UTC',
+        description: 'Daily slip detection scan with AI nudges (9 AM UTC)',
       },
     ];
   }

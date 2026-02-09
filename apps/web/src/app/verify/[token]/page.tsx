@@ -6,13 +6,11 @@ import {
   ShieldCheck,
   CheckCircle2,
   XCircle,
-  Clock,
   Loader2,
   AlertCircle,
   Users,
   HeartCrack,
   Lock,
-  Target,
   MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';

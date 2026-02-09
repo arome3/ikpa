@@ -61,8 +61,7 @@ Research-Backed Interventions That Work
 
 - 7-agent system achieved 80% time reduction in insurance claims
 - Specialized agents outperform single generalist AI
-- https://www.ibm.com/think/topics/ai-agents-in-finance  
-
+- https://www.ibm.com/think/topics/ai-agents-in-finance
 
 ---
 
@@ -100,7 +99,7 @@ Instead of one AI coach, IKPA deploys a team of specialized agents:
  │ │ AGENT │ │ AGENT │ │ AGENT │ │  
  │ │ │ │ │ │ │ │  
  │ │ Family & │ │ Progress │ │ 60-year-old │ │  
- │ │ African │ │ milestones │ │ you giving │ │  
+ │ │ │ │ milestones │ │ you giving │ │  
  │ │ context │ │ celebration │ │ wisdom │ │  
  │ └──────────────┘ └──────────────┘ └──────────────┘ │  
  │ │  
@@ -244,8 +243,7 @@ What Makes This THE BOMB:
 2.  Emotional Hook - Letters from future self create visceral reaction
 3.  Scientific Credibility - Monte Carlo simulations, not made-up numbers
 4.  Shareability - Users can share their "Financial Story" cards (viral potential)
-5.  Unique - No other hackathon project will have this  
-
+5.  Unique - No other hackathon project will have this
 
 AI Generation Flow:  
  // The Time Machine generates:  
@@ -284,8 +282,7 @@ Ikpa just ran 10,000 Monte Carlo simulations of your financial future.
 Here are two parallel universes:
 
 - In Universe A, you continue your current behavior.
-- In Universe B, you follow Ikpa's personalized guidance.  
-
+- In Universe B, you follow Ikpa's personalized guidance.
 
 And here's the magical part - your 38-year-old self wrote you a letter  
  from each universe. [Reads emotional AI-generated letter]
@@ -342,14 +339,12 @@ Tier 1: Demo-Critical (Must Ship)
 3.  "Future Self" Conversations - Talk to your 60-year-old self
 4.  Commitment Device Engine - Stake something on your goals
 5.  Goal Reframer - Auto-convert avoidance → approach goals
-6.  Cash Flow Score - Visual health metric with breakdown  
-
+6.  Cash Flow Score - Visual health metric with breakdown
 
 Tier 2: Hackathon Differentiators  
  7. Early Failure Detection - Proactive intervention system  
  8. Opik Agent Optimizer - Evolve prompts automatically  
- 9. Family Support Tracker - Africa-specific feature  
- 10. Shareable Story Cards - Viral potential
+ 9. Shareable Story Cards - Viral potential
 
 Tier 3: Nice to Have  
  11. Accountability Partner Integration - Social sharing  
@@ -398,8 +393,7 @@ Opik Metrics to Implement:
 3.  Usefulness Score - Practical, actionable guidance
 4.  Custom: Financial Safety - Doesn't recommend risky behavior
 5.  Custom: Cultural Sensitivity - Respects family obligations
-6.  Custom: Goal Alignment - Advice moves user toward goals  
-
+6.  Custom: Goal Alignment - Advice moves user toward goals
 
 Advanced Opik Features to Showcase:
 
@@ -427,10 +421,9 @@ Advanced Opik Features to Showcase:
 - FinancialSafetyScore
 - GoalAlignmentScore
 - CulturalSensitivityScore
-- InterventionEffectiveness  
+- InterventionEffectiveness
 
-
-2.3 Technical Implementation Plan
+  2.3 Technical Implementation Plan
 
 Timeline: 8-Week Execution Plan (2 Months)
 
@@ -439,23 +432,20 @@ Week 1-2: Foundation & Opik Core
 
 - Set up Opik account and TypeScript SDK
 - Create OpikService wrapper class
-- Wire basic tracing to existing auth endpoints (test integration)  
-
+- Wire basic tracing to existing auth endpoints (test integration)
 
 Days 4-7:
 
 - Implement AI module with Claude
 - Create financial context builder
 - Add Opik tracing to all LLM calls
-- Test: Every AI call appears in Opik dashboard  
-
+- Test: Every AI call appears in Opik dashboard
 
 Days 8-14:
 
 - Implement base evaluation metrics (Hallucination, Relevance)
 - Create custom FinancialSafety metric
-- Set up first Opik experiment comparing prompt versions  
-
+- Set up first Opik experiment comparing prompt versions
 
 Week 3-4: Core Backend Features  
  Days 15-21:
@@ -463,16 +453,14 @@ Week 3-4: Core Backend Features
 - Financial snapshot API (income, expenses, debts)
 - Cash Flow Score calculator with all 5 components
 - Savings rate, runway, dependency ratio calculations
-- API endpoint tests with real data  
-
+- API endpoint tests with real data
 
 Days 22-28:
 
 - AI Coach conversation endpoint with memory
 - Goal tracking CRUD endpoints
 - Family support tracker endpoints
-- Full financial context passed to Claude  
-
+- Full financial context passed to Claude
 
 Week 5-6: Frontend Development (Next.js)  
  Days 29-35:
@@ -480,16 +468,14 @@ Week 5-6: Frontend Development (Next.js)
 - Dashboard page with Cash Flow Score gauge
 - Beautiful onboarding wizard (4-5 screens)
 - Financial data input forms
-- Goal creation and progress UI  
-
+- Goal creation and progress UI
 
 Days 36-42:
 
 - AI Chat interface (conversational UI)
 - Family support tracker interface
 - Responsive design polish
-- Animation and micro-interactions  
-
+- Animation and micro-interactions
 
 Week 7: Advanced Opik Integration  
  Days 43-49:
@@ -498,8 +484,7 @@ Week 7: Advanced Opik Integration
 - A/B experiments: 3 different prompt variations
 - Custom metrics: GoalAlignment, CulturalSensitivity
 - Opik dashboard curation for demo
-- Generate 100+ traces with meaningful conversations  
-
+- Generate 100+ traces with meaningful conversations
 
 Week 8: Polish & Submission  
  Days 50-56:
@@ -508,8 +493,7 @@ Week 8: Polish & Submission
 - Demo video recording (3-5 minutes)
 - README and documentation
 - Opik insights writeup (how it improved your system)
-- Submission preparation and final review  
-
+- Submission preparation and final review
 
 ---
 
@@ -637,7 +621,7 @@ cut that in half."
  },  
  culturalFriend: {  
  triggers: ['family obligations mentioned', 'community savings', 'cultural context'],  
- traits: 'Understands African context, relatable language',  
+ traits: 'Understands context, relatable language',  
  example: "I know your mum's medical bills weren't in the plan. That's not a failure—it's being a  
  good child. Let's adjust the budget to handle both."  
  }  
@@ -645,7 +629,7 @@ cut that in half."
 
 System Prompt Structure:  
  const systemPrompt = `  
- You are Ikpa, an AI financial coach for young Africans.
+ You are Ikpa, an AI financial coach for young adults.
 
 ## Your Personality
 
@@ -654,8 +638,7 @@ You adapt your communication style based on what the user needs:
 - Be a SUPPORTIVE COACH when they need encouragement
 - Be a DIRECT ADVISOR when they want specific numbers and recommendations
 - Be a WISE MENTOR when they're learning new concepts
-- Be a CULTURAL FRIEND when discussing family obligations or cultural contexts  
-
+- Be a CULTURAL FRIEND when discussing family obligations or cultural contexts
 
 ## Key Principles
 
@@ -663,8 +646,7 @@ You adapt your communication style based on what the user needs:
 2.  ALWAYS ground advice in their actual numbers
 3.  CELEBRATE progress, no matter how small
 4.  EXPLAIN the "why" behind recommendations
-5.  Acknowledge that financial decisions aren't just about math—they're about values  
-
+5.  Acknowledge that financial decisions aren't just about math—they're about values
 
 ## Context
 
@@ -706,7 +688,7 @@ This multi-modal personality is a key judging differentiator - it shows sophisti
 
 1.  Hook (30s):  
     "92% of New Year's resolutions fail. Standard financial apps haven't solved this. Meet Ikpa - the first
-    AI system that uses proven behavioral science to actually change financial behavior."  
+    AI system that uses proven behavioral science to actually change financial behavior."
 
 2.  The Science (30s):  
     "We studied what actually works:
@@ -714,21 +696,18 @@ This multi-modal personality is a key judging differentiator - it shows sophisti
 - MIT's Future Self research shows talking to your future self increases savings by 16%
 - Commitment devices from behavioral economics significantly increase goal completion
 - Multi-agent systems outperform single AI assistants  
-  Ikpa implements ALL of these."  
-
+  Ikpa implements ALL of these."
 
 3.  Demo: Multi-Agent Financial Team (1min):  
     [Show user asking a question]  
-    User: "I keep failing to save money"  
-
+    User: "I keep failing to save money"
 
 [Show agent orchestra activating]
 
 - Analyst Agent analyzes spending patterns
 - Nudge Agent identifies psychological barriers
 - Future Self Agent prepares personalized message
-- Cultural Agent considers family obligations  
-
+- Cultural Agent considers family obligations
 
 [Show orchestrated response]  
  Ikpa: "I see you're spending ₦45K/month on food delivery. But let's  
@@ -741,8 +720,7 @@ This multi-modal personality is a key judging differentiator - it shows sophisti
     Future Self (Age 60): "I'm so glad 28-year-old me is thinking about  
     this. Let me tell you what happened when I finally started saving  
     consistently - by 45, I had enough to start my own business without  
-    loans. That feeling of freedom? It started with exactly this conversation."  
-
+    loans. That feeling of freedom? It started with exactly this conversation."
 
 [Show Cash Flow Score improving in real-time as user commits]
 
@@ -750,36 +728,34 @@ This multi-modal personality is a key judging differentiator - it shows sophisti
     [User creates a goal with stakes]  
     Goal: "Save ₦50,000 by March 31"  
     Stakes: Social accountability - "Notify my accountability partner if I miss a week"  
-    AI reframe: "Great approach goal! Your future self just smiled."  
+    AI reframe: "Great approach goal! Your future self just smiled."
 
 6.  Opik Showcase - THE WINNER (1min):  
     [Show Opik Dashboard]  
-    "But here's what makes this hackathon-winning:  
+    "But here's what makes this hackathon-winning:
 
 7.  AGENT OPTIMIZER: We used Opik's Evolutionary Optimizer to evolve  
     our nudge prompts. Watch this - our engagement rate went from  
-    45% to 78% through automated prompt evolution.  
+    45% to 78% through automated prompt evolution.
 
 8.  ONLINE EVALUATION: Every conversation is automatically scored for:
     - Financial safety (is advice sound?)
     - Cultural sensitivity (respects family obligations?)
-    - Intervention effectiveness (did user take action?)  
+    - Intervention effectiveness (did user take action?)
 
 9.  EXPERIMENT TRACKING: We A/B tested 3 Future Self personalities.  
-    The 'wise mentor' variant outperformed by 23%."  
+    The 'wise mentor' variant outperformed by 23%."
 
 10. THE BOMB: Financial Time Machine (1min):  
     [Show the Time Machine visualization]  
-    "But here's what no other app does - the Financial Time Machine.  
-
+    "But here's what no other app does - the Financial Time Machine.
 
 Ikpa just ran 10,000 Monte Carlo simulations of two parallel futures.
 
 [Show dual-path timeline]
 
 - Path A: Continue current behavior → Net worth -₦1.2M in 10 years
-- Path B: With Ikpa's guidance → Net worth ₦12M in 10 years  
-
+- Path B: With Ikpa's guidance → Net worth ₦12M in 10 years
 
 And here's the magical part - your future self wrote you a letter.
 
@@ -794,9 +770,8 @@ This isn't fantasy - it's math. 10,000 simulations. 78% probability
 
 8.  Impact (30s):  
     "Ikpa doesn't just track money - it changes behavior. Every feature is backed by research. Every prompt
-    is optimized with data. And for the first time, young Africans have an AI that understands their  
-    reality - including family obligations - without judgment.  
-
+    is optimized with data. And for the first time, young adults have an AI that understands their  
+    reality - including family obligations - without judgment.
 
 92% of resolutions fail. We built the science to change that."
 
@@ -808,8 +783,7 @@ For the "Best Use of Opik" prize, prepare these visualizations:
 2.  Evaluation Scores: Real-time quality metrics on traces
 3.  Experiment Comparison: Prompt A vs Prompt B results
 4.  Quality Trends: Improvement over development period
-5.  Cost Analysis: Token usage and optimization  
-
+5.  Cost Analysis: Token usage and optimization
 
 ---
 
@@ -848,8 +822,7 @@ Part 5: Winning Differentiation
 2.  Cultural Intelligence: First AI coach that understands family obligations
 3.  Non-Predatory: Intelligence layer, not lending or speculation
 4.  Practical Metrics: Cash Flow Score is actionable and understandable
-5.  Holistic View: Income + expenses + debt + family support + goals  
-
+5.  Holistic View: Income + expenses + debt + family support + goals
 
 5.2 Why IKPA Should Win Best Use of Opik
 
@@ -857,8 +830,7 @@ Part 5: Winning Differentiation
 2.  Custom Metrics: Financial-domain-specific evaluation
 3.  Demonstrable Improvement: Show before/after from Opik insights
 4.  Production-Ready Patterns: Online evaluation, dashboards, alerts
-5.  Clear Documentation: Explain how Opik improved the system  
-
+5.  Clear Documentation: Explain how Opik improved the system
 
 ---
 
@@ -873,8 +845,7 @@ Critical Files:
 5.  apps/api/src/app.module.ts - Uncomment/wire up modules
 6.  apps/web/src/app/dashboard/page.tsx - Main dashboard UI
 7.  apps/web/src/components/ChatInterface.tsx - AI chat component
-8.  apps/web/src/components/CashFlowScore.tsx - Score visualization  
-
+8.  apps/web/src/components/CashFlowScore.tsx - Score visualization
 
 Dependencies to Add:
 
@@ -911,18 +882,16 @@ Part 7: Verification Plan
 
 - Traces logged for every LLM call
 - Evaluation scores computed
-- Dashboard shows meaningful data  
+- Dashboard shows meaningful data
 
-
-7.2 Demo Checklist
+  7.2 Demo Checklist
 
 - Onboarding flow works completely
 - AI chat responds with context-aware advice
 - Cash Flow Score calculates correctly
 - Opik dashboard has 50+ traces with evaluations
 - At least one A/B experiment shows results
-- Demo video recorded (backup for live demo)  
-
+- Demo video recorded (backup for live demo)
 
 ---
 
@@ -934,8 +903,6 @@ Strategy Summary:
 2.  Multi-agent architecture - Not one AI, but specialized team
 3.  Behavioral science integration - Future Self, Commitment Devices, Goal Reframing
 4.  Opik Agent Optimizer - The killer feature most won't use
-5.  Cultural differentiation - Africa-specific context  
-
 
 Why This Wins:  
  ┌──────────────────┬────────────────────┬─────────────────────────────────────────────┐  
@@ -953,8 +920,7 @@ Key Success Factors:
 - Opik Agent Optimizer showing measurable improvement
 - Future Self conversations that feel magical
 - Commitment devices that create real accountability
-- Compelling narrative: "92% fail → We fix that with science"  
-
+- Compelling narrative: "92% fail → We fix that with science"
 
 ---
 
@@ -965,8 +931,7 @@ Behavior Change & Resolutions
 - https://pmc.ncbi.nlm.nih.gov/articles/PMC7725288/ - Approach vs Avoidance goals
 - https://party.alibaba.com/newyear/how-many-people-accomplish-new-year-resolution-goals-scholarly-arti
   cle - 8-10% success rate
-- https://www.cbsnews.com/news/new-years-resolutions-tips-why-they-fail/ - 88% quit in 2 weeks  
-
+- https://www.cbsnews.com/news/new-years-resolutions-tips-why-they-fail/ - 88% quit in 2 weeks
 
 AI & Behavior Change
 
@@ -974,22 +939,19 @@ AI & Behavior Change
 - https://news.mit.edu/2024/ai-simulation-gives-people-glimpse-potential-future-self-1001 - 16% savings
   increase
 - https://www.nature.com/articles/s41746-023-00856-1 - +735 steps, +45 min sleep
-- https://pubmed.ncbi.nlm.nih.gov/36826990/ - Systematic review  
-
+- https://pubmed.ncbi.nlm.nih.gov/36826990/ - Systematic review
 
 Behavioral Economics
 
 - https://www.sciencedirect.com/science/article/abs/pii/B9780128194713000021 - Hypernudging
 - https://learningloop.io/plays/psychology/commitment-devices - Precommitment
-- https://onlinelibrary.wiley.com/doi/10.1002/cb.2497 - Systematic review  
-
+- https://onlinelibrary.wiley.com/doi/10.1002/cb.2497 - Systematic review
 
 Multi-Agent Systems
 
 - https://www.ibm.com/think/topics/ai-agents-in-finance - Multi-agent architecture
 - https://www.weforum.org/stories/2024/12/agentic-ai-financial-services-autonomy-efficiency-and-inclusi
-  on/ - Financial services  
-
+  on/ - Financial services
 
 Opik & Observability
 

@@ -1,9 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MinusCircle, PlusCircle, Target, Navigation, Fish, Upload, Clock, ShieldCheck } from 'lucide-react';
+import { MinusCircle, PlusCircle, Target, Navigation, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui';
 
 export interface QuickActionsProps {
   /** Additional class names */
@@ -31,54 +30,36 @@ const actions = [
     id: 'expense',
     label: 'Add Expense',
     icon: MinusCircle,
-    variant: 'secondary' as const,
+    primary: true,
   },
   {
     id: 'income',
     label: 'Add Income',
     icon: PlusCircle,
-    variant: 'secondary' as const,
+    primary: false,
   },
   {
     id: 'goal',
     label: 'Set Goal',
     icon: Target,
-    variant: 'secondary' as const,
+    primary: false,
   },
   {
     id: 'ai',
     label: 'GPS',
     icon: Navigation,
-    variant: 'ghost' as const,
-  },
-  {
-    id: 'shark',
-    label: 'Shark',
-    icon: Fish,
-    variant: 'ghost' as const,
+    primary: false,
   },
   {
     id: 'import',
     label: 'Import',
     icon: Upload,
-    variant: 'secondary' as const,
-  },
-  {
-    id: 'futureSelf',
-    label: 'Future Self',
-    icon: Clock,
-    variant: 'ghost' as const,
-  },
-  {
-    id: 'commitments',
-    label: 'Stakes',
-    icon: ShieldCheck,
-    variant: 'ghost' as const,
+    primary: false,
   },
 ];
 
 /**
- * Row of quick action buttons for common dashboard tasks
+ * Editorial quick action buttons — 5 visible, primary action filled
  */
 export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, onAskAI, onShark, onImport, onFutureSelf, onCommitments }: QuickActionsProps) {
   const handlers: Record<string, (() => void) | undefined> = {
@@ -95,10 +76,8 @@ export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, 
   return (
     <motion.div
       className={cn(
-        // Mobile: horizontal scroll
         'flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4',
-        // Desktop: grid layout
-        'md:grid md:grid-cols-4 lg:grid-cols-7 md:mx-0 md:px-0 md:overflow-visible',
+        'md:grid md:grid-cols-5 md:mx-0 md:px-0 md:overflow-visible',
         className
       )}
       initial={{ opacity: 0, y: 10 }}
@@ -117,19 +96,22 @@ export function QuickActions({ className, onAddExpense, onAddIncome, onSetGoal, 
               transition={{ delay: 0.1 + index * 0.05, duration: 0.2 }}
               className="flex-shrink-0"
             >
-              <Button
-                variant={action.variant}
-                size="md"
+              <button
                 onClick={handler}
-                leftIcon={<Icon className="h-5 w-5" />}
                 className={cn(
-                  'whitespace-nowrap',
-                  // Make all buttons consistent width on desktop
-                  'md:w-full md:justify-center'
+                  'flex items-center justify-center gap-2 px-4 py-2.5 rounded-full',
+                  'text-sm font-sans whitespace-nowrap',
+                  'transition-colors duration-150',
+                  'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2',
+                  action.primary
+                    ? 'bg-emerald-900 text-white hover:bg-emerald-800'
+                    : 'border border-stone-200 text-stone-600 hover:bg-stone-50',
+                  'md:w-full'
                 )}
               >
+                <Icon className="h-4 w-4" strokeWidth={1.5} />
                 {action.label}
-              </Button>
+              </button>
             </motion.div>
           );
         })}

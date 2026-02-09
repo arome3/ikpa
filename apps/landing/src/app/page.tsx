@@ -1,18 +1,4 @@
-import {
-  Navigation,
-  Hero,
-  Problem,
-  Solution,
-  Features,
-  HowItWorks,
-  FutureSelf,
-  BuiltForAfrica,
-  Testimonials,
-  Pricing,
-  FAQ,
-  FinalCTA,
-  Footer,
-} from '@/components/sections';
+import { Navigation, Hero, WhySection, SystemCore, BehavioralScience, Features, Integrations, Testimonials, FAQ, Footer } from '@/components/sections';
 
 export default function Home() {
   return (
@@ -20,16 +6,13 @@ export default function Home() {
       <Navigation />
       <main>
         <Hero />
-        <Problem />
-        <Solution />
+        <WhySection />
+        <SystemCore />
+        <BehavioralScience />
         <Features />
-        <HowItWorks />
-        <FutureSelf />
-        <BuiltForAfrica />
+        <Integrations />
         <Testimonials />
-        <Pricing />
         <FAQ />
-        <FinalCTA />
       </main>
       <Footer />
     </>

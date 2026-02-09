@@ -100,7 +100,7 @@ export class FinancialSnapshotDto {
   totalSupport!: number;
 
   @ApiProperty({
-    example: 'NGN',
+    example: 'USD',
     description: 'Currency code',
   })
   currency!: string;

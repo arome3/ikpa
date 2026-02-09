@@ -1,30 +1,24 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { SubscriptionStatus } from '@/hooks/useShark';
 
-const statusConfig: Record<SubscriptionStatus, { label: string; color: string; bg: string; pulse?: boolean }> = {
+const statusConfig: Record<SubscriptionStatus, { label: string; color: string }> = {
   ZOMBIE: {
     label: 'Zombie',
-    color: 'text-amber-300',
-    bg: 'bg-amber-500/15 border-amber-500/30',
-    pulse: true,
+    color: 'border-orange-200 text-orange-700 bg-orange-50',
   },
   ACTIVE: {
     label: 'Active',
-    color: 'text-teal-300',
-    bg: 'bg-teal-500/15 border-teal-500/30',
+    color: 'border-green-200 text-green-700 bg-green-50',
   },
   UNKNOWN: {
     label: 'Unknown',
-    color: 'text-slate-300',
-    bg: 'bg-slate-500/15 border-slate-500/30',
+    color: 'border-stone-200 text-stone-600 bg-stone-50',
   },
   CANCELLED: {
     label: 'Cancelled',
-    color: 'text-neutral-400',
-    bg: 'bg-neutral-500/15 border-neutral-500/30',
+    color: 'border-stone-200 text-stone-500 bg-stone-50',
   },
 };
 
@@ -39,32 +33,11 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        'relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border',
-        config.bg,
+        'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium uppercase tracking-wider border',
         config.color,
         className
       )}
     >
-      {/* Pulsing dot for zombies */}
-      {config.pulse ? (
-        <span className="relative flex h-2 w-2">
-          <motion.span
-            className="absolute inset-0 rounded-full bg-amber-400"
-            animate={{ scale: [1, 1.8, 1], opacity: [0.7, 0, 0.7] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-          />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
-        </span>
-      ) : (
-        <span
-          className={cn(
-            'inline-flex rounded-full h-2 w-2',
-            status === 'ACTIVE' && 'bg-teal-400',
-            status === 'UNKNOWN' && 'bg-slate-400',
-            status === 'CANCELLED' && 'bg-neutral-500'
-          )}
-        />
-      )}
       {config.label}
     </span>
   );

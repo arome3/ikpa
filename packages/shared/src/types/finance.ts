@@ -93,7 +93,6 @@ export enum SavingsType {
   BANK_ACCOUNT = 'BANK_ACCOUNT',
   MOBILE_MONEY = 'MOBILE_MONEY',
   CASH = 'CASH',
-  AJO_ESUSU = 'AJO_ESUSU', // Traditional African rotating savings
   FIXED_DEPOSIT = 'FIXED_DEPOSIT',
   OTHER = 'OTHER',
 }

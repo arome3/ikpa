@@ -47,7 +47,7 @@ export class CashFlowScoreComponentsDto {
 
   @ApiProperty({
     type: ComponentScoreDto,
-    description: 'Dependency ratio component - Africa-specific (10% weight)',
+    description: 'Dependency ratio component (10% weight)',
   })
   dependencyRatio!: ComponentScoreDto;
 }

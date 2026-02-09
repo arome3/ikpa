@@ -16,7 +16,7 @@ import { SavingsType, Currency } from '@prisma/client';
 /**
  * DTO for creating a new savings account
  *
- * Supports various African savings mechanisms:
+ * Supports various savings mechanisms:
  * - Bank accounts, mobile money (M-Pesa, etc.)
  * - Traditional ajo/susu rotating savings
  * - Fixed deposits, cooperatives
@@ -98,7 +98,7 @@ export class CreateSavingsDto {
 
   @ApiPropertyOptional({
     enum: Currency,
-    example: 'NGN',
+    example: 'USD',
     description: 'Currency (defaults to user currency)',
   })
   @IsEnum(Currency)

@@ -40,7 +40,7 @@ export default function OnboardingPage() {
     completeStep,
     isCompletingStep,
     skipStep,
-    isSkippingStep,
+    isSkippingStep: _isSkippingStep,
     completeOnboarding,
     isCompletingOnboarding,
     submitEstimate,
@@ -178,8 +178,8 @@ export default function OnboardingPage() {
           <IncomeStep
             items={incomeItems.filter(i => i.isActive)}
             currency={currency}
-            onAdd={createIncome}
-            onDelete={deleteIncome}
+            onAdd={async (data) => { await createIncome(data); }}
+            onDelete={async (id) => { await deleteIncome(id); }}
             onContinue={handleIncomeComplete}
             isAdding={isCreatingIncome}
             isDeleting={isDeletingIncome}
@@ -205,8 +205,8 @@ export default function OnboardingPage() {
           <DebtsStep
             items={debtItems.filter(d => d.isActive)}
             currency={currency}
-            onAdd={createDebt}
-            onDelete={deleteDebt}
+            onAdd={async (data) => { await createDebt(data); }}
+            onDelete={async (id) => { await deleteDebt(id); }}
             onContinue={handleDebtsComplete}
             onSkip={handleDebtsSkip}
             isAdding={isCreatingDebt}
@@ -220,8 +220,8 @@ export default function OnboardingPage() {
           <GoalsStep
             items={goalItems.filter(g => g.status === 'ACTIVE')}
             currency={currency}
-            onAdd={createGoal}
-            onDelete={deleteGoal}
+            onAdd={async (data) => { await createGoal(data); }}
+            onDelete={async (id) => { await deleteGoal(id); }}
             onContinue={handleGoalsComplete}
             isAdding={isCreatingGoal}
             isDeleting={isDeletingGoal}
@@ -235,8 +235,8 @@ export default function OnboardingPage() {
             items={budgetItems.filter(b => b.isActive)}
             categories={categories}
             currency={currency}
-            onAdd={createBudget}
-            onDelete={deleteBudget}
+            onAdd={async (data) => { await createBudget(data); }}
+            onDelete={async (id) => { await deleteBudget(id); }}
             onContinue={handleBudgetsComplete}
             onSkip={handleBudgetsSkip}
             isAdding={isCreatingBudget}

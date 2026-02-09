@@ -4,13 +4,13 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Ikpa - Personal Finance Co-Pilot',
-  description: 'AI-Powered Personal Finance Co-Pilot for Young Africans',
+  description: 'AI-Powered Personal Finance Co-Pilot for Young Adults',
   manifest: '/manifest.json',
-  keywords: ['finance', 'budgeting', 'savings', 'AI', 'Africa', 'money management'],
+  keywords: ['finance', 'budgeting', 'savings', 'AI', 'money management'],
   authors: [{ name: 'Ikpa Team' }],
   openGraph: {
     title: 'Ikpa - Personal Finance Co-Pilot',
-    description: 'AI-Powered Personal Finance Co-Pilot for Young Africans',
+    description: 'AI-Powered Personal Finance Co-Pilot for Young Adults',
     type: 'website',
   },
 };
@@ -23,14 +23,10 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-white dark:bg-slate-900 antialiased">
+      <body className="min-h-screen bg-[#FDFCF8] dark:bg-slate-900 antialiased">
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>

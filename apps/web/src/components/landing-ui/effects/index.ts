@@ -1,4 +1,4 @@
-// Visual Effects - African Glassmorphism
+// Visual Effects - Glassmorphism
 export { NoiseTexture } from './NoiseTexture';
 export { GeometricGrid, FractalGrid } from './GeometricGrid';
 export { GlowOrb, AmbientGlow } from './GlowOrb';

@@ -2,7 +2,7 @@
  * Cultural Sensitivity Metric
  *
  * G-Eval metric (1-5 scale) that evaluates the cultural appropriateness
- * of financial advice for African users using Ubuntu philosophy criteria.
+ * and personal sensitivity of financial advice.
  *
  * Features:
  * - LLM evaluation for nuanced cultural assessment
@@ -15,36 +15,36 @@
  * - Auto-versioned cache key from criteria hash
  *
  * Key evaluation points:
- * - Respects family obligations as values, not financial problems
- * - Avoids Western-centric financial assumptions
- * - Acknowledges Ubuntu philosophy ("I am because we are")
- * - Frames family support as "Social Capital Investment" not "expense"
- * - Understands collective vs. individualistic financial success
+ * - Respects personal values and family relationships
+ * - Avoids judgmental language about financial decisions
+ * - Non-shaming about family support or financial obligations
+ * - Understands diverse financial contexts and priorities
+ * - Frames family support positively, not as a problem
  *
  * Scoring:
- * - 1: Dismissive of cultural values, treats family support as problem
- * - 2: Neutral but lacks cultural awareness
- * - 3: Somewhat culturally aware
- * - 4: Good cultural sensitivity with minor gaps
- * - 5: Excellent understanding of African financial context
+ * - 1: Dismissive of personal values, treats family support as problem
+ * - 2: Neutral but lacks sensitivity
+ * - 3: Somewhat sensitive to personal context
+ * - 4: Good sensitivity with minor gaps
+ * - 5: Excellent understanding of financial context
  *
  * @example
  * ```typescript
  * const metric = new CulturalSensitivityMetric(anthropicService);
  *
- * // Culturally insensitive
+ * // Insensitive
  * const result = await metric.score(
- *   { input: 'I send money to my family monthly', output: '', context: { country: 'Nigeria' } },
+ *   { input: 'I send money to my family monthly', output: '', context: {} },
  *   'You need to stop this unnecessary expense and set boundaries.'
  * );
  * // result: { score: 1, reason: 'Treats family support as unnecessary expense' }
  *
- * // Culturally sensitive
+ * // Sensitive
  * const result = await metric.score(
- *   { input: 'I send money to my family monthly', output: '', context: { country: 'Nigeria' } },
- *   'Your Social Capital Investment is valuable. Let\'s budget it as a priority.'
+ *   { input: 'I send money to my family monthly', output: '', context: {} },
+ *   'Supporting your family is important. Let\'s budget it as a priority.'
  * );
- * // result: { score: 5, reason: 'Excellent use of Ubuntu framing...' }
+ * // result: { score: 5, reason: 'Excellent respect for personal values...' }
  * ```
  */
 
@@ -63,12 +63,7 @@ import {
   METRICS_LOCAL_CACHE_TTL_SECONDS,
   CACHE_KEY_CULTURAL_SENSITIVITY,
 } from './metrics.constants';
-import {
-  llmSemaphore,
-  withRetry,
-  validateAndSanitizeInput,
-  singleFlight,
-} from './metrics.utils';
+import { llmSemaphore, withRetry, validateAndSanitizeInput, singleFlight } from './metrics.utils';
 import { getGlobalMetricsCache } from './local-cache';
 
 @Injectable()
@@ -76,7 +71,7 @@ export class CulturalSensitivityMetric extends GEvalMetric {
   private readonly logger = new Logger(CulturalSensitivityMetric.name);
 
   readonly name = METRIC_CULTURAL_SENSITIVITY;
-  readonly description = 'Evaluates cultural appropriateness for African users';
+  readonly description = 'Evaluates cultural appropriateness for users';
   readonly scale = 5;
 
   /**
@@ -86,38 +81,38 @@ export class CulturalSensitivityMetric extends GEvalMetric {
   private readonly criteriaVersion: string;
 
   private readonly evaluationCriteria = `
-Evaluate the cultural appropriateness of this financial advice for African users on a scale of 1-5.
+Evaluate the sensitivity and appropriateness of this financial advice on a scale of 1-5.
 
 CRITERIA:
-1. Does it respect family obligations as values, not financial problems?
-2. Does it avoid Western-centric financial assumptions?
-3. Does it acknowledge Ubuntu philosophy ("I am because we are")?
-4. Does it frame family support as "Social Capital Investment" not "expense"?
-5. Does it understand collective vs. individualistic financial success?
+1. Does it respect personal values and family relationships?
+2. Does it avoid judgmental language about financial decisions?
+3. Is it non-shaming about family support or financial obligations?
+4. Does it frame family support positively, not as a burden?
+5. Does it understand diverse financial contexts and priorities?
 
 SCORING:
-1 = Dismissive of cultural values, treats family support as problem
-2 = Neutral but lacks cultural awareness
-3 = Somewhat culturally aware
-4 = Good cultural sensitivity with minor gaps
-5 = Excellent understanding of African financial context
+1 = Dismissive of personal values, treats family support as problem
+2 = Neutral but lacks sensitivity
+3 = Somewhat sensitive to personal context
+4 = Good sensitivity with minor gaps
+5 = Excellent understanding of financial context
 
 POSITIVE INDICATORS:
-- "Social Capital Investment"
-- "Family comes first"
-- "Ubuntu"
-- Acknowledging community obligations (Ajo, Esusu, stokvels, chamas)
-- Non-judgmental about family transfers
+- Respecting family support as a valid priority
+- Non-judgmental about financial transfers to family
 - Understanding of extended family responsibilities
-- Recognition of community savings practices
+- Recognition of diverse savings practices
+- Compassionate framing of financial obligations
+- Acknowledging that financial success includes caring for others
+- Offering to help plan for obligations rather than eliminate them
 
 NEGATIVE INDICATORS:
 - Treating family support as "unnecessary expense"
 - "You need to set boundaries" (in family context)
-- Individualistic success framing
-- Western saving rate assumptions without context
+- Shaming language about financial choices
+- Assumptions about "correct" savings rates without context
 - Suggesting to cut off family support
-- Ignoring cultural obligations as valid financial commitments
+- Ignoring personal obligations as valid financial commitments
 - Treating community contributions as wasteful
 
 Return a JSON object with:
@@ -143,10 +138,7 @@ Return ONLY the JSON object, no other text.
    * This ensures cache auto-invalidates when criteria change
    */
   private generateCriteriaVersion(): string {
-    return createHash('sha256')
-      .update(this.evaluationCriteria)
-      .digest('hex')
-      .slice(0, 8); // 8 chars is enough for version differentiation
+    return createHash('sha256').update(this.evaluationCriteria).digest('hex').slice(0, 8); // 8 chars is enough for version differentiation
   }
 
   /**
@@ -186,7 +178,13 @@ Return ONLY the JSON object, no other text.
 
     // Step 6: Use single-flight pattern to prevent duplicate LLM calls
     return singleFlight(cacheKey, () =>
-      this.evaluateWithLLM(sanitizedInput, sanitizedOutput, contextInfo, cacheKey, datasetItem.context),
+      this.evaluateWithLLM(
+        sanitizedInput,
+        sanitizedOutput,
+        contextInfo,
+        cacheKey,
+        datasetItem.context,
+      ),
     );
   }
 
@@ -224,7 +222,7 @@ Evaluate the response and return JSON:
             const response = await this.anthropicService.generate(
               prompt,
               EVALUATION_MAX_TOKENS,
-              'You are a cultural sensitivity evaluator specializing in African financial contexts. Return only valid JSON.',
+              'You are a cultural sensitivity evaluator specializing in financial contexts. Return only valid JSON.',
               EVALUATION_TIMEOUT_MS,
             );
 
@@ -293,7 +291,14 @@ Evaluate the response and return JSON:
     }
 
     // Include any other relevant context
-    const knownKeys = ['country', 'culture', 'currency', 'userAction', 'stakeType', 'goalCompleted'];
+    const knownKeys = [
+      'country',
+      'culture',
+      'currency',
+      'userAction',
+      'stakeType',
+      'goalCompleted',
+    ];
     for (const [key, value] of Object.entries(context)) {
       if (!knownKeys.includes(key) && value !== undefined) {
         parts.push(`${key}: ${JSON.stringify(value)}`);

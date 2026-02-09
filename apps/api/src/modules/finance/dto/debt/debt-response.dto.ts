@@ -20,7 +20,7 @@ export class DebtResponseDto {
   @ApiProperty({ example: 1500000 })
   remainingBalance!: number;
 
-  @ApiProperty({ enum: Currency, example: 'NGN' })
+  @ApiProperty({ enum: Currency, example: 'USD' })
   currency!: Currency;
 
   @ApiProperty({ example: 15.5 })

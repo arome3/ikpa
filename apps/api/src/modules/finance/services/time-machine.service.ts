@@ -7,7 +7,7 @@ import {
 
 @Injectable()
 export class TimeMachineService {
-  /** Default annual return rate — ~10% Nigerian money market average */
+  /** Default annual return rate — ~10% market average */
   private readonly DEFAULT_RETURN_RATE = 0.10;
   private readonly DEFAULT_YEARS = 20;
 

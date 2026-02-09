@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Wallet, Briefcase, Building2, TrendingUp, Gift, MoreHorizontal,
-  Pencil, Trash2, RefreshCw
+  Pencil, Trash2
 } from 'lucide-react';
 import { useIncome, type Income, type CreateIncomeData } from '@/hooks/useFinance';
-import { Button, Modal, ModalFooter, Input, Spinner, Badge } from '@/components/ui';
+import { Button, Modal, ModalFooter, Input, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { formatWithSeparators, useCurrency } from '@/hooks';
 
@@ -97,54 +97,69 @@ export default function IncomePage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-0">
+      {/* Header Row */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+          <h1 className="text-3xl font-serif text-[#1A2E22] dark:text-white tracking-tight">
             Income Sources
           </h1>
-          <p className="text-neutral-500 mt-1">
-            Manage your income streams and track monthly earnings
+          <p className="text-stone-500 dark:text-neutral-400 text-sm mt-1">
+            Revenue streams and recurring earnings
           </p>
         </div>
-        <Button onClick={openAddModal} leftIcon={<Plus className="w-4 h-4" />}>
+        <button
+          onClick={openAddModal}
+          className="inline-flex items-center gap-2 rounded-full bg-[#064E3B] hover:bg-[#053D2E] text-white px-5 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:ring-offset-2"
+        >
+          <Plus className="w-4 h-4" />
           Add Income
-        </Button>
+        </button>
       </div>
 
-      {/* Summary Card */}
+      {/* Hero — Monthly Recurring Revenue */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 text-white"
+        className="pb-8 mb-8 border-b border-stone-200 dark:border-neutral-800"
       >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="relative">
-          <p className="text-emerald-100 text-sm font-medium">Total Monthly Income</p>
-          <p className="text-4xl font-bold mt-2 tabular-nums">
+        <p className="text-xs font-bold tracking-widest text-emerald-800 dark:text-emerald-400 uppercase mb-3">
+          Monthly Recurring Revenue
+        </p>
+        <div className="flex flex-wrap items-end gap-4">
+          <p className="text-5xl sm:text-7xl font-serif text-[#1A2E22] dark:text-white tracking-tight tabular-nums">
             {currencySymbol}{formatWithSeparators(Math.round(totalMonthly))}
           </p>
-          <p className="text-emerald-200 text-sm mt-2">
-            From {activeItems.length} active source{activeItems.length !== 1 ? 's' : ''}
-          </p>
+          <div className="flex items-center gap-3 pb-2">
+            <span className="text-stone-500 dark:text-neutral-400 text-sm">
+              from {activeItems.length} source{activeItems.length !== 1 ? 's' : ''}
+            </span>
+            {activeItems.length > 0 && (
+              <span className="inline-flex items-center text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-full text-xs font-medium px-2.5 py-0.5">
+                Active
+              </span>
+            )}
+          </div>
         </div>
       </motion.div>
 
-      {/* Income List */}
-      <div className="space-y-4">
+      {/* Source Ledger */}
+      <div>
         <AnimatePresence mode="popLayout">
           {activeItems.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-16 bg-neutral-100 dark:bg-neutral-800/50 rounded-2xl"
+              className="text-center py-16 bg-[#F2F0E9] dark:bg-neutral-800/50 rounded-2xl"
             >
-              <Wallet className="w-12 h-12 mx-auto text-neutral-400 mb-4" />
-              <p className="text-neutral-500">No income sources added yet</p>
-              <Button onClick={openAddModal} variant="secondary" className="mt-4">
+              <Wallet className="w-12 h-12 mx-auto text-stone-400 dark:text-neutral-500 mb-4 stroke-[1.5]" />
+              <p className="text-stone-500 dark:text-neutral-400">No income sources added yet</p>
+              <button
+                onClick={openAddModal}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-300 hover:border-stone-400 dark:hover:border-neutral-500 px-5 py-2 text-sm font-medium transition-colors"
+              >
                 Add your first income
-              </Button>
+              </button>
             </motion.div>
           ) : (
             activeItems.map((item: Income, index: number) => {
@@ -159,58 +174,41 @@ export default function IncomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group relative bg-white dark:bg-neutral-800 rounded-2xl p-5 border border-neutral-200 dark:border-neutral-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+                  className="group py-5 border-b border-stone-200 dark:border-neutral-800 hover:bg-stone-50/50 dark:hover:bg-neutral-800/30 transition-colors -mx-2 px-2 rounded-sm"
                 >
-                  <div className="flex items-start gap-4">
-                    <div className={cn(
-                      'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
-                      config.color === 'emerald' && 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
-                      config.color === 'blue' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-                      config.color === 'purple' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-                      config.color === 'amber' && 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
-                      config.color === 'rose' && 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
-                      config.color === 'pink' && 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400',
-                      config.color === 'gray' && 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400',
-                    )}>
-                      <Icon className="w-5 h-5" />
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <Icon className="w-5 h-5 stroke-[1.5] text-stone-500 dark:text-neutral-500 flex-shrink-0" />
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-neutral-900 dark:text-white truncate">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-serif text-xl text-[#1A2E22] dark:text-white truncate">
                           {item.name}
                         </h3>
-                        <Badge variant="outline" size="sm">{config.label}</Badge>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-neutral-500">
-                        <span className="flex items-center gap-1">
-                          <RefreshCw className="w-3 h-3" />
+                        <span className="bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-400 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-medium flex-shrink-0">
                           {frequencyOptions.find(f => f.value === item.frequency)?.label}
                         </span>
-                        {item.description && (
-                          <span className="truncate">{item.description}</span>
-                        )}
                       </div>
+                      {item.description && (
+                        <p className="text-stone-400 dark:text-neutral-500 text-sm mt-0.5 truncate">{item.description}</p>
+                      )}
                     </div>
 
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-neutral-900 dark:text-white tabular-nums">
-                        {currencySymbol}{formatWithSeparators(Number(item.amount))}
-                      </p>
-                    </div>
+                    <p className="font-mono text-2xl text-[#1A2E22] dark:text-white tabular-nums text-right flex-shrink-0">
+                      {currencySymbol}{formatWithSeparators(Number(item.amount))}
+                    </p>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                       <button
                         onClick={() => openEditModal(item)}
-                        className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                        className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-700 text-stone-400 hover:text-stone-700 dark:hover:text-neutral-300 transition-colors"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(item.id)}
                         disabled={isDeleting}
-                        className="p-2 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 text-neutral-500 hover:text-orange-600 transition-colors"
+                        className="p-2 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900/20 text-stone-400 hover:text-orange-600 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -240,12 +238,12 @@ export default function IncomePage() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-stone-700 dark:text-gray-300 mb-1.5">
               Type
             </label>
             <div className="grid grid-cols-3 gap-2">
               {Object.entries(incomeTypeConfig).map(([type, config]) => {
-                const Icon = config.icon;
+                const TypeIcon = config.icon;
                 return (
                   <button
                     key={type}
@@ -254,17 +252,17 @@ export default function IncomePage() {
                     className={cn(
                       'flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all',
                       formData.type === type
-                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                        : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300'
+                        ? 'border-[#064E3B] bg-[#064E3B]/5 dark:bg-emerald-900/20'
+                        : 'border-stone-200 dark:border-neutral-700 hover:border-stone-300'
                     )}
                   >
-                    <Icon className={cn(
-                      'w-5 h-5',
-                      formData.type === type ? 'text-emerald-600' : 'text-neutral-400'
+                    <TypeIcon className={cn(
+                      'w-5 h-5 stroke-[1.5]',
+                      formData.type === type ? 'text-[#064E3B] dark:text-emerald-400' : 'text-stone-400'
                     )} />
                     <span className={cn(
                       'text-xs font-medium',
-                      formData.type === type ? 'text-emerald-700 dark:text-emerald-400' : 'text-neutral-600 dark:text-neutral-400'
+                      formData.type === type ? 'text-[#064E3B] dark:text-emerald-400' : 'text-stone-500 dark:text-neutral-400'
                     )}>
                       {config.label}
                     </span>
@@ -286,13 +284,13 @@ export default function IncomePage() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-stone-700 dark:text-gray-300 mb-1.5">
               Frequency
             </label>
             <select
               value={formData.frequency}
               onChange={(e) => setFormData(prev => ({ ...prev, frequency: e.target.value as Income['frequency'] }))}
-              className="w-full h-14 px-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+              className="w-full h-14 px-4 rounded-xl border border-stone-200 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-900 dark:text-white focus:border-[#064E3B] focus:ring-2 focus:ring-[#064E3B]/20 outline-none transition-all"
             >
               {frequencyOptions.map(option => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -311,7 +309,11 @@ export default function IncomePage() {
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" isLoading={isCreating || isUpdating}>
+            <Button
+              type="submit"
+              isLoading={isCreating || isUpdating}
+              className="!rounded-full !bg-[#064E3B] hover:!bg-[#053D2E] !from-[#064E3B] !to-[#064E3B]"
+            >
               {editingItem ? 'Save Changes' : 'Add Income'}
             </Button>
           </ModalFooter>

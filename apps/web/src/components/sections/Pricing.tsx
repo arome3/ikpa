@@ -224,7 +224,7 @@ export function Pricing() {
           `}
           style={{ transitionDelay: '600ms' }}
         >
-          Prices shown are for Nigeria. Equivalent pricing available in GHS, KES, and ZAR.
+          Prices shown in USD. Multiple currencies supported.
         </p>
       </Container>
     </section>

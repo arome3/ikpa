@@ -2,7 +2,7 @@
  * CSV Parser Service
  *
  * Parses bank statement CSV files using papaparse.
- * Handles various African bank export formats.
+ * Handles various bank export formats.
  */
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -78,7 +78,15 @@ const BANK_FORMATS: Record<string, ColumnMapping> = {
     amount: ['amount', 'Amount', 'AMOUNT', 'Value'],
     debit: 'debit',
     credit: 'credit',
-    description: ['description', 'Description', 'DESCRIPTION', 'Narration', 'NARRATION', 'Remarks', 'Particulars'],
+    description: [
+      'description',
+      'Description',
+      'DESCRIPTION',
+      'Narration',
+      'NARRATION',
+      'Remarks',
+      'Particulars',
+    ],
     reference: ['reference', 'Reference', 'REFERENCE', 'Trans Ref'],
   },
 };
@@ -90,10 +98,7 @@ export class CsvParserService {
   /**
    * Parse CSV content and extract transactions
    */
-  async parse(
-    csvContent: string,
-    bankName?: SupportedBank,
-  ): Promise<ParseResult> {
+  async parse(csvContent: string, bankName?: SupportedBank): Promise<ParseResult> {
     try {
       // Parse CSV with papaparse
       const parseResult = Papa.parse<Record<string, string>>(csvContent, {
@@ -158,10 +163,7 @@ export class CsvParserService {
   /**
    * Detect the column mapping based on headers
    */
-  private detectColumnMapping(
-    headers: string[],
-    bankName?: SupportedBank,
-  ): ColumnMapping | null {
+  private detectColumnMapping(headers: string[], bankName?: SupportedBank): ColumnMapping | null {
     // If bank is specified, try its format first
     if (bankName) {
       const bankKey = this.getBankKey(bankName);
@@ -198,28 +200,29 @@ export class CsvParserService {
 
     // Check date column
     const dateColumns = Array.isArray(mapping.date) ? mapping.date : [mapping.date];
-    const hasDate = dateColumns.some((col) =>
-      normalizedHeaders.includes(col.toLowerCase()) ||
-      headers.includes(col),
+    const hasDate = dateColumns.some(
+      (col) => normalizedHeaders.includes(col.toLowerCase()) || headers.includes(col),
     );
 
     // Check amount or debit/credit columns
     const amountColumns = Array.isArray(mapping.amount) ? mapping.amount : [mapping.amount];
-    const hasAmount = amountColumns.some((col) =>
-      normalizedHeaders.includes(col.toLowerCase()) ||
-      headers.includes(col),
+    const hasAmount = amountColumns.some(
+      (col) => normalizedHeaders.includes(col.toLowerCase()) || headers.includes(col),
     );
-    const hasDebitCredit = mapping.debit && mapping.credit &&
+    const hasDebitCredit =
+      mapping.debit &&
+      mapping.credit &&
       (normalizedHeaders.includes(mapping.debit.toLowerCase()) ||
-       headers.includes(mapping.debit)) &&
+        headers.includes(mapping.debit)) &&
       (normalizedHeaders.includes(mapping.credit.toLowerCase()) ||
-       headers.includes(mapping.credit));
+        headers.includes(mapping.credit));
 
     // Check description column
-    const descColumns = Array.isArray(mapping.description) ? mapping.description : [mapping.description];
-    const hasDescription = descColumns.some((col) =>
-      normalizedHeaders.includes(col.toLowerCase()) ||
-      headers.includes(col),
+    const descColumns = Array.isArray(mapping.description)
+      ? mapping.description
+      : [mapping.description];
+    const hasDescription = descColumns.some(
+      (col) => normalizedHeaders.includes(col.toLowerCase()) || headers.includes(col),
     );
 
     return hasDate && (hasAmount || Boolean(hasDebitCredit)) && hasDescription;
@@ -316,9 +319,7 @@ export class CsvParserService {
         return row[name];
       }
       // Try case-insensitive match
-      const key = Object.keys(row).find(
-        (k) => k.toLowerCase() === name.toLowerCase(),
-      );
+      const key = Object.keys(row).find((k) => k.toLowerCase() === name.toLowerCase());
       if (key && row[key] !== undefined && row[key] !== '') {
         return row[key];
       }
@@ -330,7 +331,7 @@ export class CsvParserService {
    * Parse date string to YYYY-MM-DD format
    */
   private parseDate(dateStr: string): string | null {
-    // Common date formats in African banks
+    // Common date formats in banks
     const formats = [
       // DD/MM/YYYY
       /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
@@ -345,18 +346,29 @@ export class CsvParserService {
     ];
 
     const months: Record<string, number> = {
-      jan: 1, january: 1,
-      feb: 2, february: 2,
-      mar: 3, march: 3,
-      apr: 4, april: 4,
+      jan: 1,
+      january: 1,
+      feb: 2,
+      february: 2,
+      mar: 3,
+      march: 3,
+      apr: 4,
+      april: 4,
       may: 5,
-      jun: 6, june: 6,
-      jul: 7, july: 7,
-      aug: 8, august: 8,
-      sep: 9, september: 9,
-      oct: 10, october: 10,
-      nov: 11, november: 11,
-      dec: 12, december: 12,
+      jun: 6,
+      june: 6,
+      jul: 7,
+      july: 7,
+      aug: 8,
+      august: 8,
+      sep: 9,
+      september: 9,
+      oct: 10,
+      october: 10,
+      nov: 11,
+      november: 11,
+      dec: 12,
+      december: 12,
     };
 
     const cleanDate = dateStr.trim();
@@ -449,7 +461,7 @@ export class CsvParserService {
     const amount = parseFloat(cleaned);
     if (isNaN(amount)) return 0;
 
-    return (isNegative || isDr) ? -Math.abs(amount) : amount;
+    return isNegative || isDr ? -Math.abs(amount) : amount;
   }
 
   /**
@@ -503,10 +515,18 @@ export class CsvParserService {
    */
   private detectRecurring(description: string): boolean {
     const recurringPatterns = [
-      /netflix/i, /spotify/i, /apple/i, /google/i,
-      /subscription/i, /recurring/i, /monthly/i,
-      /dstv/i, /gotv/i, /startimes/i,
-      /icloud/i, /amazon prime/i,
+      /netflix/i,
+      /spotify/i,
+      /apple/i,
+      /google/i,
+      /subscription/i,
+      /recurring/i,
+      /monthly/i,
+      /dstv/i,
+      /gotv/i,
+      /startimes/i,
+      /icloud/i,
+      /amazon prime/i,
     ];
 
     return recurringPatterns.some((pattern) => pattern.test(description));
@@ -517,9 +537,7 @@ export class CsvParserService {
    */
   private detectCurrency(data: Record<string, string>[]): Currency {
     // Check for currency indicators in the data
-    const allValues = data
-      .flatMap((row) => Object.values(row))
-      .join(' ');
+    const allValues = data.flatMap((row) => Object.values(row)).join(' ');
 
     if (/₦|NGN|naira/i.test(allValues)) return 'NGN';
     if (/GH₵|GHS|cedi/i.test(allValues)) return 'USD';

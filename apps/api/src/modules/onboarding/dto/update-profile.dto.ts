@@ -17,7 +17,7 @@ import { Country, Currency, EmploymentType } from '@prisma/client';
 export class UpdateProfileDto {
   @ApiPropertyOptional({
     enum: Country,
-    example: 'NIGERIA',
+    example: 'US',
     description: 'Country of residence',
   })
   @IsEnum(Country, {
@@ -28,7 +28,7 @@ export class UpdateProfileDto {
 
   @ApiPropertyOptional({
     enum: Currency,
-    example: 'NGN',
+    example: 'USD',
     description: 'Primary currency',
   })
   @IsEnum(Currency, {
@@ -57,12 +57,12 @@ export class UpdateProfileDto {
   dateOfBirth?: string;
 
   @ApiPropertyOptional({
-    example: '+2348012345678',
+    example: '+12025551234',
     description: 'Phone number in E.164 format for WhatsApp notifications',
   })
   @IsString()
   @Matches(/^\+[1-9]\d{1,14}$/, {
-    message: 'Phone number must be in E.164 format (e.g., +2348012345678)',
+    message: 'Phone number must be in E.164 format (e.g., +12025551234)',
   })
   @IsOptional()
   phoneNumber?: string;
@@ -80,10 +80,10 @@ export class UpdateProfileDto {
  * Response after updating profile
  */
 export class UpdateProfileResponseDto {
-  @ApiPropertyOptional({ enum: Country, example: 'NIGERIA' })
+  @ApiPropertyOptional({ enum: Country, example: 'US' })
   country?: Country;
 
-  @ApiPropertyOptional({ enum: Currency, example: 'NGN' })
+  @ApiPropertyOptional({ enum: Currency, example: 'USD' })
   currency?: Currency;
 
   @ApiPropertyOptional({ enum: EmploymentType, example: 'EMPLOYED' })

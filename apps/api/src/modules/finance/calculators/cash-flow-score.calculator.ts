@@ -18,7 +18,7 @@ import { ScoreCalculationException } from '../exceptions';
  * - Runway Months (25%): Emergency preparedness
  * - Debt-to-Income (20%): Financial burden management
  * - Income Stability (15%): Predictability of cash flow
- * - Dependency Ratio (10%): Africa-specific cultural component
+ * - Dependency Ratio (10%): Family support component
  */
 const WEIGHTS = {
   savingsRate: 0.3,
@@ -36,7 +36,7 @@ const WEIGHTS = {
  * overall financial health - similar to a credit score but for cash flow.
  *
  * Unique Features:
- * - Africa-specific Dependency Ratio component that doesn't penalize family support
+ * - Dependency Ratio component that doesn't penalize family support
  * - Full Opik tracing for observability
  * - Transparent calculation with human-readable breakdown
  *
@@ -336,11 +336,11 @@ export class CashFlowScoreCalculator {
   }
 
   /**
-   * Dependency Ratio Score (10% weight) - Africa-specific
+   * Dependency Ratio Score (10% weight)
    * Formula: (Total Family Support / Net Income) * 100
    *
-   * This component recognizes that supporting family is a cultural norm
-   * in Africa and doesn't penalize it harshly.
+   * This component recognizes that supporting family is common
+   * and doesn't penalize it harshly.
    *
    * Scoring:
    * - 0-10% → 100 (Low support obligations)

@@ -45,7 +45,7 @@ export class StoryCardsCronService {
   ) {}
 
   /**
-   * Clean up expired story cards daily at 3 AM Africa/Lagos time
+   * Clean up expired story cards daily at 3 AM UTC time
    *
    * Deletes cards where expiresAt < now. Cards that have passed their
    * expiration date are no longer accessible and can be safely removed.
@@ -57,7 +57,7 @@ export class StoryCardsCronService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_3AM, {
     name: 'story-cards-expired-cleanup',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async cleanupExpiredCards(): Promise<CleanupResult> {
     const lockValue = randomUUID();
@@ -102,7 +102,7 @@ export class StoryCardsCronService {
   }
 
   /**
-   * Clean up inactive (soft-deleted) cards daily at 4 AM Africa/Lagos time
+   * Clean up inactive (soft-deleted) cards daily at 4 AM UTC time
    *
    * Permanently deletes cards where:
    * - isActive = false (soft-deleted)
@@ -117,7 +117,7 @@ export class StoryCardsCronService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_4AM, {
     name: 'story-cards-inactive-cleanup',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async cleanupInactiveCards(): Promise<CleanupResult> {
     const lockValue = randomUUID();
@@ -181,13 +181,13 @@ export class StoryCardsCronService {
       {
         jobName: 'story-cards-expired-cleanup',
         schedule: CronExpression.EVERY_DAY_AT_3AM,
-        timezone: 'Africa/Lagos',
+        timezone: 'UTC',
         description: 'Daily cleanup of expired story cards',
       },
       {
         jobName: 'story-cards-inactive-cleanup',
         schedule: CronExpression.EVERY_DAY_AT_4AM,
-        timezone: 'Africa/Lagos',
+        timezone: 'UTC',
         description: `Daily cleanup of inactive cards after ${INACTIVE_RETENTION_DAYS} days`,
       },
     ];

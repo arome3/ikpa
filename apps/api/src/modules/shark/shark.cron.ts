@@ -90,7 +90,7 @@ export class SharkCronService {
 
   /**
    * Weekly zombie detection job
-   * Runs every Sunday at 6:00 AM WAT
+   * Runs every Sunday at 6:00 AM UTC
    *
    * Schedule: '0 6 * * 0'
    * - 0: minute (0)
@@ -101,7 +101,7 @@ export class SharkCronService {
    */
   @Cron('0 6 * * 0', {
     name: 'weekly-zombie-detection',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async detectZombiesWeekly(): Promise<void> {
     const lockValue = randomUUID();
@@ -436,8 +436,8 @@ export class SharkCronService {
     return {
       jobName: 'weekly-zombie-detection',
       schedule: '0 6 * * 0',
-      timezone: 'Africa/Lagos',
-      description: 'Detects zombie subscriptions for all users every Sunday at 6 AM WAT',
+      timezone: 'UTC',
+      description: 'Detects zombie subscriptions for all users every Sunday at 6 AM UTC',
       config: this.batchConfig,
     };
   }

@@ -238,12 +238,12 @@ export class CardContentCalculator {
       return type === 'wealth_gain' ? `+${percentage}%` : `${percentage}%`;
     }
 
-    // Show actual amount (Nigerian Naira format)
+    // Show actual amount (formatted)
     return this.formatCurrency(amount);
   }
 
   /**
-   * Format currency in Nigerian Naira
+   * Format currency amount
    */
   private formatCurrency(amount: number): string {
     if (amount >= 1000000000) {

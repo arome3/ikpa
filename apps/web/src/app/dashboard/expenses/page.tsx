@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   Search,
-  Calendar,
   Filter,
   X,
   Receipt,
@@ -23,6 +22,7 @@ import { useCategories, useBudgets } from '@/hooks/useFinance';
 import { useCurrency } from '@/hooks';
 import { useExpenseNudge } from '@/hooks/useExpenses';
 import { TimeMachineCard } from '@/components/time-machine/TimeMachineCard';
+import { CategoryIcon } from '@/components/ui/CategoryIcon';
 
 // ============================================
 // EXPENSES PAGE
@@ -138,61 +138,41 @@ export default function ExpensesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Ambient effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -right-20 w-96 h-96 bg-red-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-40 -left-20 w-80 h-80 bg-orange-500/5 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative max-w-lg mx-auto px-4 py-6 safe-top pb-32">
+    <div className="min-h-screen bg-[#FDFCF8]">
+      <div className="relative max-w-lg mx-auto px-4 py-6 safe-top pb-24">
         {/* Header */}
         <motion.header
           className="mb-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Expenses</h1>
-              <p className="text-sm text-slate-400">Track where your money goes</p>
-            </div>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-4xl font-serif text-[#1A2E22]">Expenses</h1>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="p-3 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-xl text-white shadow-lg shadow-primary-500/25"
+              className="flex items-center gap-2 bg-[#064E3B] text-white rounded-full px-5 py-2.5 text-sm font-medium hover:bg-[#053F30] transition-colors"
             >
-              <Plus className="w-6 h-6" />
+              <Plus className="w-4 h-4" />
+              Add Expense
             </button>
           </div>
 
-          {/* Summary Card */}
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-red-500/10 via-orange-500/10 to-amber-500/10 border border-red-500/20 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-sm text-slate-400">This Month</p>
-                <p className="text-3xl font-bold text-white">
-                  {formatCurrency(monthTotal, currency)}
-                </p>
-              </div>
-              <div className="p-3 bg-red-500/20 rounded-xl">
-                <Receipt className="w-8 h-8 text-red-400" />
-              </div>
-            </div>
-
-            {/* Year total */}
-            <div className="mb-3 px-3 py-2 bg-white/5 rounded-xl flex items-center justify-between">
-              <span className="text-sm text-slate-400">This Year</span>
-              <span className="text-sm font-semibold text-white">
-                {formatCurrency(yearTotal, currency)}
-              </span>
-            </div>
+          {/* Statement Header */}
+          <div className="pt-2">
+            <p className="text-xs uppercase tracking-widest text-stone-500 mb-1">This Month</p>
+            <p className="text-6xl font-serif text-[#1A2E22] mb-2">
+              {formatCurrency(monthTotal, currency)}
+            </p>
+            <p className="text-sm text-stone-500 mb-4">
+              Year total: {formatCurrency(yearTotal, currency)}
+            </p>
 
             {/* Category breakdown mini */}
             <div className="flex flex-wrap gap-2">
               {byCategory.slice(0, 4).map((cat) => (
                 <div
                   key={cat.categoryId}
-                  className="px-3 py-1.5 bg-white/10 rounded-full text-xs text-slate-300"
+                  className="px-3 py-1.5 border border-stone-200 rounded-full text-xs text-stone-600"
                 >
                   {cat.categoryName}: {formatCurrency(Math.abs(cat.total), currency, { compact: true })}
                 </div>
@@ -204,28 +184,28 @@ export default function ExpensesPage() {
         {/* Search & Filters */}
         <motion.section
           className="mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
         >
           <div className="flex items-center gap-2">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search expenses..."
-                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-7 pr-4 py-3 bg-transparent border-b border-stone-300 text-[#1A2E22] placeholder-stone-400 focus:outline-none focus:border-[#064E3B] transition-colors"
               />
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                'p-3 rounded-xl border transition-colors',
+                'p-3 rounded-full border transition-colors',
                 showFilters
-                  ? 'bg-primary-500/20 border-primary-500/50 text-primary-400'
-                  : 'bg-white/5 border-white/10 text-slate-400'
+                  ? 'bg-[#064E3B] border-[#064E3B] text-white'
+                  : 'border-stone-300 text-stone-400 hover:border-stone-400'
               )}
             >
               <Filter className="w-5 h-5" />
@@ -247,8 +227,8 @@ export default function ExpensesPage() {
                     className={cn(
                       'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
                       !selectedCategory
-                        ? 'bg-primary-500 text-white'
-                        : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                        ? 'bg-[#064E3B] text-white'
+                        : 'border border-stone-200 text-stone-600 hover:bg-stone-100'
                     )}
                   >
                     All
@@ -260,14 +240,14 @@ export default function ExpensesPage() {
                       className={cn(
                         'px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5',
                         selectedCategory === cat.name
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                          ? 'bg-[#064E3B] text-white'
+                          : 'border border-stone-200 text-stone-600 hover:bg-stone-100'
                       )}
                     >
-                      <span>{cat.icon}</span>
+                      <CategoryIcon name={cat.icon} className="w-4 h-4" />
                       {cat.name}
                       {overBudgetCategories.includes(cat.name) && (
-                        <AlertTriangle className="w-3 h-3 text-caution-400" />
+                        <AlertTriangle className="w-3 h-3 text-orange-600" />
                       )}
                     </button>
                   ))}
@@ -279,80 +259,74 @@ export default function ExpensesPage() {
 
         {/* Expenses List */}
         <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-20 bg-white/5 animate-pulse rounded-xl" />
+                <div key={i} className="h-20 bg-stone-200 animate-pulse rounded-lg" />
               ))}
             </div>
           ) : filteredExpenses.length === 0 ? (
             <div className="text-center py-12">
-              <div className="inline-flex p-4 bg-white/5 rounded-full mb-4">
-                <Receipt className="w-8 h-8 text-slate-500" />
+              <div className="inline-flex p-4 bg-stone-100 rounded-full mb-4">
+                <Receipt className="w-8 h-8 text-stone-500" />
               </div>
-              <p className="text-slate-400">No expenses found</p>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-stone-500">No expenses found</p>
+              <p className="text-sm text-stone-400 mt-1">
                 {searchQuery || selectedCategory
                   ? 'Try adjusting your filters'
-                  : 'Tap + to add your first expense'}
+                  : 'Add your first expense'}
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {groupedExpenses.map((group, groupIndex) => (
                 <motion.div
                   key={group.date.toISOString()}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ delay: 0.05 * groupIndex }}
                 >
                   {/* Date Header */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-slate-500" />
-                      <span className="text-sm font-medium text-slate-400">
-                        {formatDate(group.date, { relative: true })}
-                      </span>
-                    </div>
-                    <span className="text-sm font-semibold text-white">
+                  <div className="flex items-center justify-between mb-1 pb-2 border-b border-stone-200">
+                    <span className="text-xs uppercase tracking-widest text-stone-400">
+                      {formatDate(group.date, { relative: true })}
+                    </span>
+                    <span className="text-sm font-mono font-semibold text-[#1A2E22]">
                       {formatCurrency(group.total, currency)}
                     </span>
                   </div>
 
-                  {/* Expense Cards */}
-                  <div className="space-y-2">
+                  {/* Expense Rows */}
+                  <div>
                     {group.expenses.map((expense, index) => (
                       <motion.div
                         key={expense.id}
-                        className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        className="py-5 border-b border-stone-200 last:border-b-0 group"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         transition={{ delay: 0.02 * index }}
                       >
                         <div className="flex items-center gap-3">
                           {/* Category Icon */}
-                          <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-                            style={{ backgroundColor: (expense.category?.color || '#666') + '20' }}
-                          >
-                            {expense.category?.icon || '💰'}
-                          </div>
+                          <span className="flex-shrink-0 text-stone-600">
+                            <CategoryIcon name={expense.category?.icon || 'receipt'} className="w-5 h-5" />
+                          </span>
 
                           {/* Details */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="font-medium text-white truncate">
+                              <p className="font-semibold text-stone-900 truncate">
                                 {expense.description || expense.merchant || expense.category?.name}
                               </p>
                               {overBudgetCategories.includes(expense.category?.name) && (
-                                <AlertTriangle className="w-4 h-4 text-caution-400 flex-shrink-0" />
+                                <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0" />
                               )}
                             </div>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-stone-500">
                               {expense.category?.name}
                               {expense.merchant && ` · ${expense.merchant}`}
                             </p>
@@ -360,29 +334,29 @@ export default function ExpensesPage() {
 
                           {/* Amount */}
                           <div className="text-right">
-                            <p className="font-semibold text-white">
+                            <p className="font-mono font-semibold text-[#1A2E22]">
                               -{formatCurrency(Math.abs(expense.amount), expense.currency)}
                             </p>
                           </div>
 
-                          {/* Actions */}
-                          <div className="flex items-center gap-1 ml-2">
+                          {/* Actions — hidden until hover on desktop, always visible on mobile */}
+                          <div className="flex items-center gap-1 ml-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => setTimeMachineExpense(expense)}
-                              className="p-2 text-slate-500 hover:text-violet-400 transition-colors"
+                              className="p-2 text-stone-400 hover:text-emerald-700 transition-colors"
                               title="Time Machine"
                             >
                               <Clock className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setEditingExpense(expense)}
-                              className="p-2 text-slate-500 hover:text-white transition-colors"
+                              className="p-2 text-stone-400 hover:text-emerald-700 transition-colors"
                             >
                               <Edit3 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteExpense(expense.id)}
-                              className="p-2 text-slate-500 hover:text-red-400 transition-colors"
+                              className="p-2 text-stone-400 hover:text-red-600 transition-colors"
                               disabled={isDeleting}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -455,23 +429,6 @@ export default function ExpensesPage() {
           />
         )}
       </AnimatePresence>
-
-      {/* Quick Add FAB */}
-      <motion.button
-        onClick={() => setIsAddModalOpen(true)}
-        className={cn(
-          'fixed bottom-24 right-4 md:bottom-8',
-          'w-14 h-14 rounded-full',
-          'bg-gradient-to-r from-primary-500 to-secondary-500',
-          'shadow-lg shadow-primary-500/30',
-          'flex items-center justify-center',
-          'text-white'
-        )}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-      >
-        <Plus className="w-7 h-7" />
-      </motion.button>
     </div>
   );
 }
@@ -483,7 +440,7 @@ export default function ExpensesPage() {
 interface ExpenseModalProps {
   expense: Expense | null;
   categories: { id: string; name: string; icon: string; color: string }[];
-  budgets: { categoryId: string; percentUsed?: number }[];
+  budgets: { categoryId?: string; percentUsed?: number }[];
   onSubmit: (data: CreateExpenseData) => Promise<void>;
   onClose: () => void;
   isLoading: boolean;
@@ -526,7 +483,7 @@ function ExpenseModal({
     >
       {/* Backdrop */}
       <motion.div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -535,20 +492,20 @@ function ExpenseModal({
 
       {/* Modal */}
       <motion.div
-        className="relative w-full max-w-lg bg-slate-900 border border-white/10 rounded-t-3xl md:rounded-2xl overflow-hidden"
+        className="relative w-full max-w-lg bg-white border border-stone-200 rounded-t-3xl md:rounded-2xl overflow-hidden"
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h2 className="text-lg font-semibold text-white">
+        <div className="flex items-center justify-between p-4 border-b border-stone-200">
+          <h2 className="text-lg font-serif font-semibold text-[#1A2E22]">
             {expense ? 'Edit Expense' : 'Add Expense'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white transition-colors"
+            className="p-2 text-stone-400 hover:text-stone-600 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -558,9 +515,9 @@ function ExpenseModal({
         <form onSubmit={handleSubmit} className="p-4 space-y-5">
           {/* Amount */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Amount</label>
+            <label className="block text-sm text-stone-500 mb-2">Amount</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-medium">
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 text-stone-400 text-xl font-medium">
                 {currencySymbol}
               </span>
               <input
@@ -568,7 +525,7 @@ function ExpenseModal({
                 value={formData.amount || ''}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
                 placeholder="0"
-                className="w-full pl-10 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-2xl font-bold text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-7 pr-4 py-4 bg-transparent border-b border-stone-300 text-2xl font-bold text-[#1A2E22] placeholder-stone-300 focus:outline-none focus:border-[#064E3B] transition-colors"
                 autoFocus
               />
             </div>
@@ -576,37 +533,32 @@ function ExpenseModal({
 
           {/* Category */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Category</label>
+            <label className="block text-sm text-stone-500 mb-2">Category</label>
             <button
               type="button"
               onClick={() => setShowCategoryPicker(!showCategoryPicker)}
               className={cn(
                 'w-full flex items-center justify-between p-4 rounded-xl border transition-colors',
                 formData.categoryId
-                  ? 'bg-white/5 border-white/20'
-                  : 'bg-white/5 border-white/10'
+                  ? 'bg-stone-50 border-stone-200'
+                  : 'bg-white border-stone-200'
               )}
             >
               {selectedCategory ? (
                 <div className="flex items-center gap-3">
-                  <span
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
-                    style={{ backgroundColor: selectedCategory.color + '30' }}
-                  >
-                    {selectedCategory.icon}
-                  </span>
-                  <span className="font-medium text-white">{selectedCategory.name}</span>
+                  <CategoryIcon name={selectedCategory.icon} className="w-5 h-5 text-stone-600" />
+                  <span className="font-medium text-[#1A2E22]">{selectedCategory.name}</span>
                   {isOverBudget && (
-                    <span className="px-2 py-0.5 bg-caution-500/20 text-caution-400 text-xs rounded-full">
+                    <span className="px-2 py-0.5 bg-orange-50 text-orange-700 text-xs rounded-full border border-orange-200">
                       {Math.round(categoryBudget?.percentUsed ?? 0)}% used
                     </span>
                   )}
                 </div>
               ) : (
-                <span className="text-slate-500">Select category</span>
+                <span className="text-stone-400">Select category</span>
               )}
               <ChevronDown className={cn(
-                'w-5 h-5 text-slate-400 transition-transform',
+                'w-5 h-5 text-stone-400 transition-transform',
                 showCategoryPicker && 'rotate-180'
               )} />
             </button>
@@ -636,22 +588,17 @@ function ExpenseModal({
                           className={cn(
                             'p-3 rounded-xl border flex flex-col items-center gap-1 transition-all',
                             formData.categoryId === cat.id
-                              ? 'bg-primary-500/20 border-primary-500/50'
-                              : 'bg-white/5 border-white/10 hover:bg-white/10',
-                            over && 'ring-1 ring-caution-500/50'
+                              ? 'bg-[#064E3B]/10 border-[#064E3B]/30'
+                              : 'bg-stone-50 border-stone-200 hover:bg-stone-100',
+                            over && 'ring-1 ring-orange-300'
                           )}
                         >
-                          <span
-                            className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
-                            style={{ backgroundColor: cat.color + '30' }}
-                          >
-                            {cat.icon}
-                          </span>
-                          <span className="text-xs text-slate-300 truncate w-full text-center">
+                          <CategoryIcon name={cat.icon} className="w-5 h-5 text-stone-600" />
+                          <span className="text-xs text-stone-600 truncate w-full text-center">
                             {cat.name}
                           </span>
                           {over && (
-                            <AlertTriangle className="w-3 h-3 text-caution-400" />
+                            <AlertTriangle className="w-3 h-3 text-orange-600" />
                           )}
                         </button>
                       );
@@ -664,47 +611,47 @@ function ExpenseModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Description (optional)</label>
+            <label className="block text-sm text-stone-500 mb-2">Description (optional)</label>
             <input
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="What was this for?"
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-0 py-3 bg-transparent border-b border-stone-300 text-[#1A2E22] placeholder-stone-400 focus:outline-none focus:border-[#064E3B] transition-colors"
             />
           </div>
 
           {/* Merchant */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Merchant (optional)</label>
+            <label className="block text-sm text-stone-500 mb-2">Merchant (optional)</label>
             <input
               type="text"
               value={formData.merchant}
               onChange={(e) => setFormData({ ...formData, merchant: e.target.value })}
               placeholder="Where did you spend?"
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-0 py-3 bg-transparent border-b border-stone-300 text-[#1A2E22] placeholder-stone-400 focus:outline-none focus:border-[#064E3B] transition-colors"
             />
           </div>
 
           {/* Date */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Date</label>
+            <label className="block text-sm text-stone-500 mb-2">Date</label>
             <input
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-0 py-3 bg-transparent border-b border-stone-300 text-[#1A2E22] focus:outline-none focus:border-[#064E3B] transition-colors"
             />
           </div>
 
           {/* Budget Warning */}
           {isOverBudget && (
-            <div className="p-4 bg-caution-500/10 border border-caution-500/20 rounded-xl">
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
               <div className="flex items-center gap-2 mb-1">
-                <AlertTriangle className="w-4 h-4 text-caution-400" />
-                <span className="font-medium text-caution-400">Budget Alert</span>
+                <AlertTriangle className="w-4 h-4 text-orange-700" />
+                <span className="font-medium text-orange-800">Budget Alert</span>
               </div>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-orange-700">
                 This category is at {Math.round(categoryBudget?.percentUsed ?? 0)}% of budget.
                 Adding this expense may trigger a GPS recalculation.
               </p>
@@ -716,10 +663,9 @@ function ExpenseModal({
             type="submit"
             disabled={!formData.categoryId || formData.amount <= 0 || isLoading}
             className={cn(
-              'w-full py-4 rounded-xl font-semibold text-white',
-              'bg-gradient-to-r from-primary-500 to-secondary-500',
-              'hover:from-primary-400 hover:to-secondary-400',
-              'shadow-lg shadow-primary-500/25',
+              'w-full py-4 rounded-full font-semibold text-white',
+              'bg-[#064E3B]',
+              'hover:bg-[#053F30]',
               'transition-all duration-200',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'flex items-center justify-center gap-2'
@@ -752,9 +698,9 @@ function ExpenseModal({
 // ============================================
 
 const severityStyles = {
-  info: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-300',
-  warning: 'from-amber-500/20 to-amber-600/10 border-amber-500/30 text-amber-300',
-  critical: 'from-red-500/20 to-red-600/10 border-red-500/30 text-red-300',
+  info: 'bg-blue-50 border-blue-200 text-blue-800',
+  warning: 'bg-amber-50 border-amber-200 text-amber-800',
+  critical: 'bg-red-50 border-red-200 text-red-800',
 };
 
 function ExpenseNudgeToast({
@@ -778,14 +724,14 @@ function ExpenseNudgeToast({
 
   return (
     <motion.div
-      className="fixed bottom-28 left-4 right-4 md:left-auto md:right-8 md:w-96 z-40"
+      className="fixed bottom-8 left-4 right-4 md:left-auto md:right-8 md:w-96 z-40"
       initial={{ opacity: 0, y: 50, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 50, scale: 0.95 }}
     >
       <div
         className={cn(
-          'p-4 rounded-2xl border backdrop-blur-xl bg-gradient-to-r',
+          'p-4 rounded-2xl border',
           severityStyles[severity],
         )}
       >

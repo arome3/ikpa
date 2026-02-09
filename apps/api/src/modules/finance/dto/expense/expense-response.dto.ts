@@ -34,7 +34,7 @@ export class ExpenseResponseDto {
   @ApiProperty({ description: 'Expense amount', example: 5000 })
   amount!: number;
 
-  @ApiProperty({ description: 'Currency code', example: 'NGN' })
+  @ApiProperty({ description: 'Currency code', example: 'USD' })
   currency!: string;
 
   @ApiProperty({ description: 'Date of expense' })

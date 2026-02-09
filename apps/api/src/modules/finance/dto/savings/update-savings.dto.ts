@@ -96,7 +96,7 @@ export class UpdateSavingsDto {
 
   @ApiPropertyOptional({
     enum: Currency,
-    example: 'NGN',
+    example: 'USD',
     description: 'Currency',
   })
   @IsEnum(Currency)

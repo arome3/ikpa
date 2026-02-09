@@ -3,7 +3,7 @@
  *
  * Defines regex patterns for detecting subscription services
  * from merchant names in expense records. Includes both
- * international and Africa-specific services.
+ * international and regional services.
  */
 
 import { SubscriptionCategory, Currency } from '@prisma/client';
@@ -35,14 +35,14 @@ export const SUBSCRIPTION_PATTERNS: SubscriptionPattern[] = [
     category: SubscriptionCategory.SOFTWARE,
     displayName: 'Software',
   },
-  // Streaming Services (International + Africa)
+  // Streaming Services
   {
     pattern:
       /netflix|spotify|amazon\s*prime|youtube\s*premium|apple\s*music|disney\+?|hulu|hbo\s*max|paramount\+?|peacock|tidal|deezer|audiomack/i,
     category: SubscriptionCategory.STREAMING,
     displayName: 'Streaming',
   },
-  // TV/Cable (Africa-specific)
+  // TV/Cable (Regional)
   {
     pattern:
       /dstv|gotv|showmax|multichoice|startimes|canal\+?|kwese|azam\s*tv/i,

@@ -2,7 +2,7 @@
  * Tool Optimizer Cron Service
  *
  * Scheduled tasks for running GEPA tool selection optimization.
- * Runs weekly on Sunday at 4:00 AM WAT (Africa/Lagos).
+ * Runs weekly on Sunday at 4:00 AM UTC.
  *
  * Training data is loaded from the database via DatasetService.
  * Historical tool selection data is also stored in ToolSelectionHistory.
@@ -59,7 +59,7 @@ export class ToolOptimizerCronService {
   }
 
   /**
-   * Weekly optimization - runs Sunday at 4:00 AM Africa/Lagos time
+   * Weekly optimization - runs Sunday at 4:00 AM UTC time
    *
    * Analyzes the week's tool selection history to:
    * 1. Extract patterns from successful/unsuccessful selections
@@ -71,7 +71,7 @@ export class ToolOptimizerCronService {
    */
   @Cron('0 4 * * 0', {
     name: 'tool-optimizer-weekly',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async runWeeklyOptimization(): Promise<OptimizedToolPolicy | null> {
     const lockValue = randomUUID();
@@ -168,7 +168,7 @@ export class ToolOptimizerCronService {
     return {
       jobName: 'tool-optimizer-weekly',
       schedule: '0 4 * * 0',
-      timezone: 'Africa/Lagos',
+      timezone: 'UTC',
       description: 'Weekly GEPA optimization for GPS Re-Router tool selection',
     };
   }

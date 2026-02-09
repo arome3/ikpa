@@ -54,7 +54,7 @@ export function BudgetsStep({
       case 'QUARTERLY':
         monthlyAmount = item.amount / 3;
         break;
-      case 'ANNUALLY':
+      case 'YEARLY':
         monthlyAmount = item.amount / 12;
         break;
     }
@@ -63,7 +63,7 @@ export function BudgetsStep({
 
   // Get categories that don't have budgets yet
   const availableCategories = categories.filter(
-    (cat) => !items.some((item) => item.category.id === cat.id)
+    (cat) => !items.some((item) => item.category?.id === cat.id)
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,16 +139,16 @@ export function BudgetsStep({
           >
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-              style={{ backgroundColor: `${item.category.color}20` }}
+              style={{ backgroundColor: `${item.category?.color}20` }}
             >
               {/* Use category icon as emoji or fallback */}
-              <span style={{ color: item.category.color }}>
-                {getCategoryEmoji(item.category.icon)}
+              <span style={{ color: item.category?.color }}>
+                {getCategoryEmoji(item.category?.icon ?? '')}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-neutral-900 dark:text-white truncate">
-                {item.category.name}
+                {item.category?.name}
               </p>
               <p className="text-sm text-neutral-500">
                 {periods.find((p) => p.value === item.period)?.label} budget

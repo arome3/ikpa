@@ -23,13 +23,18 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../../common/guards';
 import { CurrentUser, SkipEmailVerification } from '../../../common/decorators';
 import { SavingsService } from '../services';
-import { CreateSavingsDto, UpdateSavingsDto, SavingsResponseDto, SavingsListResponseDto } from '../dto';
+import {
+  CreateSavingsDto,
+  UpdateSavingsDto,
+  SavingsResponseDto,
+  SavingsListResponseDto,
+} from '../dto';
 
 /**
  * Savings Controller
  *
  * CRUD endpoints for managing savings accounts.
- * Supports African savings mechanisms: mobile money, ajo/susu, cooperatives.
+ * Supports savings mechanisms: mobile money, ajo/susu, cooperatives.
  */
 @ApiTags('Finance - Savings')
 @ApiBearerAuth()
@@ -49,7 +54,7 @@ export class SavingsController {
     description:
       'Creates a new savings account. Supports various types: bank accounts, ' +
       'mobile money (M-Pesa, OPay), fixed deposits, ajo/susu (traditional ' +
-      'African rotating savings), and cooperatives. Mark isEmergencyFund=true ' +
+      'Rotating savings), and cooperatives. Mark isEmergencyFund=true ' +
       'for accounts that count toward your emergency runway.',
   })
   @ApiResponse({

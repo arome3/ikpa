@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3002",
+    "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start --port 3002",
     "lint": "next lint",
@@ -12,9 +12,13 @@
   },
   "dependencies": {
     "@ikpa/shared": "workspace:*",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
+    "motion": "^12.33.0",
     "next": "15.1.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

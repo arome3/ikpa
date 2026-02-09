@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth.store';
-import { BottomNav } from '@/components/navigation';
+import { BottomNav, Sidebar } from '@/components/navigation';
 
 export default function DashboardLayout({
   children,
@@ -37,9 +37,12 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      {/* Main content with bottom padding for nav */}
-      <main className="pb-20 md:pb-0">
+    <div className="min-h-screen bg-[#FDFCF8]">
+      {/* Desktop sidebar */}
+      <Sidebar />
+
+      {/* Main content with bottom padding for mobile nav, left offset for sidebar on desktop */}
+      <main className="pb-20 md:pb-0 md:ml-64">
         {children}
       </main>
 

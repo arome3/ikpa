@@ -90,7 +90,7 @@ export const AuthConfig = {
   /**
    * Password Complexity Requirements
    *
-   * Balances security with accessibility for African users
+   * Balances security with accessibility for users
    * who may be on mobile devices or newer to digital finance.
    * Special characters are optional to reduce friction.
    */

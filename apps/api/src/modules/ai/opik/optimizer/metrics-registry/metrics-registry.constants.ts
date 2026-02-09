@@ -152,20 +152,20 @@ export const INTERVENTION_SUCCESS_METRIC: NumericalMetricDefinition = {
 /**
  * CulturalSensitivity metric (0-5 scale)
  *
- * Measures how well AI responses adapt to user's cultural context,
- * including currency, regional expressions, and cultural norms.
+ * Measures how well AI responses adapt to the user's personal context,
+ * including values, family dynamics, and individual circumstances.
  *
  * Scale:
- * - 1: Culturally inappropriate or offensive
- * - 2: Generic, ignores cultural context
- * - 3: Neutral, basic cultural awareness
- * - 4: Good cultural adaptation
- * - 5: Excellent cultural sensitivity and localization
+ * - 1: Insensitive or inappropriate
+ * - 2: Generic, ignores personal context
+ * - 3: Neutral, basic personal awareness
+ * - 4: Good personal adaptation
+ * - 5: Excellent sensitivity and personalization
  */
 export const CULTURAL_SENSITIVITY_METRIC: NumericalMetricDefinition = {
   name: METRIC_NAME_CULTURAL_SENSITIVITY,
   description:
-    'Measures cultural sensitivity of responses. 1=inappropriate, 5=excellent localization',
+    'Measures personal sensitivity of responses. 1=inappropriate, 5=excellent personalization',
   type: 'numerical',
   min: 0,
   max: 5,

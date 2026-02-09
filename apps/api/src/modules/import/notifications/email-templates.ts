@@ -259,8 +259,8 @@ export function buildImportWelcomeEmail(data: ImportWelcomeData): {
 
     <h3 style="color: #333;">Supported banks</h3>
     <p style="font-size: 14px; color: #555;">
-      <strong>Nigeria:</strong> GTBank, Access Bank, First Bank, Zenith, UBA, Kuda, Opay, Moniepoint<br>
-      <strong>US:</strong> Chase, Bank of America, Wells Fargo, Capital One, Citi, Amex, Discover, US Bank, PNC
+      <strong>US:</strong> Chase, Bank of America, Wells Fargo, Capital One, Citi, Amex, Discover, US Bank, PNC<br>
+      <strong>Nigeria:</strong> GTBank, Access Bank, First Bank, Zenith, UBA, Kuda, Opay, Moniepoint
     </p>
 
     <div style="text-align: center; margin: 24px 0;">
@@ -296,8 +296,8 @@ Set up auto-forwarding:
 - Yahoo: Settings > More Settings > Mailboxes > Forward
 
 Supported banks:
-Nigeria: GTBank, Access Bank, First Bank, Zenith, UBA, Kuda, Opay, Moniepoint
 US: Chase, Bank of America, Wells Fargo, Capital One, Citi, Amex, Discover, US Bank, PNC
+Nigeria: GTBank, Access Bank, First Bank, Zenith, UBA, Kuda, Opay, Moniepoint
 
 Go to Import Dashboard: ${data.frontendUrl}/dashboard/import
 

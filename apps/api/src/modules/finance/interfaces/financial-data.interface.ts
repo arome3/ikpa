@@ -49,7 +49,7 @@ export interface CashFlowScoreComponents {
   debtToIncome: ComponentScore;
   /** Income Stability: Based on coefficient of variation - Weight: 15% */
   incomeStability: ComponentScore;
-  /** Dependency Ratio: (Total Family Support / Net Income) * 100 - Weight: 10% (Africa-specific) */
+  /** Dependency Ratio: (Total Family Support / Net Income) * 100 - Weight: 10% */
   dependencyRatio: ComponentScore;
 }
 

@@ -1,5 +1,5 @@
 /* IKPA - The Clarity Engine */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,20 +7,26 @@
 
 @layer base {
   :root {
-    /* Backgrounds */
-    --background: #FFFFFF;
-    --background-secondary: #F9FAFB;
-    --background-tertiary: #F3F4F6;
-    --foreground: #111827;
-    --muted: #6B7280;
-    --muted-foreground: #9CA3AF;
-    --border: #E5E7EB;
+    /* Backgrounds — warm cream canvas */
+    --background: #FDFCF8;
+    --background-secondary: #FFFFFF;
+    --background-tertiary: #F2F0E9;
+    --foreground: #1A2E22;
+    --muted: #44403C;
+    --muted-foreground: #A8A29E;
+    --border: #E7E5E4;
+
+    /* Editorial ink tokens */
+    --ink-primary: #1A2E22;
+    --ink-secondary: #44403C;
+    --ink-tertiary: #A8A29E;
+    --action-primary: #064E3B;
 
     /* Ikpa Brand Colors */
-    --ikpa-green: #10B981;
-    --ikpa-gold: #F59E0B;
-    --ikpa-caution: #F97316;
-    --ikpa-info: #3B82F6;
+    --ikpa-green: #10b981;
+    --ikpa-gold: #f59e0b;
+    --ikpa-caution: #f97316;
+    --ikpa-info: #3b82f6;
 
     /* Glass effects */
     --glass-bg: rgba(255, 255, 255, 0.7);
@@ -35,16 +41,16 @@
 
     /* Selection */
     --selection-bg: rgba(16, 185, 129, 0.15);
-    --selection-text: #065F46;
+    --selection-text: #065f46;
   }
 
   .dark {
-    --background: #0F172A;
-    --background-secondary: #1E293B;
+    --background: #0f172a;
+    --background-secondary: #1e293b;
     --background-tertiary: #334155;
-    --foreground: #F9FAFB;
-    --muted: #9CA3AF;
-    --muted-foreground: #6B7280;
+    --foreground: #f9fafb;
+    --muted: #9ca3af;
+    --muted-foreground: #6b7280;
     --border: #374151;
 
     --glass-bg: rgba(30, 41, 59, 0.8);
@@ -53,7 +59,7 @@
     --glass-shadow: rgba(0, 0, 0, 0.2);
 
     --selection-bg: rgba(16, 185, 129, 0.25);
-    --selection-text: #A7F3D0;
+    --selection-text: #a7f3d0;
   }
 
   html {
@@ -69,13 +75,19 @@
     line-height: 1.6;
   }
 
-  h1, h2, h3, h4, .font-display {
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-weight: 700;
     letter-spacing: -0.02em;
   }
 
-  .font-mono, code, pre {
+  .font-mono,
+  code,
+  pre {
     font-family: 'JetBrains Mono', monospace;
   }
 
@@ -200,7 +212,7 @@
     @apply hover:-translate-y-0.5 transition-all duration-300;
   }
 
-  /* Glass Cards - African Glassmorphism */
+  /* Glass Cards - Glassmorphism */
   .glass-card {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
@@ -296,7 +308,7 @@
 
   /* Paper texture for "Letter from 2034" */
   .paper-texture {
-    background-color: #FFFBEB;
+    background-color: #fffbeb;
     background-image:
       linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
       linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
@@ -343,12 +355,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(16, 185, 129, 0.3),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.3), transparent);
     transform: translateX(-100%);
     animation: scanLine 3s ease-in-out infinite;
     pointer-events: none;
@@ -409,7 +416,9 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;

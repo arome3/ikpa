@@ -258,7 +258,7 @@ export const GROUP_MESSAGES = {
  * Proactive AI intervention before a commitment fails
  */
 export const SLIP_DETECTOR = {
-  /** Daily scan at 9 AM WAT */
+  /** Daily scan at 9 AM UTC */
   SCAN_CRON: '0 9 * * *',
   /** Minimum hours between nudges per contract (prevents notification fatigue) */
   FATIGUE_HOURS: 72,

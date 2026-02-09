@@ -34,7 +34,7 @@ export class BudgetResponseDto {
   @ApiProperty({ example: 50000 })
   amount!: number;
 
-  @ApiProperty({ enum: Currency, example: 'NGN' })
+  @ApiProperty({ enum: Currency, example: 'USD' })
   currency!: Currency;
 
   @ApiProperty({ enum: BudgetPeriod, example: 'MONTHLY' })

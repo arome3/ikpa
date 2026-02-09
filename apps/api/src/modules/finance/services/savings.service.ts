@@ -1,14 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CreateSavingsDto, UpdateSavingsDto, SavingsResponseDto, SavingsListResponseDto } from '../dto';
+import {
+  CreateSavingsDto,
+  UpdateSavingsDto,
+  SavingsResponseDto,
+  SavingsListResponseDto,
+} from '../dto';
 import { ErrorCodes } from '../../../common/constants/error-codes';
 
 /**
  * Savings Service
  *
  * Manages CRUD operations for savings accounts.
- * Supports African savings mechanisms including mobile money and ajo/susu.
+ * Supports savings mechanisms including mobile money and ajo/susu.
  */
 @Injectable()
 export class SavingsService {
@@ -96,7 +101,11 @@ export class SavingsService {
   /**
    * Update a savings account
    */
-  async update(userId: string, savingsId: string, dto: UpdateSavingsDto): Promise<SavingsResponseDto> {
+  async update(
+    userId: string,
+    savingsId: string,
+    dto: UpdateSavingsDto,
+  ): Promise<SavingsResponseDto> {
     // Verify ownership
     const existing = await this.prisma.savingsAccount.findFirst({
       where: { id: savingsId, userId },

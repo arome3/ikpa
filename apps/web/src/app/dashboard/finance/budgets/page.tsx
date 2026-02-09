@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Receipt, Utensils, Car, Home, ShoppingBag, Heart, Gamepad2,
-  Pencil, Trash2, AlertTriangle, CheckCircle2, Navigation, Zap
+  Pencil, Trash2, AlertTriangle, Navigation, Zap
 } from 'lucide-react';
 import { useBudgets, useCategories, type Budget, type CreateBudgetData, useGps, useCurrency } from '@/hooks';
-import { Button, Modal, ModalFooter, Input, Spinner, Badge } from '@/components/ui';
+import { Button, Modal, ModalFooter, Input, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { formatWithSeparators } from '@/hooks';
 
@@ -56,6 +56,11 @@ export default function BudgetsPage() {
 
     return { totalBudget, totalSpent, onTrack, overBudget };
   }, [activeItems]);
+
+  const deployedPercent = budgetStats.totalBudget > 0
+    ? ((budgetStats.totalSpent / budgetStats.totalBudget) * 100).toFixed(0)
+    : '0';
+  const remaining = budgetStats.totalBudget - budgetStats.totalSpent;
 
   const openAddModal = () => {
     setEditingItem(null);
@@ -112,161 +117,131 @@ export default function BudgetsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* GPS Alert Banner - Shows when budgets are over limit */}
-      {budgetStats.overBudget > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 border border-orange-500/20 dark:from-orange-500/20 dark:via-amber-500/20 dark:to-orange-500/20"
-        >
+    <div className="space-y-0">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-10">
+        <div>
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-500/20 rounded-lg">
-              <Navigation className="w-5 h-5 text-orange-500" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-orange-700 dark:text-orange-400">
-                {budgetStats.overBudget} budget{budgetStats.overBudget > 1 ? 's' : ''} exceeded
-              </p>
-              <p className="text-sm text-orange-600/80 dark:text-orange-400/70">
-                Use GPS Re-Router to find your way back on track
-              </p>
-            </div>
+            <h1 className="text-3xl font-serif text-[#1A2E22] dark:text-white tracking-tight">
+              Monthly Allocation
+            </h1>
+            {budgetStats.overBudget > 0 && (
+              <span className="inline-flex items-center gap-1.5 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-400 text-xs font-medium px-2 py-1 rounded-full">
+                <AlertTriangle className="w-3 h-3" />
+                {budgetStats.overBudget} over
+              </span>
+            )}
+          </div>
+          <p className="text-stone-500 dark:text-neutral-400 text-sm mt-1">
+            Tracking operating expenses against limits.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {budgetStats.overBudget > 0 && (
             <button
               onClick={() => router.push('/dashboard/gps')}
-              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="inline-flex items-center gap-2 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-300 hover:border-stone-400 dark:hover:border-neutral-500 px-5 py-2.5 text-sm font-medium transition-colors"
             >
               <Navigation className="w-4 h-4" />
-              Open GPS
+              View Trajectory
             </button>
+          )}
+          <button
+            onClick={openAddModal}
+            className="inline-flex items-center gap-2 rounded-full bg-[#064E3B] hover:bg-[#053D2E] text-white px-5 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:ring-offset-2"
+          >
+            <Plus className="w-4 h-4" />
+            Set Allocation
+          </button>
+        </div>
+      </div>
+
+      {/* Statement Summary Strip */}
+      {activeItems.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="border-y border-stone-200 dark:border-neutral-800 py-8 my-8"
+        >
+          <div className="grid grid-cols-3 gap-8">
+            {/* Total Cap */}
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-500 mb-2">
+                Total Cap
+              </p>
+              <p className="text-4xl font-serif text-[#1A2E22] dark:text-white tabular-nums">
+                {currencySymbol}{formatWithSeparators(Math.round(budgetStats.totalBudget))}
+              </p>
+            </div>
+
+            {/* Capital Deployed */}
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-500 mb-2">
+                Capital Deployed
+              </p>
+              <p className={cn(
+                'text-4xl font-mono tabular-nums',
+                budgetStats.totalSpent > budgetStats.totalBudget
+                  ? 'text-red-700 dark:text-red-400'
+                  : 'text-[#1A2E22] dark:text-white'
+              )}>
+                {currencySymbol}{formatWithSeparators(Math.round(budgetStats.totalSpent))}
+              </p>
+              <p className="text-stone-400 dark:text-neutral-500 text-sm mt-1">
+                {deployedPercent}% deployed
+              </p>
+            </div>
+
+            {/* Remaining */}
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase text-stone-500 dark:text-neutral-500 mb-2">
+                Remaining
+              </p>
+              <p className={cn(
+                'text-4xl font-mono tabular-nums',
+                remaining < 0 ? 'text-red-700 dark:text-red-400' : 'text-[#1A2E22] dark:text-white'
+              )}>
+                {currencySymbol}{formatWithSeparators(Math.abs(Math.round(remaining)))}
+              </p>
+              {remaining < 0 && (
+                <p className="text-red-600 dark:text-red-400 text-sm mt-1">
+                  {currencySymbol}{formatWithSeparators(Math.abs(Math.round(remaining)))} over limit
+                </p>
+              )}
+            </div>
           </div>
         </motion.div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
-            Budget Manager
-          </h1>
-          <p className="text-neutral-500 mt-1">
-            Set spending limits and track your expenses by category
+      {/* Allocations Section */}
+      <div>
+        {activeItems.length > 0 && (
+          <p className="text-xs font-bold tracking-widest text-stone-400 dark:text-neutral-500 uppercase mb-6">
+            Allocations
           </p>
-        </div>
-        <Button onClick={openAddModal} leftIcon={<Plus className="w-4 h-4" />}>
-          Create Budget
-        </Button>
-      </div>
+        )}
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 p-5 text-white"
-        >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="relative">
-            <p className="text-pink-100 text-sm font-medium">Total Budget</p>
-            <p className="text-2xl font-bold mt-1 tabular-nums">
-              {currencySymbol}{formatWithSeparators(Math.round(budgetStats.totalBudget))}
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-2xl bg-white dark:bg-neutral-800 p-5 border border-neutral-200 dark:border-neutral-700"
-        >
-          <p className="text-neutral-500 text-sm font-medium">Total Spent</p>
-          <p className="text-2xl font-bold mt-1 text-neutral-900 dark:text-white tabular-nums">
-            {currencySymbol}{formatWithSeparators(Math.round(budgetStats.totalSpent))}
-          </p>
-          <p className="text-xs text-neutral-500 mt-1">
-            {budgetStats.totalBudget > 0
-              ? `${((budgetStats.totalSpent / budgetStats.totalBudget) * 100).toFixed(0)}% of budget`
-              : 'No budget set'}
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 p-5 border border-emerald-200 dark:border-emerald-800"
-        >
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <p className="text-emerald-700 dark:text-emerald-400 text-sm font-medium">On Track</p>
-          </div>
-          <p className="text-2xl font-bold mt-1 text-emerald-700 dark:text-emerald-400">
-            {budgetStats.onTrack}
-          </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
-            budget{budgetStats.onTrack !== 1 ? 's' : ''} within limit
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className={cn(
-            'rounded-2xl p-5 border',
-            budgetStats.overBudget > 0
-              ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-              : 'bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <AlertTriangle className={cn(
-              'w-4 h-4',
-              budgetStats.overBudget > 0 ? 'text-orange-600' : 'text-neutral-400'
-            )} />
-            <p className={cn(
-              'text-sm font-medium',
-              budgetStats.overBudget > 0 ? 'text-orange-700 dark:text-orange-400' : 'text-neutral-500'
-            )}>
-              Over Budget
-            </p>
-          </div>
-          <p className={cn(
-            'text-2xl font-bold mt-1',
-            budgetStats.overBudget > 0 ? 'text-orange-700 dark:text-orange-400' : 'text-neutral-400'
-          )}>
-            {budgetStats.overBudget}
-          </p>
-          <p className={cn(
-            'text-xs mt-1',
-            budgetStats.overBudget > 0 ? 'text-orange-600 dark:text-orange-500' : 'text-neutral-400'
-          )}>
-            {budgetStats.overBudget > 0 ? 'needs attention' : 'all good!'}
-          </p>
-        </motion.div>
-      </div>
-
-      {/* Budgets List */}
-      <div className="space-y-4">
         <AnimatePresence mode="popLayout">
           {activeItems.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-16 bg-neutral-100 dark:bg-neutral-800/50 rounded-2xl"
+              className="text-center py-16 bg-[#F2F0E9] dark:bg-neutral-800/50 rounded-2xl"
             >
-              <Receipt className="w-12 h-12 mx-auto text-neutral-400 mb-4" />
-              <p className="text-neutral-500">No budgets created yet</p>
-              <p className="text-neutral-400 text-sm mt-1">Start tracking your spending by creating a budget</p>
-              <Button onClick={openAddModal} variant="secondary" className="mt-4">
-                Create your first budget
-              </Button>
+              <Receipt className="w-12 h-12 mx-auto text-stone-400 dark:text-neutral-500 mb-4 stroke-[1.5]" />
+              <p className="text-stone-500 dark:text-neutral-400">No allocations set yet</p>
+              <p className="text-stone-400 dark:text-neutral-500 text-sm mt-1">Start tracking your spending by setting an allocation</p>
+              <button
+                onClick={openAddModal}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-300 hover:border-stone-400 dark:hover:border-neutral-500 px-5 py-2 text-sm font-medium transition-colors"
+              >
+                Set your first allocation
+              </button>
             </motion.div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
               {activeItems.map((item: Budget, index: number) => {
-                const category = item.category || getCategoryById(item.category?.id || item.categoryId);
+                const category = item.category || getCategoryById(item.categoryId || '');
                 const Icon = category ? (categoryIconMap[category.id] || Receipt) : Receipt;
                 const spent = Number(item.spent || 0);
                 const budget = Number(item.amount);
@@ -283,40 +258,28 @@ export default function BudgetsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ delay: index * 0.05 }}
-                    className={cn(
-                      'group relative bg-white dark:bg-neutral-800 rounded-2xl p-5 border transition-colors',
-                      isOverBudget
-                        ? 'border-orange-300 dark:border-orange-700'
-                        : 'border-neutral-200 dark:border-neutral-700 hover:border-pink-300 dark:hover:border-pink-700'
-                    )}
+                    className="group rounded-lg p-6 border border-stone-200 dark:border-neutral-700 hover:shadow-md transition-all bg-white dark:bg-neutral-800"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
-                        <div className={cn(
-                          'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
-                          isOverBudget
-                            ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
-                            : 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
-                        )}>
-                          <Icon className="w-5 h-5" />
-                        </div>
+                        <Icon className="w-5 h-5 stroke-[1.5] text-stone-500 dark:text-neutral-500 flex-shrink-0 mt-1" />
                         <div>
-                          <h3 className="font-semibold text-neutral-900 dark:text-white">
-                            {category?.name || 'Unknown Category'}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" size="sm">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-serif text-lg text-[#1A2E22] dark:text-white">
+                              {category?.name || 'Unknown Category'}
+                            </h3>
+                            <span className="bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-400 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-medium">
                               {periodOptions.find(p => p.value === item.period)?.label}
-                            </Badge>
+                            </span>
                             {isOverBudget && (
-                              <Badge variant="outline" size="sm" className="border-orange-300 text-orange-600">
-                                Over Budget
-                              </Badge>
+                              <span className="inline-flex items-center gap-1 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-medium">
+                                Over Limit
+                              </span>
                             )}
                             {isNearLimit && (
-                              <Badge variant="outline" size="sm" className="border-amber-300 text-amber-600">
+                              <span className="inline-flex items-center gap-1 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-medium">
                                 Near Limit
-                              </Badge>
+                              </span>
                             )}
                           </div>
                         </div>
@@ -326,14 +289,14 @@ export default function BudgetsPage() {
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openEditModal(item)}
-                          className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                          className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-700 text-stone-400 hover:text-stone-700 dark:hover:text-neutral-300 transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(item.id)}
                           disabled={isDeleting}
-                          className="p-2 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 text-neutral-500 hover:text-orange-600 transition-colors"
+                          className="p-2 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900/20 text-stone-400 hover:text-orange-600 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -342,81 +305,54 @@ export default function BudgetsPage() {
 
                     {/* Progress Section */}
                     <div className="mt-4">
-                      <div className="flex items-center justify-between text-sm mb-2">
-                        <span className={cn(
-                          'font-medium tabular-nums',
-                          isOverBudget ? 'text-orange-600 dark:text-orange-400' : 'text-neutral-900 dark:text-white'
-                        )}>
-                          {currencySymbol}{formatWithSeparators(spent)} spent
-                        </span>
-                        <span className="text-neutral-500 tabular-nums">
-                          of {currencySymbol}{formatWithSeparators(budget)}
-                        </span>
-                      </div>
-                      <div className="h-3 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-stone-100 dark:bg-neutral-700 rounded-full overflow-hidden">
                         <motion.div
                           className={cn(
                             'h-full rounded-full',
                             isOverBudget
-                              ? 'bg-orange-500'
-                              : isNearLimit
-                                ? 'bg-amber-500'
-                                : 'bg-gradient-to-r from-pink-400 to-pink-500'
+                              ? 'bg-[#991B1B]'
+                              : 'bg-[#1A2E22] dark:bg-emerald-600'
                           )}
                           initial={{ width: 0 }}
                           animate={{ width: `${Math.min(progress, 100)}%` }}
                           transition={{ duration: 0.5, ease: 'easeOut' }}
                         />
                       </div>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs text-neutral-500">{progress.toFixed(0)}% used</span>
-                        <span className={cn(
-                          'text-xs font-medium',
-                          isOverBudget
-                            ? 'text-orange-600'
-                            : remaining > 0
-                              ? 'text-emerald-600'
-                              : 'text-neutral-500'
-                        )}>
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="font-mono text-sm font-bold text-[#1A2E22] dark:text-white tabular-nums">
+                          {currencySymbol}{formatWithSeparators(spent)}
+                        </span>
+                        <span className="text-stone-400 dark:text-neutral-500 text-sm tabular-nums">
                           {isOverBudget
-                            ? `${currencySymbol}${formatWithSeparators(Math.abs(remaining))} over`
-                            : `${currencySymbol}${formatWithSeparators(remaining)} remaining`}
+                            ? `${currencySymbol}${formatWithSeparators(Math.abs(remaining))} over · ${progress.toFixed(0)}%`
+                            : `${currencySymbol}${formatWithSeparators(remaining)} left · ${progress.toFixed(0)}%`}
                         </span>
                       </div>
                     </div>
 
-                    {/* GPS Recalculate Button - Shows when over budget */}
+                    {/* GPS Recalculate — text link */}
                     {(isOverBudget || isNearLimit) && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700"
+                        className="mt-4 pt-4 border-t border-stone-200 dark:border-neutral-700"
                       >
                         <button
                           onClick={() => handleRecalculate(category?.name || '')}
                           disabled={isRecalculating && recalculatingCategory === category?.name}
-                          className={cn(
-                            'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl',
-                            'text-sm font-medium transition-all',
-                            isOverBudget
-                              ? 'bg-orange-100 hover:bg-orange-200 text-orange-700 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 dark:text-orange-400'
-                              : 'bg-amber-100 hover:bg-amber-200 text-amber-700 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 dark:text-amber-400'
-                          )}
+                          className="text-sm text-[#991B1B] dark:text-red-400 hover:underline transition-colors"
                         >
                           {isRecalculating && recalculatingCategory === category?.name ? (
-                            <>
-                              <motion.div
-                                className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full"
+                            <span className="inline-flex items-center gap-2">
+                              <motion.span
+                                className="inline-block w-3.5 h-3.5 border-2 border-current/30 border-t-current rounded-full"
                                 animate={{ rotate: 360 }}
                                 transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
                               />
-                              <span>Calculating route...</span>
-                            </>
+                              Calculating route...
+                            </span>
                           ) : (
-                            <>
-                              <Navigation className="w-4 h-4" />
-                              <span>Recalculate Route</span>
-                            </>
+                            <span>Variance detected. <strong>Adjust Allocation →</strong></span>
                           )}
                         </button>
                       </motion.div>
@@ -433,18 +369,18 @@ export default function BudgetsPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingItem ? 'Edit Budget' : 'Create Budget'}
+        title={editingItem ? 'Edit Allocation' : 'Set Allocation'}
         size="md"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-stone-700 dark:text-gray-300 mb-1.5">
               Category
             </label>
             <select
               value={formData.categoryId}
               onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
-              className="w-full h-14 px-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+              className="w-full h-14 px-4 rounded-xl border border-stone-200 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-stone-900 dark:text-white focus:border-[#064E3B] focus:ring-2 focus:ring-[#064E3B]/20 outline-none transition-all"
               required
             >
               <option value="">Select a category</option>
@@ -455,7 +391,7 @@ export default function BudgetsPage() {
           </div>
 
           <Input
-            label="Budget Amount"
+            label="Allocation Amount"
             type="number"
             placeholder="0"
             currencySymbol={currencySymbol}
@@ -466,8 +402,8 @@ export default function BudgetsPage() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Budget Period
+            <label className="block text-sm font-medium text-stone-700 dark:text-gray-300 mb-1.5">
+              Period
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {periodOptions.map((option) => (
@@ -478,8 +414,8 @@ export default function BudgetsPage() {
                   className={cn(
                     'p-3 rounded-xl border-2 transition-all text-sm font-medium',
                     formData.period === option.value
-                      ? 'border-pink-500 bg-pink-50 text-pink-700 dark:bg-pink-900/20 dark:text-pink-400'
-                      : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 text-neutral-600 dark:text-neutral-400'
+                      ? 'border-[#064E3B] bg-[#064E3B]/5 text-[#064E3B] dark:bg-emerald-900/20 dark:text-emerald-400'
+                      : 'border-stone-200 dark:border-neutral-700 hover:border-stone-300 text-stone-600 dark:text-neutral-400'
                   )}
                 >
                   {option.label}
@@ -504,8 +440,12 @@ export default function BudgetsPage() {
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" isLoading={isCreating || isUpdating}>
-              {editingItem ? 'Save Changes' : 'Create Budget'}
+            <Button
+              type="submit"
+              isLoading={isCreating || isUpdating}
+              className="!rounded-full !bg-[#064E3B] hover:!bg-[#053D2E] !from-[#064E3B] !to-[#064E3B]"
+            >
+              {editingItem ? 'Save Changes' : 'Set Allocation'}
             </Button>
           </ModalFooter>
         </form>

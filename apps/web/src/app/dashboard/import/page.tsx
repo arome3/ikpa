@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import { useImport } from '@/hooks/useImport';
 import { useCategories } from '@/hooks/useFinance';
+import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import {
   FileUploadZone,
   ProcessingIndicator,
@@ -327,10 +328,10 @@ export default function ImportPage() {
                     {selectedCategory ? (
                       <div className="flex items-center gap-2">
                         <span
-                          className="w-6 h-6 rounded-md flex items-center justify-center text-sm"
+                          className="w-6 h-6 rounded-md flex items-center justify-center"
                           style={{ backgroundColor: selectedCategory.color + '30' }}
                         >
-                          {selectedCategory.icon}
+                          <CategoryIcon name={selectedCategory.icon} className="w-3.5 h-3.5" />
                         </span>
                         <span className="text-slate-700 dark:text-slate-200">{selectedCategory.name}</span>
                       </div>
@@ -373,10 +374,10 @@ export default function ImportPage() {
                             )}
                           >
                             <span
-                              className="w-6 h-6 rounded-md flex items-center justify-center text-sm"
+                              className="w-6 h-6 rounded-md flex items-center justify-center"
                               style={{ backgroundColor: cat.color + '30' }}
                             >
-                              {cat.icon}
+                              <CategoryIcon name={cat.icon} className="w-3.5 h-3.5" />
                             </span>
                             {cat.name}
                           </button>

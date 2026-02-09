@@ -20,7 +20,7 @@ const colorMap = {
 };
 
 /**
- * Variable opacity grid lines inspired by African fractal patterns
+ * Variable opacity grid lines inspired by fractal patterns
  * Creates subtle geometric texture for backgrounds
  */
 export const GeometricGrid = memo(function GeometricGrid({
@@ -48,7 +48,7 @@ export const GeometricGrid = memo(function GeometricGrid({
 
 /**
  * Fractal-inspired diagonal grid pattern
- * More complex pattern inspired by African textile designs
+ * More complex pattern inspired by textile designs
  */
 export const FractalGrid = memo(function FractalGrid({
   color = 'emerald',

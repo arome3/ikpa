@@ -20,7 +20,7 @@ export class GoalResponseDto {
   @ApiProperty({ example: 250000 })
   currentAmount!: number;
 
-  @ApiProperty({ enum: Currency, example: 'NGN' })
+  @ApiProperty({ enum: Currency, example: 'USD' })
   currency!: Currency;
 
   @ApiPropertyOptional({ example: '3 months of expenses' })

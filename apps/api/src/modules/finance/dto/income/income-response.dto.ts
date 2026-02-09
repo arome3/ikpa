@@ -17,7 +17,7 @@ export class IncomeResponseDto {
   @ApiProperty({ example: 500000 })
   amount!: number;
 
-  @ApiProperty({ enum: Currency, example: 'NGN' })
+  @ApiProperty({ enum: Currency, example: 'USD' })
   currency!: Currency;
 
   @ApiProperty({ enum: Frequency, example: 'MONTHLY' })

@@ -17,7 +17,7 @@ import { IsStrongPassword } from './password.validator';
  * - Email must be valid format
  * - Password must meet complexity requirements (uppercase, lowercase, number)
  * - Name must be 2-100 characters
- * - Country is optional (defaults to NIGERIA)
+ * - Country is optional (defaults to OTHER)
  */
 export class RegisterDto {
   @ApiProperty({
@@ -51,7 +51,7 @@ export class RegisterDto {
 
   @ApiPropertyOptional({
     enum: Country,
-    example: 'NIGERIA',
+    example: 'US',
     description: 'Country of residence',
   })
   @IsOptional()

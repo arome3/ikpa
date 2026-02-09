@@ -1,13 +1,10 @@
 export { Navigation } from './Navigation';
 export { Hero } from './Hero';
-export { Problem } from './Problem';
-export { Solution } from './Solution';
+export { WhySection } from './WhySection';
+export { SystemCore } from './SystemCore';
+export { BehavioralScience } from './BehavioralScience';
 export { Features } from './Features';
-export { HowItWorks } from './HowItWorks';
-export { FutureSelf } from './FutureSelf';
-export { BuiltForAfrica } from './BuiltForAfrica';
+export { Integrations } from './Integrations';
 export { Testimonials } from './Testimonials';
-export { Pricing } from './Pricing';
 export { FAQ } from './FAQ';
-export { FinalCTA } from './FinalCTA';
 export { Footer } from './Footer';

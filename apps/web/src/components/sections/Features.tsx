@@ -12,8 +12,8 @@ const features = [
     description: 'Not one AI—a team of 5 specialists that collaborate on your behalf. Shark Auditor, GPS Re-Router, and more.',
   },
   {
-    title: 'Cultural Intelligence',
-    description: 'Family support isn\'t a leak—it\'s a value. "I am because we are" (Ubuntu). Your obligations, optimized.',
+    title: 'Values-Aware Design',
+    description: 'Family support isn\'t a leak—it\'s a value. Your obligations, optimized without guilt or judgment.',
   },
   {
     title: 'Non-Judgmental Design',
@@ -21,7 +21,7 @@ const features = [
   },
   {
     title: 'G-Eval Quality',
-    description: 'LLM-as-Judge ensures every piece of advice is empathetic, safe, and culturally sensitive before it reaches you.',
+    description: 'LLM-as-Judge ensures every piece of advice is empathetic, safe, and personally sensitive before it reaches you.',
   },
   {
     title: 'Story Cards',

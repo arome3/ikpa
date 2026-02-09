@@ -53,7 +53,7 @@ export class AppleSignInDto {
   @ApiPropertyOptional({
     enum: Country,
     description: 'Country of residence (for new accounts)',
-    example: 'NIGERIA',
+    example: 'US',
   })
   @IsOptional()
   @IsEnum(Country, { message: 'Please select a valid country' })

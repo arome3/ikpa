@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Target, Home, Car, GraduationCap, Plane, Heart, Sparkles,
-  Pencil, Trash2, Calendar
+  Pencil, Trash2, Calendar, CheckCircle2
 } from 'lucide-react';
 import { useGoals, type Goal, type CreateGoalData } from '@/hooks/useFinance';
-import { Button, Modal, ModalFooter, Input, Spinner, Badge } from '@/components/ui';
+import { Button, Modal, ModalFooter, Input, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { formatWithSeparators, useCurrency } from '@/hooks';
 
@@ -96,7 +96,6 @@ export default function GoalsPage() {
     }
   };
 
-  // Calculate days remaining for a goal
   const getDaysRemaining = (targetDate: string | null | undefined) => {
     if (!targetDate) return null;
     const target = new Date(targetDate);
@@ -114,271 +113,244 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+          <h1 className="text-3xl font-serif text-[#1A2E22] dark:text-white tracking-tight">
             Financial Goals
           </h1>
-          <p className="text-neutral-500 mt-1">
-            Set and track your savings goals
+          <p className="text-stone-500 dark:text-neutral-400 text-sm mt-1">
+            Portfolio strategy and target tracking
           </p>
         </div>
-        <Button onClick={openAddModal} leftIcon={<Plus className="w-4 h-4" />}>
+        <button
+          onClick={openAddModal}
+          className="inline-flex items-center gap-2 rounded-full bg-[#064E3B] hover:bg-[#053D2E] text-white px-5 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:ring-offset-2"
+        >
+          <Plus className="w-4 h-4" />
           Add Goal
-        </Button>
+        </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 p-6 text-white"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="relative">
-            <p className="text-amber-100 text-sm font-medium">Total Goal Target</p>
-            <p className="text-3xl font-bold mt-2 tabular-nums">
+      {/* Executive Summary Hero */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="pb-8 mb-8 border-b border-stone-200 dark:border-neutral-800"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-stretch sm:divide-x divide-stone-200 dark:divide-neutral-800">
+          {/* Total Portfolio Target */}
+          <div className="pb-6 sm:pb-0 sm:pr-8 border-b sm:border-b-0 border-stone-200 dark:border-neutral-800">
+            <p className="text-xs font-bold tracking-widest text-emerald-800 dark:text-emerald-400 uppercase mb-3">
+              Total Portfolio Target
+            </p>
+            <p className="text-5xl sm:text-7xl font-serif text-[#1A2E22] dark:text-white tracking-tight tabular-nums">
               {currencySymbol}{formatWithSeparators(Math.round(totalTarget))}
             </p>
-            <p className="text-amber-200 text-sm mt-2">
+            <p className="text-stone-500 dark:text-neutral-400 text-sm mt-2">
               {activeItems.length} active goal{activeItems.length !== 1 ? 's' : ''}
             </p>
           </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="relative overflow-hidden rounded-2xl bg-white dark:bg-neutral-800 p-6 border border-neutral-200 dark:border-neutral-700"
-        >
-          <p className="text-neutral-500 text-sm font-medium">Progress</p>
-          <p className="text-3xl font-bold mt-2 text-emerald-600 dark:text-emerald-400 tabular-nums">
-            {currencySymbol}{formatWithSeparators(Math.round(totalSaved))}
-          </p>
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-xs text-neutral-500 mb-1">
-              <span>Overall</span>
-              <span>{overallProgress.toFixed(0)}%</span>
-            </div>
-            <div className="h-2 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(overallProgress, 100)}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-              />
-            </div>
+          {/* Current Progress */}
+          <div className="py-6 sm:py-0 sm:px-8 border-b sm:border-b-0 border-stone-200 dark:border-neutral-800">
+            <p className="text-xs font-bold tracking-widest text-stone-400 dark:text-neutral-500 uppercase mb-3">
+              Current Progress
+            </p>
+            <p className="font-mono text-3xl text-[#1A2E22] dark:text-white tabular-nums">
+              {currencySymbol}{formatWithSeparators(Math.round(totalSaved))}
+            </p>
+            <p className="text-sm mt-2">
+              <span className="inline-flex items-center text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-full text-xs font-medium px-2.5 py-0.5">
+                {overallProgress.toFixed(0)}% Funded
+              </span>
+            </p>
           </div>
-        </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="relative overflow-hidden rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 p-6 border border-emerald-200 dark:border-emerald-800"
-        >
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-emerald-600" />
-            <p className="text-emerald-700 dark:text-emerald-400 text-sm font-medium">Completed</p>
+          {/* Goals Achieved */}
+          <div className="pt-6 sm:pt-0 sm:pl-8">
+            <p className="text-xs font-bold tracking-widest text-stone-400 dark:text-neutral-500 uppercase mb-3">
+              Goals Achieved
+            </p>
+            <p className="text-3xl font-serif text-[#1A2E22] dark:text-white tabular-nums">
+              {completedItems.length} / {activeItems.length + completedItems.length}
+            </p>
+            <p className="text-stone-500 dark:text-neutral-400 text-sm mt-2">
+              goals achieved
+            </p>
           </div>
-          <p className="text-3xl font-bold mt-2 text-emerald-700 dark:text-emerald-400">
-            {completedItems.length}
-          </p>
-          <p className="text-emerald-600 dark:text-emerald-500 text-sm mt-1">
-            goal{completedItems.length !== 1 ? 's' : ''} achieved
-          </p>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
-      {/* Goals List */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-          Active Goals
-        </h2>
+      {/* Active Goals */}
+      <div>
+        {activeItems.length > 0 && (
+          <p className="text-xs font-bold tracking-widest text-stone-400 dark:text-neutral-500 uppercase mb-6">
+            Active Goals
+          </p>
+        )}
         <AnimatePresence mode="popLayout">
           {activeItems.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-16 bg-neutral-100 dark:bg-neutral-800/50 rounded-2xl"
+              className="text-center py-16 bg-[#F2F0E9] dark:bg-neutral-800/50 rounded-2xl"
             >
-              <Target className="w-12 h-12 mx-auto text-neutral-400 mb-4" />
-              <p className="text-neutral-500">No goals set yet</p>
-              <p className="text-neutral-400 text-sm mt-1">Start by setting your first financial goal</p>
-              <Button onClick={openAddModal} variant="secondary" className="mt-4">
+              <Target className="w-12 h-12 mx-auto text-stone-400 dark:text-neutral-500 mb-4 stroke-[1.5]" />
+              <p className="text-stone-500 dark:text-neutral-400">No goals set yet</p>
+              <p className="text-stone-400 dark:text-neutral-500 text-sm mt-1">Start by setting your first financial goal</p>
+              <button
+                onClick={openAddModal}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-stone-300 dark:border-neutral-600 text-stone-700 dark:text-neutral-300 hover:border-stone-400 dark:hover:border-neutral-500 px-5 py-2 text-sm font-medium transition-colors"
+              >
                 Create your first goal
-              </Button>
+              </button>
             </motion.div>
           ) : (
-            activeItems.map((item: Goal, index: number) => {
-              const config = goalTypeConfig[item.type] || goalTypeConfig.OTHER;
-              const prioConfig = priorityConfig[item.priority] || priorityConfig.MEDIUM;
-              const Icon = config.icon;
-              const progress = Number(item.targetAmount) > 0
-                ? (Number(item.currentAmount) / Number(item.targetAmount)) * 100
-                : 0;
-              const remaining = Number(item.targetAmount) - Number(item.currentAmount);
-              const daysRemaining = getDaysRemaining(item.targetDate);
+            <div className="space-y-3">
+              {activeItems.map((item: Goal, index: number) => {
+                const config = goalTypeConfig[item.type] || goalTypeConfig.OTHER;
+                const prioConfig = priorityConfig[item.priority] || priorityConfig.MEDIUM;
+                const Icon = config.icon;
+                const progress = Number(item.targetAmount) > 0
+                  ? (Number(item.currentAmount) / Number(item.targetAmount)) * 100
+                  : 0;
+                const remaining = Number(item.targetAmount) - Number(item.currentAmount);
+                const daysRemaining = getDaysRemaining(item.targetDate);
 
-              return (
-                <motion.div
-                  key={item.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="group relative bg-white dark:bg-neutral-800 rounded-2xl p-5 border border-neutral-200 dark:border-neutral-700 hover:border-amber-300 dark:hover:border-amber-700 transition-colors"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={cn(
-                      'w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0',
-                      config.color === 'rose' && 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
-                      config.color === 'blue' && 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-                      config.color === 'purple' && 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-                      config.color === 'emerald' && 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
-                      config.color === 'amber' && 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
-                      config.color === 'pink' && 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400',
-                      config.color === 'gray' && 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400',
-                    )}>
-                      <Icon className="w-6 h-6" />
-                    </div>
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="group relative bg-white dark:bg-neutral-800 rounded-lg p-6 border border-stone-200 dark:border-neutral-700 hover:bg-stone-50/50 dark:hover:bg-neutral-800/80 transition-colors"
+                  >
+                    <div className="flex items-start gap-4">
+                      <Icon className="w-5 h-5 stroke-[1.5] text-stone-500 dark:text-neutral-500 flex-shrink-0 mt-1" />
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-neutral-900 dark:text-white text-lg">
-                          {item.name}
-                        </h3>
-                        <Badge variant="outline" size="sm">{config.label}</Badge>
-                        <Badge
-                          variant="outline"
-                          size="sm"
-                          className={cn(
-                            prioConfig.color === 'emerald' && 'border-emerald-300 text-emerald-600',
-                            prioConfig.color === 'amber' && 'border-amber-300 text-amber-600',
-                            prioConfig.color === 'rose' && 'border-rose-300 text-rose-600',
-                          )}
-                        >
-                          {prioConfig.label}
-                        </Badge>
-                      </div>
-
-                      {item.description && (
-                        <p className="text-sm text-neutral-500 mt-1">{item.description}</p>
-                      )}
-
-                      <div className="flex items-center gap-4 mt-2 text-sm">
-                        {item.targetDate && (
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-serif text-xl text-[#1A2E22] dark:text-white">
+                            {item.name}
+                          </h3>
+                          <span className="bg-stone-100 dark:bg-neutral-700 text-stone-600 dark:text-neutral-400 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-medium">
+                            {config.label}
+                          </span>
                           <span className={cn(
-                            'flex items-center gap-1',
-                            daysRemaining !== null && daysRemaining < 30 ? 'text-amber-600' : 'text-neutral-500'
+                            'border text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-medium',
+                            prioConfig.color === 'emerald' && 'border-stone-300 dark:border-neutral-600 text-stone-500 dark:text-neutral-400',
+                            prioConfig.color === 'amber' && 'border-stone-400 dark:border-neutral-500 text-stone-600 dark:text-neutral-300',
+                            prioConfig.color === 'rose' && 'border-stone-500 dark:border-neutral-400 text-stone-700 dark:text-neutral-200',
                           )}>
-                            <Calendar className="w-3 h-3" />
-                            {daysRemaining !== null && daysRemaining > 0
-                              ? `${daysRemaining} days left`
-                              : daysRemaining === 0
-                                ? 'Due today!'
-                                : 'Overdue'}
+                            {prioConfig.label}
                           </span>
-                        )}
-                        <span className="text-neutral-500">
-                          {currencySymbol}{formatWithSeparators(Math.round(remaining))} to go
-                        </span>
-                      </div>
+                        </div>
 
-                      {/* Progress Bar */}
-                      <div className="mt-4">
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="font-medium text-neutral-900 dark:text-white tabular-nums">
-                            {currencySymbol}{formatWithSeparators(Number(item.currentAmount))}
-                          </span>
-                          <span className="text-neutral-500 tabular-nums">
-                            {currencySymbol}{formatWithSeparators(Number(item.targetAmount))}
-                          </span>
-                        </div>
-                        <div className="h-3 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
-                          <motion.div
-                            className={cn(
-                              'h-full rounded-full',
-                              progress >= 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-400 to-amber-500'
-                            )}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(progress, 100)}%` }}
-                            transition={{ duration: 0.5, ease: 'easeOut' }}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-neutral-500">{progress.toFixed(0)}% complete</span>
-                          {progress >= 100 && (
-                            <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                              <Sparkles className="w-3 h-3" /> Goal reached!
+                        {item.description && (
+                          <p className="text-sm text-stone-400 dark:text-neutral-500 mt-1">{item.description}</p>
+                        )}
+
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          {item.targetDate && (
+                            <span className={cn(
+                              'flex items-center gap-1',
+                              daysRemaining !== null && daysRemaining < 30 ? 'text-[#C2410C]' : 'text-stone-500 dark:text-neutral-400'
+                            )}>
+                              <Calendar className="w-3 h-3" />
+                              {daysRemaining !== null && daysRemaining > 0
+                                ? `${daysRemaining} days left`
+                                : daysRemaining === 0
+                                  ? 'Due today!'
+                                  : 'Overdue'}
                             </span>
                           )}
+                          <span className="font-mono text-stone-500 dark:text-neutral-400 tabular-nums">
+                            {currencySymbol}{formatWithSeparators(Math.round(remaining))} to go
+                          </span>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mt-4">
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="font-mono text-[#1A2E22] dark:text-white tabular-nums">
+                              {currencySymbol}{formatWithSeparators(Number(item.currentAmount))}
+                            </span>
+                            <span className="font-mono text-stone-400 dark:text-neutral-500 tabular-nums">
+                              {currencySymbol}{formatWithSeparators(Number(item.targetAmount))}
+                            </span>
+                          </div>
+                          <div className="h-2 bg-stone-100 dark:bg-neutral-700 rounded-sm overflow-hidden">
+                            <motion.div
+                              className={cn(
+                                'h-full rounded-sm',
+                                progress >= 100 ? 'bg-[#3F6212]' : 'bg-[#064E3B]'
+                              )}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min(progress, 100)}%` }}
+                              transition={{ duration: 0.5, ease: 'easeOut' }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs text-stone-400 dark:text-neutral-500">{progress.toFixed(0)}% funded</span>
+                            {progress >= 100 && (
+                              <span className="text-xs text-[#3F6212] dark:text-emerald-400 font-medium flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Target reached
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => openEditModal(item)}
-                        className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        disabled={isDeleting}
-                        className="p-2 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 text-neutral-500 hover:text-orange-600 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-neutral-700 text-stone-400 hover:text-stone-700 dark:hover:text-neutral-300 transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={isDeleting}
+                          className="p-2 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900/20 text-stone-400 hover:text-orange-600 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })
+                  </motion.div>
+                );
+              })}
+            </div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Completed Goals */}
+      {/* Completed Goals — Ledger Pattern */}
       {completedItems.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-emerald-500" />
-            Completed Goals
-          </h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            {completedItems.map((item: Goal) => {
-              const config = goalTypeConfig[item.type] || goalTypeConfig.OTHER;
-              const Icon = config.icon;
-
-              return (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-neutral-900 dark:text-white">{item.name}</h4>
-                      <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                        {currencySymbol}{formatWithSeparators(Number(item.targetAmount))} achieved
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+        <div className="mt-10">
+          <p className="text-xs font-bold tracking-widest text-stone-400 dark:text-neutral-500 uppercase mb-4">
+            Completed
+          </p>
+          <div>
+            {completedItems.map((item: Goal) => (
+              <div
+                key={item.id}
+                className="flex items-center gap-4 py-4 border-b border-stone-100 dark:border-neutral-800"
+              >
+                <CheckCircle2 className="w-5 h-5 text-[#3F6212] dark:text-emerald-400 flex-shrink-0" />
+                <h4 className="font-serif text-[#1A2E22] dark:text-white flex-1 min-w-0 truncate">
+                  {item.name}
+                </h4>
+                <p className="font-mono text-[#1A2E22] dark:text-white tabular-nums text-right flex-shrink-0">
+                  {currencySymbol}{formatWithSeparators(Number(item.targetAmount))}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -400,7 +372,7 @@ export default function GoalsPage() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-stone-700 dark:text-gray-300 mb-1.5">
               Goal Type
             </label>
             <div className="grid grid-cols-4 gap-2">
@@ -414,17 +386,17 @@ export default function GoalsPage() {
                     className={cn(
                       'flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all',
                       formData.type === type
-                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                        ? 'border-[#064E3B] bg-[#064E3B]/5 dark:bg-emerald-900/20'
                         : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300'
                     )}
                   >
                     <Icon className={cn(
                       'w-5 h-5',
-                      formData.type === type ? 'text-amber-600' : 'text-neutral-400'
+                      formData.type === type ? 'text-[#064E3B] dark:text-emerald-400' : 'text-neutral-400'
                     )} />
                     <span className={cn(
                       'text-xs font-medium text-center',
-                      formData.type === type ? 'text-amber-700 dark:text-amber-400' : 'text-neutral-600 dark:text-neutral-400'
+                      formData.type === type ? 'text-[#064E3B] dark:text-emerald-400' : 'text-neutral-600 dark:text-neutral-400'
                     )}>
                       {config.label}
                     </span>
@@ -457,7 +429,7 @@ export default function GoalsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <label className="block text-sm font-medium text-stone-700 dark:text-gray-300 mb-1.5">
               Priority Level
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -469,12 +441,7 @@ export default function GoalsPage() {
                   className={cn(
                     'p-3 rounded-xl border-2 transition-all text-sm font-medium',
                     formData.priority === level
-                      ? cn(
-                          'border-current',
-                          config.color === 'emerald' && 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400',
-                          config.color === 'amber' && 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
-                          config.color === 'rose' && 'border-rose-500 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400',
-                        )
+                      ? 'border-[#064E3B] bg-[#064E3B]/5 text-[#064E3B] dark:bg-emerald-900/20 dark:text-emerald-400'
                       : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 text-neutral-600'
                   )}
                 >
@@ -502,7 +469,11 @@ export default function GoalsPage() {
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" isLoading={isCreating || isUpdating}>
+            <Button
+              type="submit"
+              isLoading={isCreating || isUpdating}
+              className="!rounded-full !bg-[#064E3B] hover:!bg-[#053D2E] !from-[#064E3B] !to-[#064E3B]"
+            >
               {editingItem ? 'Save Changes' : 'Create Goal'}
             </Button>
           </ModalFooter>

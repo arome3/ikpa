@@ -811,8 +811,8 @@ export class FutureSelfAgent {
       monthlyExpenses,
       currentNetWorth,
       goals,
-      currency: user.currency || 'NGN',
-      country: user.country || 'NIGERIA',
+      currency: user.currency || 'USD',
+      country: user.country || 'OTHER',
     };
   }
 
@@ -887,11 +887,14 @@ export class FutureSelfAgent {
 
     // City is derived from country since schema doesn't have city field
     const cityByCountry: Record<string, string> = {
+      US: 'New York',
+      UK: 'London',
+      CANADA: 'Toronto',
+      AUSTRALIA: 'Sydney',
       NIGERIA: 'Lagos',
       GHANA: 'Accra',
       KENYA: 'Nairobi',
       SOUTH_AFRICA: 'Johannesburg',
-      EGYPT: 'Cairo',
     };
 
     // Enrich context with recent decisions and struggles
@@ -916,7 +919,7 @@ export class FutureSelfAgent {
       currentSavingsRate,
       monthlyIncome,
       currentNetWorth,
-      currency: user.currency || 'NGN',
+      currency: user.currency || 'USD',
       recentDecisions,
       struggles,
     };

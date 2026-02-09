@@ -52,7 +52,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto md:max-w-4xl px-4 safe-top">
+    <div className="max-w-5xl mx-auto px-6 md:px-12 py-8 md:py-12 safe-top">
       {/* Header */}
       <DashboardHeader
         firstName={user?.name?.split(' ')[0] ?? 'there'}
@@ -62,22 +62,22 @@ export default function DashboardPage() {
       />
 
       {/* Cash Flow Score Gauge */}
-      <section className="mt-2" aria-labelledby="score-heading">
+      <section className="mt-8" aria-labelledby="score-heading">
         <h2 id="score-heading" className="sr-only">Cash Flow Score</h2>
         <CashFlowScoreGauge data={scoreData} isLoading={scoreLoading} />
       </section>
 
       {/* Metrics Grid */}
-      <section className="mt-6" aria-labelledby="metrics-heading">
-        <div className="flex items-center justify-between mb-2">
-          <h2 id="metrics-heading" className="text-sm font-medium text-muted-foreground">Financial Metrics</h2>
+      <section className="mt-10" aria-labelledby="metrics-heading">
+        <div className="flex items-center justify-between mb-3">
+          <h2 id="metrics-heading" className="text-xs uppercase tracking-wider text-stone-400 font-sans">Financial Metrics</h2>
           <button
             onClick={refreshSnapshot}
             disabled={isRefreshing}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            className="p-2 rounded-full text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors disabled:opacity-50"
             title="Refresh snapshot"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} strokeWidth={1.5} />
           </button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -131,7 +131,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Quick Actions */}
-      <section className="mt-6" aria-labelledby="actions-heading">
+      <section className="mt-8" aria-labelledby="actions-heading">
         <h2 id="actions-heading" className="sr-only">Quick Actions</h2>
         <QuickActions
           onAddExpense={handleAddExpense}
@@ -145,7 +145,7 @@ export default function DashboardPage() {
       </section>
 
       {/* AI Insight */}
-      <section className="mt-6" aria-labelledby="insight-heading">
+      <section className="mt-8" aria-labelledby="insight-heading">
         <h2 id="insight-heading" className="sr-only">AI Insights</h2>
         <AIInsightCard
           insight={mockAIInsight}
@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
       {/* Zombie Alert */}
       {sharkSummary && sharkSummary.zombieCount > 0 && (
-        <section className="mt-6" aria-labelledby="shark-heading">
+        <section className="mt-8" aria-labelledby="shark-heading">
           <h2 id="shark-heading" className="sr-only">Subscription Alerts</h2>
           <ZombieAlertBadge
             zombieCount={sharkSummary.zombieCount}
@@ -168,7 +168,7 @@ export default function DashboardPage() {
       )}
 
       {/* Recent Transactions */}
-      <section className="mt-6 mb-6" aria-labelledby="transactions-heading">
+      <section className="mt-8 mb-8" aria-labelledby="transactions-heading">
         <h2 id="transactions-heading" className="sr-only">Recent Transactions</h2>
         <RecentTransactions
           transactions={transactions}

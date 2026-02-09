@@ -58,7 +58,7 @@ export class SessionInfoDto {
 
   @ApiProperty({
     description: 'Approximate location based on IP',
-    example: 'Lagos, Nigeria',
+    example: 'New York, US',
     nullable: true,
   })
   location!: string | null;

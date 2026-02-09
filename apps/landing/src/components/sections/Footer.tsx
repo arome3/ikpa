@@ -44,36 +44,35 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="bg-primary-900 py-16">
+    <footer className="bg-forest py-16">
       <Container>
         {/* Tagline */}
         <div className="text-center mb-12">
-          <p className="text-lg md:text-xl text-primary-200 font-medium">
-            See your money clearly. Understand it deeply. Plan it wisely.
+          <p className="text-lg md:text-xl text-sage-300 font-medium">
+            See where you stand. Know what it means. Act on what matters.
           </p>
         </div>
 
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           {/* Logo and Description */}
           <div className="md:col-span-2">
-            <a href="/" className="text-2xl font-bold text-white">
+            <a href="/" className="font-serif text-2xl font-bold text-cream">
               Ikpa
             </a>
-            <p className="text-primary-400 mt-4 max-w-sm">
-              AI-powered personal finance for young Africans. See where you&apos;re headed.
-              Understand what it means. Plan what to do.
+            <p className="text-sage-300 mt-4 max-w-sm">
+              AI-powered financial intelligence for young adults. Real stakes. Real accountability. Real results.
             </p>
           </div>
 
           {/* Company Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Company</h4>
+            <h4 className="text-cream font-semibold mb-4">Company</h4>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="text-primary-400 hover:text-white transition-colors"
+                    className="text-sage-400 hover:text-cream transition-colors"
                   >
                     {link.label}
                   </a>
@@ -84,13 +83,13 @@ export function Footer() {
 
           {/* Legal Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Legal</h4>
+            <h4 className="text-cream font-semibold mb-4">Legal</h4>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="text-primary-400 hover:text-white transition-colors"
+                    className="text-sage-400 hover:text-cream transition-colors"
                   >
                     {link.label}
                   </a>
@@ -101,7 +100,7 @@ export function Footer() {
         </div>
 
         {/* Social and Copyright */}
-        <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-primary-800">
+        <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-sage-800">
           {/* Social Links */}
           <div className="flex items-center gap-4 mb-4 md:mb-0">
             {footerLinks.social.map((link) => (
@@ -110,7 +109,7 @@ export function Footer() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary-400 hover:text-white transition-colors"
+                className="text-sage-400 hover:text-cream transition-colors"
                 aria-label={link.label}
               >
                 {link.icon}
@@ -119,7 +118,7 @@ export function Footer() {
           </div>
 
           {/* Copyright */}
-          <p className="text-primary-500 text-sm">© 2025 Ikpa. Lagos, Nigeria.</p>
+          <p className="text-sage-500 text-sm">&copy; 2026 Ikpa.</p>
         </div>
       </Container>
     </footer>

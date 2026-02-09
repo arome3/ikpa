@@ -47,10 +47,10 @@ const painPoints = [
   },
   {
     icon: Users,
-    anxiety: 'Cultural Blindness',
+    anxiety: 'Values Blindness',
     clarity: 'Family Values Manager',
     description: 'Other apps ignore family obligations. We treat them as core values, not leaks.',
-    stat: 'Ubuntu: I am because we are',
+    stat: '45% feel guilt about family support',
   },
 ];
 

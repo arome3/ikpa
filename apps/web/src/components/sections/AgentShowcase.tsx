@@ -56,8 +56,8 @@ const agents = [
     icon: Heart,
     color: 'rose' as const,
     tagline: 'Your values, optimized',
-    description: 'Tracks family obligations without guilt. "I am because we are" (Ubuntu). Family support isn\'t a leak—it\'s a core value.',
-    defeatsMode: 'Cultural Blindness',
+    description: 'Tracks family obligations without guilt. Family support isn\'t a leak—it\'s a core value. Plan for it, don\'t fight it.',
+    defeatsMode: 'Values Blindness',
   },
 ];
 

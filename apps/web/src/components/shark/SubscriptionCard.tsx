@@ -21,39 +21,29 @@ export function SubscriptionCard({ subscription, onClick, delay = 0 }: Subscript
     <motion.button
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-3 p-4 rounded-xl border backdrop-blur-sm text-left transition-colors',
+        'w-full flex items-center gap-3 py-4 border-b border-stone-100 text-left transition-colors',
         subscription.status === 'ZOMBIE'
-          ? 'bg-amber-500/5 border-amber-500/15 hover:border-amber-500/30'
-          : 'bg-white/5 border-white/10 hover:border-white/20'
+          ? 'bg-orange-50/40 hover:bg-orange-50/70'
+          : 'hover:bg-stone-50/50'
       )}
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
     >
       {/* Category icon */}
-      <div
-        className={cn(
-          'flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center',
-          subscription.status === 'ZOMBIE' ? 'bg-amber-500/15' : 'bg-white/10'
-        )}
-      >
-        <Icon
-          className={cn(
-            'w-5 h-5',
-            subscription.status === 'ZOMBIE' ? 'text-amber-400' : 'text-slate-300'
-          )}
-        />
+      <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-stone-100">
+        <Icon className="w-5 h-5 text-stone-500 stroke-[1.5]" />
       </div>
 
       {/* Details */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <p className="font-medium text-white truncate">{subscription.name}</p>
+          <p className="font-sans font-medium text-[#1A2E22] truncate">{subscription.name}</p>
           <StatusBadge status={subscription.status} />
         </div>
         <div className="flex items-center gap-2">
           <CategoryBadge category={subscription.category} size="sm" />
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-stone-400">
             {subscription.chargeCount} charge{subscription.chargeCount !== 1 ? 's' : ''}
           </span>
         </div>
@@ -64,23 +54,23 @@ export function SubscriptionCard({ subscription, onClick, delay = 0 }: Subscript
         <div className="flex items-center gap-1 justify-end">
           {subscription.priceChangePercent != null && Math.abs(subscription.priceChangePercent) >= 5 && (
             <span className={cn(
-              'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium',
+              'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium border',
               subscription.priceChangePercent > 0
-                ? 'bg-red-500/20 text-red-300'
-                : 'bg-emerald-500/20 text-emerald-300'
+                ? 'border-orange-200 text-orange-700 bg-orange-50'
+                : 'border-green-200 text-green-700 bg-green-50'
             )}>
               <TrendingUp className={cn('w-2.5 h-2.5', subscription.priceChangePercent < 0 && 'rotate-180')} />
               {subscription.priceChangePercent > 0 ? '+' : ''}{Math.round(subscription.priceChangePercent)}%
             </span>
           )}
-          <p className="font-semibold text-white tabular-nums">
+          <p className="font-mono text-lg text-[#1A2E22] tabular-nums">
             {formatCurrency(subscription.monthlyCost, subscription.currency)}
           </p>
         </div>
-        <p className="text-xs text-slate-400">/month</p>
+        <p className="text-xs text-stone-400">/month</p>
       </div>
 
-      {onClick && <ChevronRight className="w-4 h-4 text-slate-500 flex-shrink-0" />}
+      {onClick && <ChevronRight className="w-4 h-4 text-stone-400 flex-shrink-0" />}
     </motion.button>
   );
 }

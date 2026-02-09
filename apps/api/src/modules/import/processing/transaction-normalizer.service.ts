@@ -31,7 +31,7 @@ const MERCHANT_ALIASES: Record<string, string[]> = {
   'apple tv': ['apple tv', 'apple tv+'],
   peacock: ['peacock', 'peacock tv'],
 
-  // Nigerian services
+  // Regional streaming/TV
   dstv: ['dstv', 'multichoice', 'dstv subscription'],
   gotv: ['gotv', 'gotv subscription'],
   startimes: ['startimes', 'star times'],
@@ -80,7 +80,7 @@ const MERCHANT_ALIASES: Record<string, string[]> = {
   exxon: ['exxon', 'exxonmobil'],
   bp: ['bp'],
 
-  // Retail - Nigeria
+  // Retail - International
   shoprite: ['shoprite', 'shoprite nigeria'],
   spar: ['spar', 'spar nigeria'],
   'game stores': ['game stores', 'game nigeria'],
@@ -239,7 +239,7 @@ export class TransactionNormalizerService {
   ): string | null {
     if (!description) return null;
 
-    // Nigerian bank description patterns
+    // Common bank description patterns
     const nigerianPatterns = [
       // "POS PURCHASE - MERCHANT"
       /POS\s+(?:PURCHASE|PAYMENT)\s*[-:]\s*(.+?)(?:\s+\d|$)/i,

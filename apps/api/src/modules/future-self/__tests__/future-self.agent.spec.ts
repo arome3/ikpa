@@ -41,9 +41,9 @@ describe('FutureSelfAgent', () => {
     id: mockUserId,
     firstName: 'Aisha',
     dateOfBirth: new Date('1998-06-15'),
-    city: 'Lagos',
-    country: 'NIGERIA',
-    currency: 'NGN',
+    city: 'New York',
+    country: 'US',
+    currency: 'USD',
     goals: [
       {
         name: 'House Down Payment',
@@ -347,7 +347,7 @@ Aisha (Age 60)`,
       const context = await agent.getUserContext(mockUserId);
 
       expect(context.name).toBe('Aisha');
-      expect(context.city).toBe('Lagos');
+      expect(context.city).toBe('New York');
       expect(context.currency).toBe('NGN');
       expect(context.goals).toHaveLength(1);
       expect(context.goals[0].name).toBe('House Down Payment');

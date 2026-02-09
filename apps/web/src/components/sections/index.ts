@@ -23,5 +23,4 @@ export { Problem } from './Problem';
 export { Solution } from './Solution';
 export { HowItWorks } from './HowItWorks';
 export { FutureSelf } from './FutureSelf';
-export { BuiltForAfrica } from './BuiltForAfrica';
 export { Testimonials } from './Testimonials';

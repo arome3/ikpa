@@ -20,14 +20,14 @@ const faqs = [
       'No. All data entry is manual, which means you stay in complete control. We designed it this way intentionally—low data anxiety, high data accuracy.',
   },
   {
-    question: 'How is Ikpa different from PiggyVest or Cowrywise?',
+    question: 'How is Ikpa different from other finance apps?',
     answer:
-      "Those are investment and savings platforms—they hold your money. Ikpa is the layer before that: understanding where you stand, what your options are, and which path makes sense for your situation.",
+      "Most finance apps track your money or hold it for you. Ikpa is the layer before that: understanding where you stand, what your options are, and which path makes sense for your situation. We change behavior, not just numbers.",
   },
   {
     question: 'What about family obligations? Other apps ignore this.',
     answer:
-      'Ikpa treats family support as a feature, not a bug. We embrace Ubuntu philosophy—"I am because we are." Your Family Values Manager tracks obligations without guilt and helps you plan for them while still building personal wealth.',
+      'Ikpa treats family support as a feature, not a bug. Your Family Values Manager tracks obligations without guilt and helps you plan for them while still building personal wealth.',
   },
   {
     question: 'Is my data safe?',
@@ -37,12 +37,12 @@ const faqs = [
   {
     question: 'How does the AI work?',
     answer:
-      'Ikpa deploys 5 specialized AI agents, each designed to defeat a specific reason why financial resolutions fail: Shark Auditor finds forgotten subscriptions, GPS Re-Router helps you recover from slips without judgment, Commitment Device creates real stakes through social accountability, Future Self Simulator writes letters from your 60-year-old self, and Family Values Manager handles cultural obligations. All agents are powered by Claude and use G-Eval to ensure empathetic, culturally sensitive advice.',
+      'Ikpa deploys 5 specialized AI agents, each designed to defeat a specific reason why financial resolutions fail: Shark Auditor finds forgotten subscriptions, GPS Re-Router helps you recover from slips without judgment, Commitment Device creates real stakes through social accountability, Future Self Simulator writes letters from your 60-year-old self, and Family Values Manager handles personal obligations. All agents are powered by Claude and use G-Eval to ensure empathetic, personally sensitive advice.',
   },
   {
     question: 'What countries does Ikpa support?',
     answer:
-      "We're launching first in Nigeria, with Ghana, Kenya, and South Africa following. The app supports NGN, GHS, KES, ZAR, and USD.",
+      'Available globally. The app supports multiple currencies including USD, GBP, EUR, and more.',
   },
   {
     question: 'Can I use Ikpa if my income is irregular?',
@@ -159,7 +159,7 @@ export function FAQ() {
 
   return (
     <section ref={sectionRef} className="py-20 md:py-32 bg-sage relative overflow-hidden">
-      {/* Subtle Kente diagonal */}
+      {/* Subtle diagonal pattern */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{

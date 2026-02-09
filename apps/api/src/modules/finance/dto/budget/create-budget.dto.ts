@@ -59,7 +59,7 @@ export class CreateBudgetDto {
 
   @ApiPropertyOptional({
     enum: Currency,
-    example: 'NGN',
+    example: 'USD',
     description: 'Currency (defaults to user currency)',
   })
   @IsEnum(Currency)

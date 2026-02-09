@@ -2,22 +2,26 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Crown,
-  Flame,
-  Medal,
-  Trophy,
-  ToggleLeft,
-  ToggleRight,
-  RefreshCw,
-} from 'lucide-react';
+import { ArrowLeft, RefreshCw, BarChart3, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/Card';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 
-const rankIcons = [Crown, Medal, Medal]; // gold, silver, bronze
-const rankColors = ['text-amber-400', 'text-slate-300', 'text-amber-600'];
-const rankBg = ['bg-amber-500/10 border-amber-500/20', 'bg-slate-500/10 border-slate-500/20', 'bg-amber-700/10 border-amber-700/20'];
+// ─── Helpers ────────────────────────────────────
+
+function getStatusLabel(rank: number, streakDays: number): { text: string; className: string } | null {
+  if (rank <= 3) return { text: 'Top Performer', className: 'text-[#064E3B] bg-emerald-50' };
+  if (streakDays >= 7) return { text: 'Rising', className: 'text-stone-500 bg-stone-100' };
+  return null;
+}
+
+function computeTopPercent(rank: number, total: number): string {
+  if (total <= 0 || rank <= 0) return 'Top —%';
+  const pct = Math.max(1, Math.round((rank / total) * 100));
+  return `Top ${pct}%`;
+}
+
+// ─── Page ───────────────────────────────────────
 
 export default function LeaderboardPage() {
   const {
@@ -41,179 +45,240 @@ export default function LeaderboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Ambient */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 -right-10 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 -left-10 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative max-w-lg mx-auto px-4 py-6 safe-top pb-32">
-        {/* Header */}
-        <motion.header
-          className="mb-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <Link
-              href="/dashboard/future-self"
-              className="p-2 bg-white/10 rounded-xl text-slate-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-amber-400" />
-                Streak Leaderboard
-              </h1>
-              <p className="text-sm text-slate-400">Top micro-commitment streakers</p>
-            </div>
-          </div>
-
-          {/* Opt-in Toggle */}
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-white">Show me on leaderboard</p>
-              <p className="text-xs text-slate-400">Others see your streak (name anonymized)</p>
-            </div>
-            <button
-              onClick={handleToggle}
-              disabled={isTogglingOptIn}
-              className="flex items-center"
-            >
-              {isOptedIn ? (
-                <ToggleRight className="w-10 h-10 text-emerald-400" />
-              ) : (
-                <ToggleLeft className="w-10 h-10 text-slate-500" />
-              )}
-            </button>
-          </div>
-
-          {/* My Rank Card */}
-          {myRank && myRank.rank && (
-            <motion.div
-              className="mt-3 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-amber-400/80 uppercase font-medium">Your Rank</p>
-                  <p className="text-3xl font-bold text-amber-400">#{myRank.rank}</p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Flame className="w-4 h-4 text-orange-400" />
-                    <span className="text-lg font-bold text-white">{myRank.streakDays}d</span>
-                  </div>
-                  <p className="text-xs text-slate-400">Best: {myRank.longestStreak}d</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </motion.header>
-
-        {/* Pull to refresh */}
-        <div className="flex justify-end mb-3">
-          <button
-            onClick={() => refetch()}
-            className="p-2 text-slate-500 hover:text-white transition-colors"
+    <div className="max-w-4xl mx-auto px-6 md:px-12 py-8 md:py-12 space-y-8">
+      {/* ── Header ── */}
+      <motion.header
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="flex items-start justify-between"
+      >
+        <div className="flex items-start gap-3">
+          <Link
+            href="/dashboard/future-self"
+            className="mt-1.5 p-2 rounded-full text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
           >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-serif text-[#1A2E22] tracking-tight">
+              Community Benchmarks
+            </h1>
+            <p className="text-sm text-stone-400 mt-1">
+              Comparing your micro-commitment consistency against the top 1%.
+            </p>
+          </div>
         </div>
-
-        {/* Leaderboard List */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+        <button
+          onClick={() => refetch()}
+          className="mt-1.5 p-2 rounded-full text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+          title="Refresh rankings"
         >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </motion.header>
+
+      {/* ── Your Standing (Performance Certificate) ── */}
+      {myRank && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05, ease: 'easeOut' }}
+        >
+          <Card variant="paper" padding="lg">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              {/* Left: standing */}
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase tracking-widest text-stone-400">
+                  Current Standing
+                </p>
+                <p className="text-5xl md:text-6xl font-serif text-[#1A2E22] leading-none">
+                  {myRank.rank
+                    ? computeTopPercent(myRank.rank, entries.length)
+                    : 'Unranked'}
+                </p>
+                {myRank.rank && (
+                  <p className="text-sm text-[#064E3B] font-mono">
+                    Rank #{String(myRank.rank).padStart(2, '0')} of {entries.length} member{entries.length !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+
+              {/* Right: visibility toggle */}
+              <div className="flex flex-col items-start md:items-end gap-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-stone-500">
+                    {isOptedIn ? 'Visible' : 'Hidden'}
+                  </span>
+                  <button
+                    role="switch"
+                    aria-checked={isOptedIn}
+                    onClick={handleToggle}
+                    disabled={isTogglingOptIn}
+                    className={cn(
+                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50',
+                      isOptedIn ? 'bg-[#064E3B]' : 'bg-stone-300',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 shadow-sm',
+                        isOptedIn ? 'translate-x-6' : 'translate-x-1',
+                      )}
+                    />
+                  </button>
+                </div>
+                <p className="text-xs text-stone-400">
+                  Your name is always anonymized.
+                </p>
+              </div>
+            </div>
+
+            {/* Streak stats */}
+            <div className="mt-5 pt-4 border-t border-stone-100 flex items-center gap-8">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-stone-400">
+                  Current Streak
+                </p>
+                <p className="font-mono text-lg text-[#1A2E22]">
+                  {myRank.streakDays} Days
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-stone-400">
+                  Longest Streak
+                </p>
+                <p className="font-mono text-lg text-[#1A2E22]">
+                  {myRank.longestStreak} Days
+                </p>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* ── Consistency Ledger ── */}
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1, ease: 'easeOut' }}
+      >
+        <Card variant="paper" padding="none">
+          <div className="px-6 pt-6 pb-4 flex items-center gap-2">
+            <Users className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
+            <h2 className="text-lg font-serif text-[#1A2E22]">
+              Consistency Ledger
+            </h2>
+          </div>
+
+          {/* Table header (desktop) */}
+          <div className="hidden md:flex items-center px-6 py-2 border-b border-stone-100 text-[10px] uppercase tracking-widest text-stone-400">
+            <div className="w-16">Rank</div>
+            <div className="flex-1">Member</div>
+            <div className="w-36 text-right">Consistency Streak</div>
+            <div className="w-32 text-right">Status</div>
+          </div>
+
+          {/* Loading */}
           {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-16 bg-white/5 animate-pulse rounded-xl" />
+            <div className="divide-y divide-stone-100">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-6 py-4">
+                  <div className="w-10 h-5 bg-stone-100 rounded animate-pulse" />
+                  <div className="flex-1 h-4 bg-stone-100 rounded animate-pulse" />
+                  <div className="w-20 h-4 bg-stone-100 rounded animate-pulse" />
+                  <div className="hidden md:block w-24 h-4 bg-stone-100 rounded animate-pulse" />
+                </div>
               ))}
             </div>
           ) : entries.length === 0 ? (
-            <div className="text-center py-12">
-              <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400">No one on the leaderboard yet</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Start a micro-commitment and opt in!
+            /* Empty state */
+            <div className="text-center py-16 px-6">
+              <BarChart3 className="w-10 h-10 text-stone-300 mx-auto mb-4" strokeWidth={1} />
+              <p className="font-serif text-lg text-[#1A2E22] mb-1">
+                No benchmarks yet
+              </p>
+              <p className="text-sm text-stone-400 max-w-xs mx-auto">
+                Start a micro-commitment and opt in to see how your consistency compares.
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            /* Entries */
+            <div className="divide-y divide-stone-100">
               {entries.map((entry, index) => {
-                const isTop3 = entry.rank <= 3;
-                const RankIcon = isTop3 ? rankIcons[entry.rank - 1] : null;
+                const status = getStatusLabel(entry.rank, entry.longestStreak);
 
                 return (
                   <motion.div
                     key={`${entry.rank}-${entry.displayName}`}
                     className={cn(
-                      'p-4 rounded-xl border backdrop-blur-sm transition-all',
-                      entry.isCurrentUser
-                        ? 'bg-primary-500/10 border-primary-500/30 ring-1 ring-primary-500/20'
-                        : isTop3
-                          ? rankBg[entry.rank - 1]
-                          : 'bg-white/5 border-white/10',
+                      'flex items-center px-6 py-4 transition-colors hover:bg-stone-50',
+                      entry.rank === 1 && 'bg-emerald-50/50',
                     )}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.03 * index }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.02 * index, duration: 0.3, ease: 'easeOut' }}
                   >
-                    <div className="flex items-center gap-3">
-                      {/* Rank */}
-                      <div className="w-10 text-center">
-                        {RankIcon ? (
-                          <RankIcon className={cn('w-6 h-6 mx-auto', rankColors[entry.rank - 1])} />
-                        ) : (
-                          <span className="text-lg font-bold text-slate-400">
-                            {entry.rank}
+                    {/* Rank */}
+                    <div className="w-16 flex-shrink-0">
+                      <span
+                        className={cn(
+                          'font-serif italic',
+                          entry.rank === 1 && 'text-xl text-[#1A2E22]',
+                          entry.rank >= 2 && entry.rank <= 3 && 'text-lg text-[#1A2E22]',
+                          entry.rank > 3 && 'text-base text-stone-500',
+                        )}
+                      >
+                        #{String(entry.rank).padStart(2, '0')}
+                      </span>
+                    </div>
+
+                    {/* Member */}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={cn(
+                          'truncate',
+                          entry.rank <= 3
+                            ? 'font-medium text-[#1A2E22]'
+                            : 'text-stone-500',
+                        )}
+                      >
+                        {entry.displayName}
+                        {entry.isCurrentUser && (
+                          <span className="ml-2 inline-flex px-2 py-0.5 text-[10px] font-medium bg-emerald-100 text-[#064E3B] rounded-full">
+                            You
                           </span>
                         )}
-                      </div>
+                      </p>
+                    </div>
 
-                      {/* Name */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white truncate">
-                          {entry.displayName}
-                          {entry.isCurrentUser && (
-                            <span className="ml-2 px-2 py-0.5 bg-primary-500/20 text-primary-400 text-xs rounded-full">
-                              You
-                            </span>
-                          )}
-                        </p>
-                      </div>
+                    {/* Streak */}
+                    <div className="w-36 text-right flex-shrink-0">
+                      <span className="font-mono text-sm text-[#1A2E22]">
+                        {entry.longestStreak} Days
+                      </span>
+                    </div>
 
-                      {/* Streak */}
-                      <div className="flex items-center gap-1.5">
-                        <Flame
+                    {/* Status (desktop) */}
+                    <div className="hidden md:block w-32 text-right flex-shrink-0">
+                      {status && (
+                        <span
                           className={cn(
-                            'w-4 h-4',
-                            entry.longestStreak >= 30
-                              ? 'text-red-400'
-                              : entry.longestStreak >= 7
-                                ? 'text-orange-400'
-                                : 'text-amber-400',
+                            'inline-flex px-2.5 py-0.5 text-[10px] font-medium rounded-full',
+                            status.className,
                           )}
-                        />
-                        <span className="text-lg font-bold text-white">
-                          {entry.longestStreak}
+                        >
+                          {status.text}
                         </span>
-                        <span className="text-xs text-slate-400">days</span>
-                      </div>
+                      )}
                     </div>
                   </motion.div>
                 );
               })}
             </div>
           )}
-        </motion.section>
-      </div>
+        </Card>
+      </motion.section>
     </div>
   );
 }

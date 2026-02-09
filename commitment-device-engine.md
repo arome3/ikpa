@@ -1,6 +1,6 @@
 # The Commitment Device Engine — User Flow, Personas & Impact
 
-> *"People don't fail because they lack motivation. They fail because motivation fades and there's nothing holding them accountable."*
+> _"People don't fail because they lack motivation. They fail because motivation fades and there's nothing holding them accountable."_
 > — Based on research by Gollwitzer & Sheeran (2006), Implementation Intentions
 
 ---
@@ -32,7 +32,7 @@ The Commitment Device Engine transforms passive financial goals into binding con
 
 ### The Problem It Solves
 
-Young Africans face a unique savings challenge: strong intentions but weak follow-through. Cultural obligations (family support), irregular income, and the absence of institutional savings infrastructure mean that even motivated savers frequently fall short. Traditional budgeting apps tell users *what* to do but provide no mechanism to ensure they *actually do it*.
+Young Adults face a unique savings challenge: strong intentions but weak follow-through. Cultural obligations (family support), irregular income, and the absence of institutional savings infrastructure mean that even motivated savers frequently fall short. Traditional budgeting apps tell users _what_ to do but provide no mechanism to ensure they _actually do it_.
 
 ### How It Works (30-Second Summary)
 
@@ -49,32 +49,32 @@ Young Africans face a unique savings challenge: strong intentions but weak follo
 
 ### Persona 1: Adaeze — The Ambitious Saver
 
-| Attribute | Detail |
-|-----------|--------|
-| **Age** | 26 |
-| **Location** | Lagos, Nigeria |
-| **Income** | N350,000/month (employed, tech) |
-| **Financial Goal** | Build 6-month emergency fund (N900,000) |
-| **Pain Point** | Keeps dipping into savings for family requests |
-| **Personality** | Competitive, social, responds to external accountability |
-| **Ideal Stake Type** | SOCIAL (referee) + Group Accountability |
+| Attribute            | Detail                                                   |
+| -------------------- | -------------------------------------------------------- |
+| **Age**              | 26                                                       |
+| **Location**         | Lagos, Nigeria                                           |
+| **Income**           | N350,000/month (employed, tech)                          |
+| **Financial Goal**   | Build 6-month emergency fund (N900,000)                  |
+| **Pain Point**       | Keeps dipping into savings for family requests           |
+| **Personality**      | Competitive, social, responds to external accountability |
+| **Ideal Stake Type** | SOCIAL (referee) + Group Accountability                  |
 
 **Adaeze's Journey:**
-Adaeze has tried saving three times. Each time, a family emergency derailed her progress. She doesn't need budgeting advice — she needs something that makes it *harder* to quit. She creates a commitment with her best friend Chioma as referee, joins a group with 3 colleagues, and sets a 6-month deadline. The social pressure of knowing Chioma will verify her progress — and that her group can see she's "on track" or "behind" — keeps her committed even when temptation strikes.
+Adaeze has tried saving three times. Each time, a family emergency derailed her progress. She doesn't need budgeting advice — she needs something that makes it _harder_ to quit. She creates a commitment with her best friend Chioma as referee, joins a group with 3 colleagues, and sets a 6-month deadline. The social pressure of knowing Chioma will verify her progress — and that her group can see she's "on track" or "behind" — keeps her committed even when temptation strikes.
 
 ---
 
 ### Persona 2: Kwame — The Loss-Averse Freelancer
 
-| Attribute | Detail |
-|-----------|--------|
-| **Age** | 31 |
-| **Location** | Accra, Ghana |
-| **Income** | Variable, N200,000-400,000/month (freelance) |
-| **Financial Goal** | Pay off N500,000 business loan in 12 months |
-| **Pain Point** | Income volatility makes commitment feel risky |
-| **Personality** | Analytical, loss-averse, motivated by avoiding negative outcomes |
-| **Ideal Stake Type** | ANTI_CHARITY |
+| Attribute            | Detail                                                           |
+| -------------------- | ---------------------------------------------------------------- |
+| **Age**              | 31                                                               |
+| **Location**         | Accra, Ghana                                                     |
+| **Income**           | Variable, N200,000-400,000/month (freelance)                     |
+| **Financial Goal**   | Pay off N500,000 business loan in 12 months                      |
+| **Pain Point**       | Income volatility makes commitment feel risky                    |
+| **Personality**      | Analytical, loss-averse, motivated by avoiding negative outcomes |
+| **Ideal Stake Type** | ANTI_CHARITY                                                     |
 
 **Kwame's Journey:**
 Kwame consults the AI commitment coach, which analyzes his income pattern and suggests a moderate N25,000 anti-charity stake (well within his minimum monthly earnings). The coach explains: "If you miss your goal, N25,000 goes to [political party he opposes]." The thought of funding something he disagrees with is more motivating than any reward could be. He negotiates the coach down to N20,000 and accepts. Over 12 months, every time he considers skipping a payment, the anti-charity consequence keeps him on track.
@@ -83,15 +83,15 @@ Kwame consults the AI commitment coach, which analyzes his income pattern and su
 
 ### Persona 3: Fatima — The Cautious First-Timer
 
-| Attribute | Detail |
-|-----------|--------|
-| **Age** | 23 |
-| **Location** | Nairobi, Kenya |
-| **Income** | N150,000/month (entry-level) |
-| **Financial Goal** | Save N50,000 for a professional certification course |
-| **Pain Point** | No savings habit; intimidated by large commitments |
-| **Personality** | Cautious, needs gentle onboarding, responds to incremental progress |
-| **Ideal Stake Type** | Future Self micro-commitment -> SOCIAL upgrade |
+| Attribute            | Detail                                                              |
+| -------------------- | ------------------------------------------------------------------- |
+| **Age**              | 23                                                                  |
+| **Location**         | Nairobi, Kenya                                                      |
+| **Income**           | N150,000/month (entry-level)                                        |
+| **Financial Goal**   | Save N50,000 for a professional certification course                |
+| **Pain Point**       | No savings habit; intimidated by large commitments                  |
+| **Personality**      | Cautious, needs gentle onboarding, responds to incremental progress |
+| **Ideal Stake Type** | Future Self micro-commitment -> SOCIAL upgrade                      |
 
 **Fatima's Journey:**
 Fatima starts with the Future Self Simulator, which generates a letter from her 2045 self. Moved by the letter, she commits to saving N500/day — a micro-commitment with no stakes. After 5 consecutive days, the system surfaces an upgrade prompt: "Your 5-day streak shows real discipline. Ready to make it official with a commitment contract?" She upgrades to a SOCIAL commitment (no money at risk) with her sister as referee. The gentle escalation from micro-commitment to formal contract matches her comfort level.
@@ -100,12 +100,12 @@ Fatima starts with the Future Self Simulator, which generates a letter from her 
 
 ### Persona 4: The Squad — Group Accountability
 
-| Attribute | Detail |
-|-----------|--------|
-| **Members** | Adaeze + 3 work colleagues |
-| **Group Name** | "Savings Squad Q2" |
+| Attribute       | Detail                                 |
+| --------------- | -------------------------------------- |
+| **Members**     | Adaeze + 3 work colleagues             |
+| **Group Name**  | "Savings Squad Q2"                     |
 | **Shared Goal** | Each member has their own savings goal |
-| **Motivation** | Peer visibility + group bonus badge |
+| **Motivation**  | Peer visibility + group bonus badge    |
 
 **The Squad's Journey:**
 Adaeze creates "Savings Squad Q2" and shares the invite code (e.g., `a3f7b2c1`) via their WhatsApp group. Three colleagues join. Each person creates their own commitment contract and links it to the group. The group dashboard shows categorical progress only — "On Track", "Behind", "Goal Achieved!" — never dollar amounts (protecting financial privacy). Every Sunday, the system sends a nudge: "3/4 members are on track this week!" When all four succeed, they earn the "Group Champions" badge.
@@ -223,40 +223,40 @@ System checks days until deadline:
 
 ### SOCIAL Accountability
 
-| Aspect | Detail |
-|--------|--------|
-| **How it works** | A referee (friend, family, coach) verifies whether you achieved your goal |
-| **Money at risk** | None |
-| **Motivation mechanism** | Social pressure, reputation, relationship accountability |
-| **Research basis** | 78% success rate (Locke & Latham, 2002) |
-| **Best for** | First-time users, tight budgets, relationship-oriented personalities |
-| **Referee flow** | Invite -> Accept -> Verify at deadline |
-| **Failure consequence** | Referee is informed you didn't achieve your goal (social cost) |
+| Aspect                   | Detail                                                                    |
+| ------------------------ | ------------------------------------------------------------------------- |
+| **How it works**         | A referee (friend, family, coach) verifies whether you achieved your goal |
+| **Money at risk**        | None                                                                      |
+| **Motivation mechanism** | Social pressure, reputation, relationship accountability                  |
+| **Research basis**       | 78% success rate (Locke & Latham, 2002)                                   |
+| **Best for**             | First-time users, tight budgets, relationship-oriented personalities      |
+| **Referee flow**         | Invite -> Accept -> Verify at deadline                                    |
+| **Failure consequence**  | Referee is informed you didn't achieve your goal (social cost)            |
 
 ### ANTI_CHARITY Stakes
 
-| Aspect | Detail |
-|--------|--------|
-| **How it works** | If you miss your goal, your stake is donated to a cause you oppose |
-| **Money at risk** | N1,000 - N500,000 |
-| **Motivation mechanism** | Loss aversion + ideological aversion (double motivation) |
-| **Research basis** | 85% success rate — highest of all types (stickK.com data) |
-| **Best for** | Users with strong values, moderate-to-high disposable income |
-| **Failure consequence** | Stake donated to the named anti-charity |
-| **Example** | "If I fail, N15,000 goes to [political party I oppose]" |
+| Aspect                   | Detail                                                             |
+| ------------------------ | ------------------------------------------------------------------ |
+| **How it works**         | If you miss your goal, your stake is donated to a cause you oppose |
+| **Money at risk**        | N1,000 - N500,000                                                  |
+| **Motivation mechanism** | Loss aversion + ideological aversion (double motivation)           |
+| **Research basis**       | 85% success rate — highest of all types (stickK.com data)          |
+| **Best for**             | Users with strong values, moderate-to-high disposable income       |
+| **Failure consequence**  | Stake donated to the named anti-charity                            |
+| **Example**              | "If I fail, N15,000 goes to [political party I oppose]"            |
 
 ### LOSS_POOL Stakes
 
-| Aspect | Detail |
-|--------|--------|
-| **How it works** | Funds are locked in a virtual escrow; released only on success |
-| **Money at risk** | N1,000 - N500,000 |
-| **Motivation mechanism** | Liquidity loss aversion (can't access your own money) |
-| **Research basis** | 81% success rate |
-| **Best for** | Users who need forced discipline, have savings cushion |
-| **Success** | Funds released back to user |
-| **Failure** | Funds forfeited (redistributed) |
-| **Cancellation** | Partial refund based on time remaining (see schedule above) |
+| Aspect                   | Detail                                                         |
+| ------------------------ | -------------------------------------------------------------- |
+| **How it works**         | Funds are locked in a virtual escrow; released only on success |
+| **Money at risk**        | N1,000 - N500,000                                              |
+| **Motivation mechanism** | Liquidity loss aversion (can't access your own money)          |
+| **Research basis**       | 81% success rate                                               |
+| **Best for**             | Users who need forced discipline, have savings cushion         |
+| **Success**              | Funds released back to user                                    |
+| **Failure**              | Funds forfeited (redistributed)                                |
+| **Cancellation**         | Partial refund based on time remaining (see schedule above)    |
 
 ---
 
@@ -317,26 +317,26 @@ Coach: "Done! Here's your recommendation:
 
 The agent has 5 financial context tools that it calls via Claude's `tool_use` pattern during negotiation:
 
-| Tool | What It Provides |
-|------|-----------------|
-| `get_financial_summary` | Income, expenses, savings, debt, discretionary income |
+| Tool                      | What It Provides                                          |
+| ------------------------- | --------------------------------------------------------- |
+| `get_financial_summary`   | Income, expenses, savings, debt, discretionary income     |
 | `calculate_optimal_stake` | 5-15% of discretionary income, capped at 10% total income |
-| `check_goal_progress` | Progress %, days remaining, current status |
-| `get_commitment_history` | Past success rates by stake type |
-| `assess_risk_profile` | Behavioral signals for risk tolerance |
+| `check_goal_progress`     | Progress %, days remaining, current status                |
+| `get_commitment_history`  | Past success rates by stake type                          |
+| `assess_risk_profile`     | Behavioral signals for risk tolerance                     |
 
 ### Safety Guardrails
 
-| Rule | Rationale | Enforced By |
-|------|-----------|-------------|
-| Never recommend > 10% of monthly income | Prevents financial harm | `validateFinancialSafety()` in agent |
-| If income < expenses: ONLY suggest SOCIAL | No money at risk for users in deficit | `calculate_optimal_stake` tool |
-| First-time users: default to lower stakes | Build confidence before escalating | `get_commitment_history` tool |
-| If user expresses anxiety: pivot to SOCIAL | Respect emotional boundaries | System prompt instructions |
-| Max 6 conversation turns | Prevent analysis paralysis | `runAgentLoop()` turn counter |
-| All sessions traced via Opik | Full observability and evaluation | Opik trace wrapper on every call |
-| Graceful degradation on failure | Agent errors don't block user | Returns default SOCIAL recommendation |
-| Session auto-expiry | Prevents stale sessions | Redis TTL (30 minutes) |
+| Rule                                       | Rationale                             | Enforced By                           |
+| ------------------------------------------ | ------------------------------------- | ------------------------------------- |
+| Never recommend > 10% of monthly income    | Prevents financial harm               | `validateFinancialSafety()` in agent  |
+| If income < expenses: ONLY suggest SOCIAL  | No money at risk for users in deficit | `calculate_optimal_stake` tool        |
+| First-time users: default to lower stakes  | Build confidence before escalating    | `get_commitment_history` tool         |
+| If user expresses anxiety: pivot to SOCIAL | Respect emotional boundaries          | System prompt instructions            |
+| Max 6 conversation turns                   | Prevent analysis paralysis            | `runAgentLoop()` turn counter         |
+| All sessions traced via Opik               | Full observability and evaluation     | Opik trace wrapper on every call      |
+| Graceful degradation on failure            | Agent errors don't block user         | Returns default SOCIAL recommendation |
+| Session auto-expiry                        | Prevents stale sessions               | Redis TTL (30 minutes)                |
 
 ---
 
@@ -395,11 +395,11 @@ Referee submits decision
 
 ### Referee Follow-Up System
 
-| Trigger | Timing | Action |
-|---------|--------|--------|
-| Initial verification request | At deadline | Email + in-app notification |
-| Weekly follow-up | Every Monday 9 AM | "You have pending verifications" |
-| Auto-fail | 72 hours after deadline | If no verification, auto-process |
+| Trigger                      | Timing                  | Action                           |
+| ---------------------------- | ----------------------- | -------------------------------- |
+| Initial verification request | At deadline             | Email + in-app notification      |
+| Weekly follow-up             | Every Monday 9 AM       | "You have pending verifications" |
+| Auto-fail                    | 72 hours after deadline | If no verification, auto-process |
 
 ---
 
@@ -455,7 +455,7 @@ Each member creates their own commitment contract
 +--------------------------------------------------+
 ```
 
-**Why categorical only?** The Beshears 401k study found that showing raw savings balances in group contexts caused "comparison anxiety" and *reduced* savings rates. By showing only "On Track" / "Behind" / "Goal Achieved!", members get motivational context without unhealthy financial comparison.
+**Why categorical only?** The Beshears 401k study found that showing raw savings balances in group contexts caused "comparison anxiety" and _reduced_ savings rates. By showing only "On Track" / "Behind" / "Goal Achieved!", members get motivational context without unhealthy financial comparison.
 
 ### Group Bonus
 
@@ -563,32 +563,32 @@ GPS shows warning:
 
 ### Risk Levels
 
-| Level | Criteria | User Experience |
-|-------|----------|-----------------|
-| **HIGH** | Monetary stake + deadline <= 7 days | Red warning banner, urgent tone |
-| **MEDIUM** | Monetary stake + deadline <= 14 days | Amber warning, suggestive tone |
-| **LOW** | No monetary stake OR deadline > 14 days | Subtle info note |
-| **NONE** | No active commitments | No warning shown |
+| Level      | Criteria                                | User Experience                 |
+| ---------- | --------------------------------------- | ------------------------------- |
+| **HIGH**   | Monetary stake + deadline <= 7 days     | Red warning banner, urgent tone |
+| **MEDIUM** | Monetary stake + deadline <= 14 days    | Amber warning, suggestive tone  |
+| **LOW**    | No monetary stake OR deadline > 14 days | Subtle info note                |
+| **NONE**   | No active commitments                   | No warning shown                |
 
 ---
 
 ## Notification Lifecycle
 
-| Event | Timing | Channel | Message | Status |
-|-------|--------|---------|---------|--------|
-| **Contract Created** | Immediately | In-app | "You've raised the stakes. You're now 3x more likely to succeed." | Built |
-| **Referee Invited** | Immediately | Email | "[Name] has named you as their accountability partner..." | Built (via EmailService) |
-| **Referee Accepted** | On acceptance | In-app | "[Referee] accepted! They'll verify your goal." | Built (via EmailService) |
-| **7-Day Reminder** | 7 days before deadline | In-app + push | "Your deadline is approaching. 7 days left." | Cron logic built, delivery logged only |
-| **1-Day Reminder** | 1 day before deadline | In-app + push | "Time to finish strong. 1 day left." | Cron logic built, delivery logged only |
-| **1-Hour Reminder** | 1 hour before deadline | Push | "You're in the home stretch. 1 hour left." | Cron logic built, delivery logged only |
-| **Verification Request** | At deadline | Email to referee | "Did [User] achieve [Goal]? Verify now." | Cron logic built, delivery logged only |
-| **Referee Follow-up** | Monday 9 AM (weekly) | Email | "You have [N] commitments awaiting verification." | Cron logic built, delivery logged only |
-| **Success** | On verification | In-app | "You did it! Your stake is being released." | Built (inline) |
-| **Failure** | On verification/auto | In-app | "Let's learn from this. Your stake is being processed." | Built (inline) |
-| **Group Nudge** | Sunday 10 AM | In-app | "Weekly check-in: 3/4 members on track this week!" | Cron logic built, delivery logged only |
-| **Group Champions** | On group resolution | In-app | "Group Champions! Every member achieved their goal." | Built (inline) |
-| **Stake at Risk** | On GPS overspend detect | In-app | "Stakes at risk! Deadline in [N] days, [Amount] staked." | Built |
+| Event                    | Timing                  | Channel          | Message                                                           | Status                                 |
+| ------------------------ | ----------------------- | ---------------- | ----------------------------------------------------------------- | -------------------------------------- |
+| **Contract Created**     | Immediately             | In-app           | "You've raised the stakes. You're now 3x more likely to succeed." | Built                                  |
+| **Referee Invited**      | Immediately             | Email            | "[Name] has named you as their accountability partner..."         | Built (via EmailService)               |
+| **Referee Accepted**     | On acceptance           | In-app           | "[Referee] accepted! They'll verify your goal."                   | Built (via EmailService)               |
+| **7-Day Reminder**       | 7 days before deadline  | In-app + push    | "Your deadline is approaching. 7 days left."                      | Cron logic built, delivery logged only |
+| **1-Day Reminder**       | 1 day before deadline   | In-app + push    | "Time to finish strong. 1 day left."                              | Cron logic built, delivery logged only |
+| **1-Hour Reminder**      | 1 hour before deadline  | Push             | "You're in the home stretch. 1 hour left."                        | Cron logic built, delivery logged only |
+| **Verification Request** | At deadline             | Email to referee | "Did [User] achieve [Goal]? Verify now."                          | Cron logic built, delivery logged only |
+| **Referee Follow-up**    | Monday 9 AM (weekly)    | Email            | "You have [N] commitments awaiting verification."                 | Cron logic built, delivery logged only |
+| **Success**              | On verification         | In-app           | "You did it! Your stake is being released."                       | Built (inline)                         |
+| **Failure**              | On verification/auto    | In-app           | "Let's learn from this. Your stake is being processed."           | Built (inline)                         |
+| **Group Nudge**          | Sunday 10 AM            | In-app           | "Weekly check-in: 3/4 members on track this week!"                | Cron logic built, delivery logged only |
+| **Group Champions**      | On group resolution     | In-app           | "Group Champions! Every member achieved their goal."              | Built (inline)                         |
+| **Stake at Risk**        | On GPS overspend detect | In-app           | "Stakes at risk! Deadline in [N] days, [Amount] staked."          | Built                                  |
 
 > **Note on notification delivery:** The cron jobs for reminders, referee follow-ups, verification requests, and group nudges have full scheduling logic, distributed Redis locks, and idempotency — but the final delivery step (email/push/SMS) is currently logged to console rather than dispatched to a notification service. The infrastructure is ready; connecting to SendGrid, Firebase Cloud Messaging, or a similar provider is a production integration task.
 
@@ -600,15 +600,15 @@ The Commitment Device Engine is built on five evidence-based behavioral principl
 
 ### 1. Loss Aversion (Kahneman & Tversky, 1979)
 
-> *People feel losses 2x more strongly than equivalent gains.*
+> _People feel losses 2x more strongly than equivalent gains._
 
-**Application**: Anti-charity stakes leverage loss aversion by making failure actively *painful* — not just the absence of reward, but the realization that your money funded something you oppose. LOSS_POOL stakes leverage liquidity loss aversion — the inability to access your own funds.
+**Application**: Anti-charity stakes leverage loss aversion by making failure actively _painful_ — not just the absence of reward, but the realization that your money funded something you oppose. LOSS_POOL stakes leverage liquidity loss aversion — the inability to access your own funds.
 
 **Result**: 85% success rate for anti-charity stakes (stickK.com data).
 
 ### 2. Social Accountability (Matthews, 2015)
 
-> *People who share their goals with an accountability partner achieve goals at 76% vs. 35% for solo goal-setters.*
+> _People who share their goals with an accountability partner achieve goals at 76% vs. 35% for solo goal-setters._
 
 **Application**: The referee system and group accountability feature create external observers. The mere knowledge that someone will check on you changes behavior. Groups amplify this through peer visibility.
 
@@ -616,25 +616,25 @@ The Commitment Device Engine is built on five evidence-based behavioral principl
 
 ### 3. Commitment Consistency (Cialdini, 2001)
 
-> *People who make explicit public commitments are more likely to follow through.*
+> _People who make explicit public commitments are more likely to follow through._
 
 **Application**: Creating a formal contract — with a named stake type, specific deadline, and documented referee — activates the consistency principle. Users feel cognitive pressure to act consistently with their stated commitment.
 
 ### 4. Implementation Intentions (Gollwitzer, 1999)
 
-> *Specific "if-then" plans increase goal achievement by 2-3x.*
+> _Specific "if-then" plans increase goal achievement by 2-3x._
 
 **Application**: The commitment contract IS an implementation intention: "If the deadline arrives and I haven't reached my goal, then [specific consequence]." The AI coach helps users form precise, achievable commitments rather than vague aspirations.
 
 ### 5. Optimal Group Size (Dunbar, 2010; Kullgren RCT)
 
-> *Groups of 4-5 are optimal for accountability. Larger groups diffuse responsibility.*
+> _Groups of 4-5 are optimal for accountability. Larger groups diffuse responsibility._
 
 **Application**: Groups capped at 2-5 members. The Kullgren physical activity trial found that hybrid individual+group incentives outperform either alone — which is exactly our architecture (individual stakes + group visibility).
 
 ### 6. Privacy-Preserving Social Comparison (Beshears et al., 2015)
 
-> *Showing raw financial numbers in group settings causes comparison anxiety and reduces savings.*
+> _Showing raw financial numbers in group settings causes comparison anxiety and reduces savings._
 
 **Application**: Group dashboards show only categorical progress ("On Track" / "Behind"), never dollar amounts. This provides motivational social context without triggering unhealthy comparison or shame.
 
@@ -644,16 +644,17 @@ The Commitment Device Engine is built on five evidence-based behavioral principl
 
 ### Quantitative Impact Projections
 
-| Metric | Without Engine | With Engine | Source |
-|--------|---------------|-------------|--------|
-| **Goal achievement rate** | ~35% | ~76% (social) / ~85% (anti-charity) | Matthews (2015), stickK.com |
-| **Savings consistency** | Drops after 2-3 months | Sustained through deadline | Commitment consistency effect |
-| **Goal abandonment** | ~40% within first month | < 15% (stakes create switching cost) | Loss aversion literature |
-| **Re-engagement after failure** | ~10% try again | ~45% create new commitment | Supportive messaging + retry prompts |
+| Metric                          | Without Engine          | With Engine                          | Source                               |
+| ------------------------------- | ----------------------- | ------------------------------------ | ------------------------------------ |
+| **Goal achievement rate**       | ~35%                    | ~76% (social) / ~85% (anti-charity)  | Matthews (2015), stickK.com          |
+| **Savings consistency**         | Drops after 2-3 months  | Sustained through deadline           | Commitment consistency effect        |
+| **Goal abandonment**            | ~40% within first month | < 15% (stakes create switching cost) | Loss aversion literature             |
+| **Re-engagement after failure** | ~10% try again          | ~45% create new commitment           | Supportive messaging + retry prompts |
 
 ### Qualitative Impact
 
 **For Individual Users:**
+
 - Transforms vague goals into binding contracts
 - Creates external accountability where none existed
 - Provides graduated commitment options (micro -> social -> staked)
@@ -661,12 +662,14 @@ The Commitment Device Engine is built on five evidence-based behavioral principl
 - Integrates with GPS Re-Router for proactive risk warnings
 
 **For Friend Groups:**
+
 - Normalizes financial goal-setting in peer groups
 - Creates positive social pressure without shame
 - Provides shared celebration moments (Group Champions badge)
 - Respects financial privacy through categorical-only visibility
 
 **For the IKPA Platform:**
+
 - Increases user retention (active commitments = active users)
 - Creates viral growth through referee invitations and group sharing
 - Generates behavioral data for AI coach optimization
@@ -741,22 +744,22 @@ CommitmentModule (8 providers)
 
 The engine uses a `MockPaymentService` for hackathon purposes. All payment operations (fund locking, release, donation, refund) are implemented with full business logic, retry mechanisms, and database state tracking — but the actual money movement is simulated in-memory. Production deployment requires replacing `MockPaymentService` with a real payment provider (Paystack, Flutterwave, or Stripe).
 
-| Mock Method | What It Simulates | Production Replacement |
-|-------------|-------------------|----------------------|
-| `lockFunds()` | Virtual escrow hold | Paystack charge + hold |
-| `releaseFunds()` | Escrow release to user | Paystack transfer back |
-| `processDonation()` | Anti-charity payment | Paystack transfer to charity |
-| `processRefund()` | Partial refund on cancel | Paystack partial reversal |
+| Mock Method         | What It Simulates        | Production Replacement       |
+| ------------------- | ------------------------ | ---------------------------- |
+| `lockFunds()`       | Virtual escrow hold      | Paystack charge + hold       |
+| `releaseFunds()`    | Escrow release to user   | Paystack transfer back       |
+| `processDonation()` | Anti-charity payment     | Paystack transfer to charity |
+| `processRefund()`   | Partial refund on cancel | Paystack partial reversal    |
 
 #### Cron Jobs (5 Scheduled Tasks)
 
-| Job | Schedule | Lock | Status |
-|-----|----------|------|--------|
-| `runEnforcement()` | Daily 6 AM (Africa/Lagos) | `commitment:enforce-lock` | Built - processes expired contracts, auto-fails after verification window |
-| `sendReminders()` | Hourly | `commitment:reminder-lock` | Built - idempotent via `lastReminderSentAt` tracking |
-| `followUpReferees()` | Monday 9 AM | `commitment:referee-followup-lock` | Built - Redis TTL prevents duplicate follow-ups |
-| `resolveGroupOutcomes()` | Daily 7 AM | `commitment:group-resolve-lock` | Built - awards group bonus, transitions to COMPLETED |
-| `sendGroupWeeklyNudges()` | Sunday 10 AM | `commitment:group-nudge-lock` | Built - categorical summary (e.g., "3/4 on track") |
+| Job                       | Schedule                  | Lock                               | Status                                                                    |
+| ------------------------- | ------------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| `runEnforcement()`        | Daily 6 AM (Africa/Lagos) | `commitment:enforce-lock`          | Built - processes expired contracts, auto-fails after verification window |
+| `sendReminders()`         | Hourly                    | `commitment:reminder-lock`         | Built - idempotent via `lastReminderSentAt` tracking                      |
+| `followUpReferees()`      | Monday 9 AM               | `commitment:referee-followup-lock` | Built - Redis TTL prevents duplicate follow-ups                           |
+| `resolveGroupOutcomes()`  | Daily 7 AM                | `commitment:group-resolve-lock`    | Built - awards group bonus, transitions to COMPLETED                      |
+| `sendGroupWeeklyNudges()` | Sunday 10 AM              | `commitment:group-nudge-lock`      | Built - categorical summary (e.g., "3/4 on track")                        |
 
 ### Frontend (Next.js + React Query)
 
@@ -776,37 +779,37 @@ The engine uses a `MockPaymentService` for hackathon purposes. All payment opera
 
 ### API Endpoints (22 Total)
 
-| # | Method | Route | Auth | Purpose | Status |
-|---|--------|-------|------|---------|--------|
-| | **Stake Management** | | | | |
-| 1 | POST | `/commitment/stakes` | JWT | Create commitment (idempotency key) | Built |
-| 2 | GET | `/commitment/stakes/:goalId` | JWT | Get stakes for goal (paginated) | Built |
-| 3 | PUT | `/commitment/stakes/:id` | JWT | Update (extend deadline, raise stake) | Built |
-| 4 | DELETE | `/commitment/stakes/:id` | JWT | Cancel with partial refund schedule | Built |
-| | **Verification** | | | | |
-| 5 | POST | `/commitment/verify/:id` | Token | Referee submits verification decision | Built |
-| | **Referee Management** | | | | |
-| 6 | GET | `/commitment/referee/pending` | Token | Get pending verifications for referee | Built |
-| 7 | POST | `/commitment/referee/invite` | JWT | Invite accountability partner | Built |
-| 8 | POST | `/commitment/referee/accept` | Token | Accept referee invitation | Built |
-| | **Upgrade Flow** | | | | |
-| 9 | GET | `/commitment/upgrade/check/:id` | JWT | Check upgrade eligibility (3+ streak) | Built |
-| 10 | POST | `/commitment/upgrade/:id` | JWT | Upgrade micro-commitment to contract | Built |
-| | **AI Coach Negotiation** | | | | |
-| 11 | POST | `/commitment/negotiate` | JWT | Start AI coach session | Built |
-| 12 | POST | `/commitment/negotiate/respond` | JWT | Continue negotiation (max 6 turns) | Built |
-| | **Analytics** | | | | |
-| 13 | GET | `/commitment/analytics/effectiveness` | JWT | Stake effectiveness by type | Built |
-| 14 | POST | `/commitment/analytics/eval` | JWT | Run Opik eval suite | Built |
-| 15 | GET | `/commitment/analytics/overview` | JWT | Comprehensive analytics dashboard | Built |
-| | **Group Accountability** | | | | |
-| 16 | POST | `/commitment/groups` | JWT | Create group (generates invite code) | Built |
-| 17 | POST | `/commitment/groups/join` | JWT | Join via invite code | Built |
-| 18 | GET | `/commitment/groups` | JWT | List my groups | Built |
-| 19 | GET | `/commitment/groups/:groupId` | JWT | Group dashboard (categorical progress) | Built |
-| 20 | POST | `/commitment/groups/:groupId/link` | JWT | Link contract to group membership | Built |
-| 21 | POST | `/commitment/groups/:groupId/leave` | JWT | Leave group | Built |
-| 22 | DELETE | `/commitment/groups/:groupId` | JWT | Disband group (owner only) | Built |
+| #   | Method                   | Route                                 | Auth  | Purpose                                | Status |
+| --- | ------------------------ | ------------------------------------- | ----- | -------------------------------------- | ------ |
+|     | **Stake Management**     |                                       |       |                                        |        |
+| 1   | POST                     | `/commitment/stakes`                  | JWT   | Create commitment (idempotency key)    | Built  |
+| 2   | GET                      | `/commitment/stakes/:goalId`          | JWT   | Get stakes for goal (paginated)        | Built  |
+| 3   | PUT                      | `/commitment/stakes/:id`              | JWT   | Update (extend deadline, raise stake)  | Built  |
+| 4   | DELETE                   | `/commitment/stakes/:id`              | JWT   | Cancel with partial refund schedule    | Built  |
+|     | **Verification**         |                                       |       |                                        |        |
+| 5   | POST                     | `/commitment/verify/:id`              | Token | Referee submits verification decision  | Built  |
+|     | **Referee Management**   |                                       |       |                                        |        |
+| 6   | GET                      | `/commitment/referee/pending`         | Token | Get pending verifications for referee  | Built  |
+| 7   | POST                     | `/commitment/referee/invite`          | JWT   | Invite accountability partner          | Built  |
+| 8   | POST                     | `/commitment/referee/accept`          | Token | Accept referee invitation              | Built  |
+|     | **Upgrade Flow**         |                                       |       |                                        |        |
+| 9   | GET                      | `/commitment/upgrade/check/:id`       | JWT   | Check upgrade eligibility (3+ streak)  | Built  |
+| 10  | POST                     | `/commitment/upgrade/:id`             | JWT   | Upgrade micro-commitment to contract   | Built  |
+|     | **AI Coach Negotiation** |                                       |       |                                        |        |
+| 11  | POST                     | `/commitment/negotiate`               | JWT   | Start AI coach session                 | Built  |
+| 12  | POST                     | `/commitment/negotiate/respond`       | JWT   | Continue negotiation (max 6 turns)     | Built  |
+|     | **Analytics**            |                                       |       |                                        |        |
+| 13  | GET                      | `/commitment/analytics/effectiveness` | JWT   | Stake effectiveness by type            | Built  |
+| 14  | POST                     | `/commitment/analytics/eval`          | JWT   | Run Opik eval suite                    | Built  |
+| 15  | GET                      | `/commitment/analytics/overview`      | JWT   | Comprehensive analytics dashboard      | Built  |
+|     | **Group Accountability** |                                       |       |                                        |        |
+| 16  | POST                     | `/commitment/groups`                  | JWT   | Create group (generates invite code)   | Built  |
+| 17  | POST                     | `/commitment/groups/join`             | JWT   | Join via invite code                   | Built  |
+| 18  | GET                      | `/commitment/groups`                  | JWT   | List my groups                         | Built  |
+| 19  | GET                      | `/commitment/groups/:groupId`         | JWT   | Group dashboard (categorical progress) | Built  |
+| 20  | POST                     | `/commitment/groups/:groupId/link`    | JWT   | Link contract to group membership      | Built  |
+| 21  | POST                     | `/commitment/groups/:groupId/leave`   | JWT   | Leave group                            | Built  |
+| 22  | DELETE                   | `/commitment/groups/:groupId`         | JWT   | Disband group (owner only)             | Built  |
 
 All endpoints include Swagger annotations (`@ApiOperation`, `@ApiResponse`, `@ApiParam`) and rate limiting via `@Throttle`.
 
@@ -816,39 +819,39 @@ All endpoints include Swagger annotations (`@ApiOperation`, `@ApiResponse`, `@Ap
 
 ### Financial Safety
 
-| Guardrail | Implementation |
-|-----------|---------------|
-| Stake amount limits | N1,000 minimum, N500,000 maximum |
-| AI coach income cap | Never recommends > 10% of monthly income |
-| Deficit protection | If income < expenses, only SOCIAL stakes offered |
+| Guardrail               | Implementation                                         |
+| ----------------------- | ------------------------------------------------------ |
+| Stake amount limits     | N1,000 minimum, N500,000 maximum                       |
+| AI coach income cap     | Never recommends > 10% of monthly income               |
+| Deficit protection      | If income < expenses, only SOCIAL stakes offered       |
 | Partial refund schedule | Graduated refund: 100% (>14d), 75% (7-14d), 50% (3-7d) |
-| Cancellation window | Cannot cancel within 3 days of deadline |
-| Deadline constraints | Minimum 7 days, maximum extension 90 days |
+| Cancellation window     | Cannot cancel within 3 days of deadline                |
+| Deadline constraints    | Minimum 7 days, maximum extension 90 days              |
 
 ### Regulatory Compliance
 
-| Risk | Mitigation |
-|------|------------|
-| Peer-to-peer betting | No stake redistribution between group members |
-| Gambling classification | Stakes are self-imposed commitments, not wagers |
-| Financial advice | AI coach provides behavioral nudges, not financial advice |
-| Data privacy | Group dashboards show categorical progress only, never amounts |
-| Fund custody | Fund locks are database-tracked via `CommitmentFundLock` model; payment provider integration is mock for hackathon (see [Implementation Status](#implementation-status)) |
+| Risk                    | Mitigation                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Peer-to-peer betting    | No stake redistribution between group members                                                                                                                            |
+| Gambling classification | Stakes are self-imposed commitments, not wagers                                                                                                                          |
+| Financial advice        | AI coach provides behavioral nudges, not financial advice                                                                                                                |
+| Data privacy            | Group dashboards show categorical progress only, never amounts                                                                                                           |
+| Fund custody            | Fund locks are database-tracked via `CommitmentFundLock` model; payment provider integration is mock for hackathon (see [Implementation Status](#implementation-status)) |
 
 ### Technical Safety
 
-| Mechanism | Purpose | Verified |
-|-----------|---------|----------|
-| Idempotency keys | Prevent duplicate commitments on network retry | Yes — `idempotencyKey` field on CommitmentContract, checked before creation |
-| Distributed Redis locks | Prevent duplicate cron job execution | Yes — all 5 cron jobs use `SET NX EX` locks with TTLs |
-| Atomic database transactions | Prevent partial state (e.g., funds locked but contract failed) | Yes — Prisma `$transaction()` wraps all multi-step mutations |
-| Compensating transactions | If fund lock succeeds but contract fails, funds are released | Yes — `createCommitment()` saga: pre-lock → contract → catch → release |
-| Rate limiting | All endpoints throttled (5-20 req/min) | Yes — `@Throttle()` decorator on sensitive endpoints |
-| Audit logging | Every lifecycle event recorded with actor + timestamp | Yes — `CommitmentAuditLog` with action, actor, metadata JSON |
-| Opik tracing | Full AI coach conversation observability | Yes — traces + 4 feedback metrics (quality, effectiveness, safety, accepted) |
-| Retry with backoff | Payment operations retry on transient failures | Yes — exponential backoff, 3 retries on all `MockPaymentService` calls |
-| JWT referee tokens | Public verification endpoints secured without login | Yes — 30-day tokens, `RefereeService` validates + decodes |
-| Redis session TTL | AI coach sessions auto-expire | Yes — 30-minute TTL, last 20 messages kept |
+| Mechanism                    | Purpose                                                        | Verified                                                                     |
+| ---------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Idempotency keys             | Prevent duplicate commitments on network retry                 | Yes — `idempotencyKey` field on CommitmentContract, checked before creation  |
+| Distributed Redis locks      | Prevent duplicate cron job execution                           | Yes — all 5 cron jobs use `SET NX EX` locks with TTLs                        |
+| Atomic database transactions | Prevent partial state (e.g., funds locked but contract failed) | Yes — Prisma `$transaction()` wraps all multi-step mutations                 |
+| Compensating transactions    | If fund lock succeeds but contract fails, funds are released   | Yes — `createCommitment()` saga: pre-lock → contract → catch → release       |
+| Rate limiting                | All endpoints throttled (5-20 req/min)                         | Yes — `@Throttle()` decorator on sensitive endpoints                         |
+| Audit logging                | Every lifecycle event recorded with actor + timestamp          | Yes — `CommitmentAuditLog` with action, actor, metadata JSON                 |
+| Opik tracing                 | Full AI coach conversation observability                       | Yes — traces + 4 feedback metrics (quality, effectiveness, safety, accepted) |
+| Retry with backoff           | Payment operations retry on transient failures                 | Yes — exponential backoff, 3 retries on all `MockPaymentService` calls       |
+| JWT referee tokens           | Public verification endpoints secured without login            | Yes — 30-day tokens, `RefereeService` validates + decodes                    |
+| Redis session TTL            | AI coach sessions auto-expire                                  | Yes — 30-minute TTL, last 20 messages kept                                   |
 
 ---
 
@@ -858,26 +861,26 @@ All endpoints include Swagger annotations (`@ApiOperation`, `@ApiResponse`, `@Ap
 
 ### Build Completeness
 
-| Component | Files | Status | Notes |
-|-----------|-------|--------|-------|
-| **Prisma Schema** | `schema.prisma` | Complete | 2 enums, 7 models, all relations |
-| **CommitmentService** | `commitment.service.ts` | Complete | Full lifecycle with saga pattern |
-| **StakeService** | `stake.service.ts` (inline) | Complete (mock payment) | Business logic solid; `MockPaymentService` for hackathon |
-| **RefereeService** | `referee.service.ts` (inline) | Complete | JWT tokens, invite/accept/verify flow |
-| **UpgradeService** | `upgrade.service.ts` | Complete | Micro-commitment → contract bridge |
-| **GroupService** | `group.service.ts` | Complete | Create/join/leave/link/dashboard/resolve |
-| **CommitmentCoachAgent** | `agents/commitment-coach.agent.ts` | Complete | 5 tools, safety validation, Opik tracing |
-| **CommitmentRiskService** | `commitment-risk.service.ts` | Complete | GPS integration, risk level calculation |
-| **CommitmentCronService** | `commitment.cron.ts` | Complete (delivery pending) | All 5 jobs run; notification delivery logged only |
-| **CommitmentEvalRunner** | `constants/eval.constants.ts` | Complete | Opik metrics defined, eval endpoint working |
-| **Controller** | `commitment.controller.ts` | Complete | 22 endpoints, Swagger, rate limiting |
-| **Frontend Dashboard** | `commitments/page.tsx` | Complete | Active contracts, stats, effectiveness chart |
-| **Frontend Create Wizard** | `commitments/new/page.tsx` | Complete | 4-step flow with validation |
-| **Frontend Analytics** | `commitments/analytics/page.tsx` | Complete | Effectiveness charts |
-| **Frontend Groups Hub** | `commitments/groups/page.tsx` | Complete | List, create modal, join modal |
-| **Frontend Group Dashboard** | `commitments/groups/[groupId]/page.tsx` | Complete | Member progress grid, bonus banner |
-| **useCommitments hook** | `hooks/useCommitments.ts` | Complete | 11 operations, React Query |
-| **useGroups hook** | `hooks/useGroups.ts` | Complete | 7 operations, query key factory |
+| Component                    | Files                                   | Status                      | Notes                                                    |
+| ---------------------------- | --------------------------------------- | --------------------------- | -------------------------------------------------------- |
+| **Prisma Schema**            | `schema.prisma`                         | Complete                    | 2 enums, 7 models, all relations                         |
+| **CommitmentService**        | `commitment.service.ts`                 | Complete                    | Full lifecycle with saga pattern                         |
+| **StakeService**             | `stake.service.ts` (inline)             | Complete (mock payment)     | Business logic solid; `MockPaymentService` for hackathon |
+| **RefereeService**           | `referee.service.ts` (inline)           | Complete                    | JWT tokens, invite/accept/verify flow                    |
+| **UpgradeService**           | `upgrade.service.ts`                    | Complete                    | Micro-commitment → contract bridge                       |
+| **GroupService**             | `group.service.ts`                      | Complete                    | Create/join/leave/link/dashboard/resolve                 |
+| **CommitmentCoachAgent**     | `agents/commitment-coach.agent.ts`      | Complete                    | 5 tools, safety validation, Opik tracing                 |
+| **CommitmentRiskService**    | `commitment-risk.service.ts`            | Complete                    | GPS integration, risk level calculation                  |
+| **CommitmentCronService**    | `commitment.cron.ts`                    | Complete (delivery pending) | All 5 jobs run; notification delivery logged only        |
+| **CommitmentEvalRunner**     | `constants/eval.constants.ts`           | Complete                    | Opik metrics defined, eval endpoint working              |
+| **Controller**               | `commitment.controller.ts`              | Complete                    | 22 endpoints, Swagger, rate limiting                     |
+| **Frontend Dashboard**       | `commitments/page.tsx`                  | Complete                    | Active contracts, stats, effectiveness chart             |
+| **Frontend Create Wizard**   | `commitments/new/page.tsx`              | Complete                    | 4-step flow with validation                              |
+| **Frontend Analytics**       | `commitments/analytics/page.tsx`        | Complete                    | Effectiveness charts                                     |
+| **Frontend Groups Hub**      | `commitments/groups/page.tsx`           | Complete                    | List, create modal, join modal                           |
+| **Frontend Group Dashboard** | `commitments/groups/[groupId]/page.tsx` | Complete                    | Member progress grid, bonus banner                       |
+| **useCommitments hook**      | `hooks/useCommitments.ts`               | Complete                    | 11 operations, React Query                               |
+| **useGroups hook**           | `hooks/useGroups.ts`                    | Complete                    | 7 operations, query key factory                          |
 
 ### What's Production-Ready
 
@@ -894,20 +897,20 @@ All core business logic, data persistence, cron scheduling, AI agent, frontend U
 
 ### What Needs Production Integration
 
-| Gap | Current State | What's Needed | Effort |
-|-----|---------------|---------------|--------|
-| **Payment Provider** | `MockPaymentService` (in-memory) | Replace with Paystack/Flutterwave/Stripe SDK | Medium — interfaces already defined |
-| **Notification Delivery** | 4 cron locations log to console | Connect to SendGrid (email), FCM (push), or Twilio (SMS) | Medium — scheduling logic is complete |
-| **Email Templates** | `EmailService` sends basic emails | Verify production email provider configuration | Low — service exists, may need API keys |
-| **`averageTimeToSuccess`** | Returns `null` in effectiveness analytics | Implement time-delta calculation on resolved contracts | Low — query against `CommitmentAuditLog` timestamps |
+| Gap                        | Current State                             | What's Needed                                            | Effort                                              |
+| -------------------------- | ----------------------------------------- | -------------------------------------------------------- | --------------------------------------------------- |
+| **Payment Provider**       | `MockPaymentService` (in-memory)          | Replace with Paystack/Flutterwave/Stripe SDK             | Medium — interfaces already defined                 |
+| **Notification Delivery**  | 4 cron locations log to console           | Connect to SendGrid (email), FCM (push), or Twilio (SMS) | Medium — scheduling logic is complete               |
+| **Email Templates**        | `EmailService` sends basic emails         | Verify production email provider configuration           | Low — service exists, may need API keys             |
+| **`averageTimeToSuccess`** | Returns `null` in effectiveness analytics | Implement time-delta calculation on resolved contracts   | Low — query against `CommitmentAuditLog` timestamps |
 
 ### Hackathon Prize Alignment
 
-| Prize Category | Relevant Feature | Evidence |
-|----------------|-----------------|----------|
-| **Best Use of Opik** | AI Coach Negotiation | Full tracing on agent loop, 4 feedback metrics, eval runner endpoint |
-| **Best AI Agent** | CommitmentCoachAgent | 5 tool_use tools, financial safety validation, negotiation flow |
-| **Social Impact** | Group Accountability + Behavioral Science | Privacy-safe design, research-backed (Matthews 2015, Kullgren RCT) |
+| Prize Category       | Relevant Feature                          | Evidence                                                             |
+| -------------------- | ----------------------------------------- | -------------------------------------------------------------------- |
+| **Best Use of Opik** | AI Coach Negotiation                      | Full tracing on agent loop, 4 feedback metrics, eval runner endpoint |
+| **Best AI Agent**    | CommitmentCoachAgent                      | 5 tool_use tools, financial safety validation, negotiation flow      |
+| **Social Impact**    | Group Accountability + Behavioral Science | Privacy-safe design, research-backed (Matthews 2015, Kullgren RCT)   |
 
 ---
 

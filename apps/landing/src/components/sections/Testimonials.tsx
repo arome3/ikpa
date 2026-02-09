@@ -1,89 +1,133 @@
-import { Container, SectionHeader } from '@/components/ui';
+'use client';
+
+import { useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Container, FadeIn } from '@/components/ui';
 
 const testimonials = [
   {
+    headline: 'Ikpa stopped my 2 AM spending.',
     quote:
-      "I finally understand where my money goes. For the first time, I can see exactly what happens if I keep doing what I'm doing—and it was the wake-up call I needed.",
-    author: 'Chidi A.',
+      "Ikpa found $380 in forgotten subscriptions I didn't even know I was paying for. But the real game-changer was the accountability feature — knowing my friends would see if I missed my savings goal made me actually stick to it.",
+    name: 'Tunde A.',
     role: 'Product Designer',
-    location: 'Lagos',
+    initials: 'TA',
   },
   {
+    headline: 'Finally understood my cash flow.',
     quote:
-      "The family support tracking changed everything. I used to feel guilty about helping my parents. Now I plan for it, and I'm building wealth at the same time.",
-    author: 'Amara K.',
-    role: 'Freelance Consultant',
-    location: 'Accra',
+      "Irregular income made budgeting impossible. Ikpa didn't just track my expenses — it made sense of my irregular income so I could actually plan ahead. I've saved more this year than in the last three combined.",
+    name: 'Amara O.',
+    role: 'Digital Marketer',
+    initials: 'AO',
   },
   {
+    headline: 'Behavioral nudges that actually work.',
     quote:
-      "I have three income sources and no two months look the same. Ikpa is the first app that actually works for how I earn.",
-    author: 'Kwame M.',
-    role: 'Software Developer',
-    location: 'Nairobi',
+      "I used to pull money out of my savings for risky trades. The 'Future Self' visualization stopped that. Seeing how a small withdrawal ruined my 5-year projection was a wake-up call.",
+    name: 'David K.',
+    role: 'Software Engineer',
+    initials: 'DK',
   },
 ];
 
-const stats = [
-  { value: '30%', label: 'average increase in savings rate after 3 months' },
-  { value: '40%', label: 'of users report reduced financial stress' },
-  { value: '70%', label: 'pass financial literacy check after using Ikpa' },
-];
+const logos = ['Flutterwave', 'Paystack', 'MTN', 'PiggyVest', 'Google'];
 
 export function Testimonials() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'left' | 'right') => {
+    scrollRef.current?.scrollBy({
+      left: direction === 'left' ? -496 : 496,
+      behavior: 'smooth',
+    });
+  };
+
   return (
-    <section className="py-20 md:py-32 bg-primary-50">
-      <Container>
-        <SectionHeader title="What early users say" />
+    <section className="bg-cream py-20 md:py-32">
+      <Container size="xl">
+        {/* Header row */}
+        <FadeIn>
+          <div className="flex items-end justify-between mb-10">
+            <h2 className="font-serif text-4xl md:text-5xl font-bold text-forest">
+              Real results from real members.
+            </h2>
 
-        {/* Testimonials Grid */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl p-8 shadow-sm border border-primary-100 relative"
-            >
-              {/* Quote Icon */}
-              <div className="absolute -top-4 left-8">
-                <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                  </svg>
-                </div>
-              </div>
+            <div className="hidden md:flex items-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => scroll('left')}
+                className="w-12 h-12 rounded-full bg-[#064E3B] text-white flex items-center justify-center transition-colors hover:bg-[#053D2E] focus:outline-none focus:ring-2 focus:ring-[#064E3B]/50"
+                aria-label="Previous testimonial"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => scroll('right')}
+                className="w-12 h-12 rounded-full bg-[#064E3B] text-white flex items-center justify-center transition-colors hover:bg-[#053D2E] focus:outline-none focus:ring-2 focus:ring-[#064E3B]/50"
+                aria-label="Next testimonial"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </motion.button>
+            </div>
+          </div>
+        </FadeIn>
 
-              <blockquote className="text-primary-700 leading-relaxed mb-6 pt-4">
-                &ldquo;{testimonial.quote}&rdquo;
-              </blockquote>
-
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary-200 flex items-center justify-center">
-                  <span className="text-primary-600 font-semibold text-sm">
-                    {testimonial.author.split(' ').map((n) => n[0]).join('')}
-                  </span>
-                </div>
+        {/* Carousel */}
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 hide-scrollbar"
+        >
+          {testimonials.map((t, i) => (
+            <FadeIn key={t.name} direction="left" delay={i * 0.1}>
+              <div className="w-[480px] flex-shrink-0 snap-start bg-white rounded-2xl p-8 shadow-sm border border-sage-100 flex flex-col justify-between">
                 <div>
-                  <p className="font-semibold text-primary-900">{testimonial.author}</p>
-                  <p className="text-sm text-primary-500">
-                    {testimonial.role}, {testimonial.location}
+                  <h3 className="font-serif text-2xl font-bold text-forest">
+                    {t.headline}
+                  </h3>
+                  <p className="text-charcoal/70 leading-relaxed mt-4">
+                    &ldquo;{t.quote}&rdquo;
                   </p>
                 </div>
+
+                <div className="flex items-center gap-3 mt-6 pt-6 border-t border-sage-100">
+                  <div className="w-10 h-10 rounded-full bg-sage-100 text-sage-700 flex items-center justify-center text-sm font-semibold">
+                    {t.initials}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-forest text-sm">
+                      {t.name}
+                    </p>
+                    <p className="text-charcoal/50 text-sm">{t.role}</p>
+                  </div>
+                </div>
               </div>
-            </div>
+            </FadeIn>
           ))}
         </div>
 
-        {/* Stats Block */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 md:p-12">
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            {stats.map((stat, index) => (
-              <div key={index}>
-                <p className="text-4xl md:text-5xl font-bold text-accent mb-2">{stat.value}</p>
-                <p className="text-primary-200">{stat.label}</p>
-              </div>
-            ))}
+        {/* Logo strip */}
+        <FadeIn delay={0.3}>
+          <div className="mt-16 pt-8 border-t border-sage-100">
+            <p className="text-sm text-charcoal/40 text-center mb-6">
+              Trusted by professionals at
+            </p>
+            <div className="flex items-center justify-center gap-10 md:gap-16 flex-wrap">
+              {logos.map((logo) => (
+                <span
+                  key={logo}
+                  className="font-bold text-xl text-charcoal/20 select-none"
+                >
+                  {logo}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        </FadeIn>
       </Container>
     </section>
   );

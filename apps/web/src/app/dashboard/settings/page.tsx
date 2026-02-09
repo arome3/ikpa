@@ -3,18 +3,9 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import {
-  ArrowLeft,
-  Mail,
-  Copy,
-  Check,
-  RefreshCw,
-  User,
-  Globe,
-  Shield,
-} from 'lucide-react';
+import { Inbox, Copy, Check, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, Button, Skeleton } from '@/components/ui';
+import { Skeleton } from '@/components/ui';
 import { useImportEmail } from '@/hooks/useImportEmail';
 import { useAuthStore } from '@/stores/auth.store';
 import { useCurrency } from '@/hooks';
@@ -22,6 +13,7 @@ import { useCurrency } from '@/hooks';
 export default function SettingsPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const { currency } = useCurrency();
   const {
     importEmail,
@@ -33,6 +25,10 @@ export default function SettingsPage() {
 
   const [copied, setCopied] = useState(false);
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : null;
 
   const handleCopy = useCallback(async () => {
     if (!importEmail?.emailAddress) return;
@@ -62,273 +58,213 @@ export default function SettingsPage() {
     }
   }, [regenerate]);
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'Never';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900">
-      <div className="max-w-lg mx-auto px-4 py-6 safe-top pb-32">
-        {/* Header */}
-        <motion.header
-          className="flex items-center gap-3 mb-8"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="p-2 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-              Settings
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Manage your account and preferences
-            </p>
+    <div className="max-w-2xl mx-auto px-6 py-10">
+      {/* Header — Account Overview */}
+      <motion.header
+        className="flex items-start justify-between mb-12"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div>
+          <h1 className="font-serif text-4xl text-[#1A2E22] dark:text-white">
+            Account Configuration
+          </h1>
+          <p className="mt-2 text-stone-500 dark:text-stone-400">
+            Manage your data inputs and privacy preferences.
+          </p>
+        </div>
+        {memberSince && (
+          <span className="flex-shrink-0 ml-4 mt-2 font-mono text-xs text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-white/10 rounded-full px-3 py-1">
+            Member since {memberSince}
+          </span>
+        )}
+      </motion.header>
+
+      {/* Ingestion Protocol — Email Forwarding */}
+      <motion.section
+        className="bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 rounded-lg p-8 shadow-sm"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <Inbox className="w-5 h-5 text-[#1A2E22] dark:text-emerald-400" strokeWidth={1.5} />
+          <h2 className="font-serif text-lg font-semibold text-[#1A2E22] dark:text-white">
+            Transaction Import Address
+          </h2>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-4 w-3/4 rounded" />
           </div>
-        </motion.header>
-
-        {/* Email Forwarding Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-        >
-          <Card variant="default" padding="lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-                <Mail className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-                  Email Forwarding
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Auto-import transactions from bank alerts
-                </p>
-              </div>
+        ) : importEmail ? (
+          <>
+            {/* Email address display + copy */}
+            <div
+              className={cn(
+                'flex items-center gap-2 p-4 rounded',
+                'bg-stone-50 dark:bg-white/5',
+                'border border-stone-200 dark:border-white/10',
+              )}
+            >
+              <code className="flex-1 font-mono text-sm text-[#1A2E22] dark:text-stone-300 truncate">
+                {importEmail.emailAddress}
+              </code>
+              <button
+                onClick={handleCopy}
+                className={cn(
+                  'flex-shrink-0 p-2 rounded transition-colors',
+                  copied
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300',
+                )}
+                title={copied ? 'Copied!' : 'Copy to clipboard'}
+              >
+                {copied ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </button>
             </div>
 
-            {isLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-12 w-full rounded-xl" />
-                <Skeleton className="h-4 w-3/4 rounded" />
-              </div>
-            ) : importEmail ? (
-              <>
-                {/* Email address display + copy */}
-                <div
-                  className={cn(
-                    'flex items-center gap-2 p-3 rounded-xl',
-                    'bg-slate-50 dark:bg-white/5',
-                    'border border-slate-200 dark:border-white/10',
-                  )}
-                >
-                  <code className="flex-1 text-sm font-mono text-slate-700 dark:text-slate-300 truncate">
-                    {importEmail.emailAddress}
-                  </code>
-                  <button
-                    onClick={handleCopy}
-                    className={cn(
-                      'flex-shrink-0 p-2 rounded-lg transition-colors',
-                      copied
-                        ? 'bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-400'
-                        : 'bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-white/10 dark:text-slate-300 dark:hover:bg-white/15',
-                    )}
-                    title={copied ? 'Copied!' : 'Copy to clipboard'}
-                  >
-                    {copied ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
+            {/* Instructions */}
+            <p className="mt-4 text-sm italic text-stone-400 dark:text-stone-500 leading-relaxed">
+              Forward bank alerts to this secure address to automatically import
+              transactions. Works with any bank that sends email notifications.
+            </p>
 
-                {/* Status row */}
-                <div className="flex items-center justify-between mt-3 text-xs text-slate-500 dark:text-slate-400">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={cn(
-                        'w-2 h-2 rounded-full',
-                        importEmail.isActive
-                          ? 'bg-green-500'
-                          : 'bg-slate-300 dark:bg-slate-600',
-                      )}
-                    />
-                    {importEmail.isActive ? 'Active' : 'Inactive'}
-                  </div>
-                  <span>Last used: {formatDate(importEmail.lastUsedAt)}</span>
-                </div>
-
-                {/* Instructions */}
-                <div className="mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/10">
-                  <p className="text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
-                    Forward your bank alerts to this address to automatically
-                    import transactions. Works with any bank that sends email
-                    notifications.
+            {/* Regenerate */}
+            <div className="mt-5">
+              {showRegenConfirm ? (
+                <div className="p-4 rounded bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10">
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mb-3">
+                    This will create a new email address. The old address will
+                    stop receiving emails. Are you sure?
                   </p>
-                </div>
-
-                {/* Regenerate */}
-                <div className="mt-4">
-                  {showRegenConfirm ? (
-                    <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10">
-                      <p className="text-xs text-amber-700 dark:text-amber-400 mb-3">
-                        This will create a new email address. The old address
-                        will stop receiving emails. Are you sure?
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={handleRegenerate}
-                          isLoading={isRegenerating}
-                          leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-                        >
-                          Regenerate
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowRegenConfirm(false)}
-                          disabled={isRegenerating}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                      {regenerateError && (
-                        <p className="mt-2 text-xs text-red-600 dark:text-red-400">
-                          {regenerateError.message}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
+                  <div className="flex items-center gap-3">
                     <button
-                      onClick={() => setShowRegenConfirm(true)}
-                      className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors flex items-center gap-1.5"
+                      onClick={handleRegenerate}
+                      disabled={isRegenerating}
+                      className="text-xs font-medium text-red-700 dark:text-red-400 hover:underline disabled:opacity-50 flex items-center gap-1.5"
                     >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      Regenerate email address
+                      <RefreshCw className={cn('w-3.5 h-3.5', isRegenerating && 'animate-spin')} />
+                      Regenerate
                     </button>
+                    <button
+                      onClick={() => setShowRegenConfirm(false)}
+                      disabled={isRegenerating}
+                      className="text-xs text-stone-500 dark:text-stone-400 hover:underline disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {regenerateError && (
+                    <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                      {regenerateError.message}
+                    </p>
                   )}
                 </div>
-              </>
-            ) : (
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Unable to load your import email address. Please try again
-                later.
-              </p>
-            )}
-          </Card>
-        </motion.div>
+              ) : (
+                <button
+                  onClick={() => setShowRegenConfirm(true)}
+                  className="text-xs text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 transition-colors flex items-center gap-1.5"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Regenerate email address
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-stone-500 dark:text-stone-400">
+            Unable to load your import email address. Please try again later.
+          </p>
+        )}
+      </motion.section>
 
-        {/* Profile Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mt-4"
+      {/* Configuration Grid — Profile + Preferences + Security merged */}
+      <motion.section
+        className="bg-white dark:bg-white/5 border border-stone-200 dark:border-white/10 rounded-lg p-8 mt-8 shadow-sm"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+          {/* Full Name */}
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-2">
+              Full Name
+            </div>
+            <div className="text-base text-[#1A2E22] dark:text-white border-b border-stone-200 dark:border-white/10 pb-2">
+              {user?.name ?? '---'}
+            </div>
+          </div>
+
+          {/* Primary Email */}
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-2">
+              Primary Email
+            </div>
+            <div className="text-base text-[#1A2E22] dark:text-white border-b border-stone-200 dark:border-white/10 pb-2 truncate">
+              {user?.email ?? '---'}
+            </div>
+          </div>
+
+          {/* Base Currency */}
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-2">
+              Base Currency
+            </div>
+            <div className="text-base text-[#1A2E22] dark:text-white border-b border-stone-200 dark:border-white/10 pb-2">
+              {currency || '---'}
+            </div>
+          </div>
+
+          {/* Password */}
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-2">
+              Password
+            </div>
+            <div className="border-b border-stone-200 dark:border-white/10 pb-2">
+              <button
+                onClick={() => router.push('/forgot-password')}
+                className="text-base text-[#1A2E22] dark:text-white hover:underline"
+              >
+                Reset Password
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Session Control Footer */}
+      <motion.footer
+        className="mt-12 flex items-center justify-between"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15 }}
+      >
+        <button
+          onClick={() => {
+            logout();
+            localStorage.removeItem('ikpa-refresh-token');
+            router.push('/signin');
+          }}
+          className="text-sm font-medium text-red-800 dark:text-red-400 hover:underline"
         >
-          <Card variant="default" padding="lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
-                <User className="w-5 h-5" />
-              </div>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-                Profile
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500 dark:text-slate-400">
-                  Name
-                </span>
-                <span className="text-sm font-medium text-slate-900 dark:text-white">
-                  {user?.name ?? '—'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500 dark:text-slate-400">
-                  Email
-                </span>
-                <span className="text-sm font-medium text-slate-900 dark:text-white truncate ml-4 max-w-[200px]">
-                  {user?.email ?? '—'}
-                </span>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Preferences Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mt-4"
+          Sign Out
+        </button>
+        <button
+          onClick={() => {}}
+          className="text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300"
         >
-          <Card variant="default" padding="lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-info-100 text-info-600 dark:bg-info-900/30 dark:text-info-400">
-                <Globe className="w-5 h-5" />
-              </div>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-                Preferences
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500 dark:text-slate-400">
-                  Currency
-                </span>
-                <span className="text-sm font-medium text-slate-900 dark:text-white">
-                  {currency || '—'}
-                </span>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Security Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mt-4"
-        >
-          <Card variant="default" padding="lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-xl bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
-                <Shield className="w-5 h-5" />
-              </div>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-                Security
-              </h2>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500 dark:text-slate-400">
-                  Account created
-                </span>
-                <span className="text-sm font-medium text-slate-900 dark:text-white">
-                  {user?.createdAt ? formatDate(user.createdAt) : '—'}
-                </span>
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      </div>
+          Delete Account
+        </button>
+      </motion.footer>
     </div>
   );
 }

@@ -50,7 +50,7 @@ describe('FinanceCronService Configuration', () => {
     const jobConfig = {
       jobName: 'daily-cash-flow-score-calculation',
       schedule: '0 2 * * *',
-      timezone: 'Africa/Lagos',
+      timezone: 'UTC',
     };
 
     it('should be named daily-cash-flow-score-calculation', () => {
@@ -61,8 +61,8 @@ describe('FinanceCronService Configuration', () => {
       expect(jobConfig.schedule).toBe('0 2 * * *');
     });
 
-    it('should use Africa/Lagos timezone', () => {
-      expect(jobConfig.timezone).toBe('Africa/Lagos');
+    it('should use UTC timezone', () => {
+      expect(jobConfig.timezone).toBe('UTC');
     });
   });
 

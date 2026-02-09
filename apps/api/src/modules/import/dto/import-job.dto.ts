@@ -27,7 +27,7 @@ export class ParsedTransactionDto {
   @ApiProperty({
     description: 'Currency code',
     enum: Currency,
-    example: 'NGN',
+    example: 'USD',
   })
   currency!: Currency;
 

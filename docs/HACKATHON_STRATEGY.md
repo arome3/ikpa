@@ -3,6 +3,7 @@
 ## Commit to Change: An AI Agents Hackathon
 
 **Target Prizes:**
+
 - Financial Health: $5,000
 - Best Use of Opik: $5,000
 - **Maximum Prize: $10,000**
@@ -17,25 +18,25 @@
 
 The 91% resolution failure rate is NOT a failure of intent or data availability—it's a **failure of executive function architecture** caused by five distinct failure modes:
 
-| Failure Mode | What Happens | IKPA Agent |
-|--------------|--------------|------------|
-| **Invisible Leakage** | Money disappears through forgotten subscriptions | **Shark Auditor** |
-| **Failure Spiral** | One slip cascades into total abandonment | **GPS Re-Router** |
-| **Temporal Disconnect** | Future self feels like a stranger | **Future Self Simulator** |
-| **Cultural Blindness** | Western apps shame family support | **Ubuntu Manager** |
-| **Commitment Decay** | Goals abandoned without stakes or accountability | **Commitment Device Engine** |
+| Failure Mode            | What Happens                                     | IKPA Agent                   |
+| ----------------------- | ------------------------------------------------ | ---------------------------- |
+| **Invisible Leakage**   | Money disappears through forgotten subscriptions | **Shark Auditor**            |
+| **Failure Spiral**      | One slip cascades into total abandonment         | **GPS Re-Router**            |
+| **Temporal Disconnect** | Future self feels like a stranger                | **Future Self Simulator**    |
+| **Cultural Blindness**  | Western apps shame family support                | **Ubuntu Manager**           |
+| **Commitment Decay**    | Goals abandoned without stakes or accountability | **Commitment Device Engine** |
 
 Each failure mode is defeated by one specialized IKPA agent.
 
 ### Paradigm Shift
 
-| Legacy Apps (Mint, YNAB) | IKPA (Agentic) |
-|--------------------------|----------------|
-| Pull-based (user logs in) | Push-based (agent intervenes) |
-| Historical data | Real-time interception |
-| Visualization only | Execution (negotiation, transfers) |
-| User must decide | Agent acts autonomously |
-| Western-centric | Africa-aware (family obligations) |
+| Legacy Apps (Mint, YNAB)  | IKPA (Agentic)                     |
+| ------------------------- | ---------------------------------- |
+| Pull-based (user logs in) | Push-based (agent intervenes)      |
+| Historical data           | Real-time interception             |
+| Visualization only        | Execution (negotiation, transfers) |
+| User must decide          | Agent acts autonomously            |
+| Western-centric           | Africa-aware (family obligations)  |
 
 ### Why IKPA Will Win
 
@@ -52,6 +53,7 @@ Each failure mode is defeated by one specialized IKPA agent.
 Understanding the "user hardware" (human brain) failure modes is critical to designing effective interventions.
 
 ### Failure Mode 1: Invisible Leakage
+
 **→ Defeated by: Shark Auditor ("Trash Collector")**
 
 **What:** Money silently drains through forgotten subscriptions, zombie charges, and unnoticed fees.
@@ -59,6 +61,7 @@ Understanding the "user hardware" (human brain) failure modes is critical to des
 **Why It Happens:** Subscription models exploit our "set and forget" psychology. A ₦3,000/month charge feels trivial, but ₦36,000/year is significant. Users don't consciously choose to keep paying—they simply forget to cancel.
 
 **Statistics:**
+
 - Average user has 12 forgotten subscriptions
 - 84% of people underestimate their monthly subscription costs
 - "Zombie subscriptions" (unused but still charging) cost users an average of $273/year
@@ -70,6 +73,7 @@ Understanding the "user hardware" (human brain) failure modes is critical to des
 ---
 
 ### Failure Mode 2: Failure Spiral
+
 **→ Defeated by: GPS Re-Router ("Wrong Turn Recovery")**
 
 **What:** One budget slip triggers guilt → avoidance → abandonment → total failure.
@@ -79,6 +83,7 @@ Understanding the "user hardware" (human brain) failure modes is critical to des
 **Why It Happens:** Traditional apps frame budget exceeds as failures. This triggers shame, which triggers avoidance (Ostrich Effect), which triggers total resolution abandonment.
 
 **Statistics:**
+
 - 88% of resolutions fail within 2 weeks
 - First slip is the #1 predictor of total abandonment
 - Users who recover from first slip are 3x more likely to succeed
@@ -90,6 +95,7 @@ Understanding the "user hardware" (human brain) failure modes is critical to des
 ---
 
 ### Failure Mode 3: Temporal Disconnect
+
 **→ Defeated by: Future Self Simulator ("Time Machine")**
 
 **What:** Users feel disconnected from their future selves. Future-Aisha feels like a stranger to Present-Aisha.
@@ -99,6 +105,7 @@ Understanding the "user hardware" (human brain) failure modes is critical to des
 **Why It Happens:** The brain's limbic system (immediate gratification) is evolutionarily older than the prefrontal cortex (long-term planning). Hyperbolic discounting causes us to overvalue immediate rewards.
 
 **Statistics:**
+
 - fMRI studies show future self activates "stranger" brain regions
 - 16% increase in savings after future self interaction (MIT)
 - Dual-path visualizations increase commitment by 23%
@@ -109,27 +116,8 @@ Understanding the "user hardware" (human brain) failure modes is critical to des
 
 ---
 
-### Failure Mode 4: Cultural Blindness
-**→ Defeated by: Ubuntu Manager ("Social Capital Recognizer")**
-
-**What:** Western fintech apps frame family support as "financial leakage" instead of "social capital investment."
-
-**Why It Matters:** In African cultures, supporting family is a VALUE, not a problem. Apps that shame family obligations alienate users and create guilt around culturally mandated behaviors.
-
-**Ubuntu Philosophy:** "I am because we are." Financial success in African context includes family prosperity, not just individual wealth.
-
-**Statistics:**
-- Average African professional supports 4-6 family members
-- Family support averages 15-35% of net income
-- 67% of African users abandon Western finance apps due to "irrelevant advice"
-
-**Why Traditional Apps Fail:** They categorize family transfers as "gifts" or "other"—negative budget items. This creates psychological conflict between cultural identity and financial software.
-
-**IKPA Solution:** The **Ubuntu Manager** categorizes family transfers as "Social Capital Investment" with a Dependency Ratio health gauge. It provides non-judgmental adjustments for family emergencies and tracks social capital alongside financial capital.
-
----
-
 ### Failure Mode 5: Commitment Decay
+
 **→ Defeated by: Commitment Device Engine ("Stakes Enforcer")**
 
 **What:** Initial motivation fades without external accountability or stakes. Users set goals with enthusiasm but abandon them when faced with temptation or competing priorities.
@@ -139,6 +127,7 @@ Understanding the "user hardware" (human brain) failure modes is critical to des
 **Why It Happens:** Without skin in the game, goals feel optional. The psychological cost of abandonment is too low. "I can always start again next month." The pain of missing a goal without stakes is fleeting—easily rationalized away.
 
 **Statistics:**
+
 - Users with stakes are 3x more likely to achieve goals (stickK.com data)
 - Social accountability increases success rates by 65%
 - Loss aversion is 2x stronger than gain motivation (Kahneman & Tversky)
@@ -147,8 +136,9 @@ Understanding the "user hardware" (human brain) failure modes is critical to des
 **Why Traditional Apps Fail:** They track goals but create no consequence for failure. A missed target just becomes a sad statistic—a red number on a chart. There's no accountability partner, no referee, no stakes. Users can simply reset and try again, perpetuating the cycle.
 
 **IKPA Solution:** The **Commitment Device Engine** creates real stakes through three mechanisms:
+
 1. **Social Accountability** - Designate a referee who verifies goal completion and receives progress notifications
-2. **Anti-Charity Stakes** - Pre-commit funds to donate to a cause you *oppose* if you fail (loss aversion weaponized for good)
+2. **Anti-Charity Stakes** - Pre-commit funds to donate to a cause you _oppose_ if you fail (loss aversion weaponized for good)
 3. **Loss Pool** - Pre-committed funds locked until goal achieved, creating tangible cost for abandonment
 
 The engine transforms vague intentions into binding commitments with real consequences.
@@ -158,11 +148,13 @@ The engine transforms vague intentions into binding commitments with real conseq
 ## Part 2: Feature Specifications
 
 ### 2.1 The Shark Auditor (Automated Savings)
+
 **Mission:** Defeat Invisible Leakage
 
 #### Technical Implementation
 
 **Trigger Mechanism:**
+
 - Daily cron job scans transaction history
 - Webhook on new recurring charge detection
 - User-requested audit
@@ -177,7 +169,7 @@ const subscriptionPatterns = [
   /netflix|spotify|amazon prime|youtube premium/i,
   /DSTV|GOTV|Showmax/i,
   /gym|fitness|wellness/i,
-  /cloud|storage|backup/i
+  /cloud|storage|backup/i,
 ];
 
 // Step 2: Anomaly Detection for "Zombie Subscriptions"
@@ -185,7 +177,7 @@ const subscriptionPatterns = [
 const zombieDetection = {
   hasActiveCharge: true,
   lastUsageDate: '2025-08-15', // 5 months ago
-  status: 'ZOMBIE'
+  status: 'ZOMBIE',
 };
 
 // Step 3: Annualized Framing (Cognitive Reframe)
@@ -193,23 +185,25 @@ const framing = {
   monthly: '₦3,000/month',
   annual: '₦36,000/year',
   context: "That's 7% of your monthly rent.",
-  impact: "Canceling saves you ₦36,000 this year."
+  impact: 'Canceling saves you ₦36,000 this year.',
 };
 
 // Step 4: Tinder-Style Swipe UI
 const swipeOptions = {
   swipeLeft: 'Cancel subscription',
   swipeRight: 'Keep subscription',
-  tapForDetails: 'View usage history'
+  tapForDetails: 'View usage history',
 };
 ```
 
 **Annualized Framing Examples:**
+
 - "$15/month" → "$180/year. That's 8% of your rent."
 - "₦5,000/month" → "₦60,000/year. That's a weekend trip to Calabar."
 - "£9.99/month" → "£120/year. That's 3 months of groceries."
 
 **Opik Metrics:**
+
 - `SubscriptionDetectionAccuracy`: True positives / (True positives + False positives)
 - `CancellationRate`: Subscriptions cancelled / Subscriptions surfaced
 - `AnnualSavingsGenerated`: Sum of cancelled subscription values
@@ -217,11 +211,13 @@ const swipeOptions = {
 ---
 
 ### 2.2 The GPS Re-Router (Failure Management)
+
 **Mission:** Defeat the Failure Spiral
 
 #### Technical Implementation
 
 **Trigger Mechanism:**
+
 - Webhook on budget threshold exceed (80%, 100%, 120%)
 - Manual trigger ("I overspent, help me recover")
 - Scheduled weekly goal check
@@ -237,7 +233,7 @@ const budgetStatus = {
   budgeted: 50000,
   spent: 72000,
   overagePercent: 44,
-  trigger: 'BUDGET_EXCEEDED'
+  trigger: 'BUDGET_EXCEEDED',
 };
 
 // Step 2: Probability Engine Recalculation
@@ -246,7 +242,7 @@ const goalImpact = {
   previousProbability: 0.78,
   newProbability: 0.71,
   probabilityDrop: 0.07,
-  message: 'This spending reduced your goal probability from 78% to 71%.'
+  message: 'This spending reduced your goal probability from 78% to 71%.',
 };
 
 // Step 3: Generate 3 Recovery Paths
@@ -255,20 +251,20 @@ const recoveryPaths = [
     name: 'Time Adjustment',
     description: 'Extend goal deadline by 3 weeks',
     newProbability: 0.78,
-    effort: 'Low'
+    effort: 'Low',
   },
   {
     name: 'Rate Adjustment',
     description: 'Increase weekly savings by ₦5,000 for next month',
-    newProbability: 0.80,
-    effort: 'Medium'
+    newProbability: 0.8,
+    effort: 'Medium',
   },
   {
     name: 'Freeze Protocol',
     description: 'Pause entertainment spending for 2 weeks',
     newProbability: 0.82,
-    effort: 'High'
-  }
+    effort: 'High',
+  },
 ];
 
 // Step 4: Non-Judgmental Framing
@@ -276,17 +272,19 @@ const message = {
   tone: 'Supportive',
   headline: "You made a wrong turn. Let's recalculate.",
   subtext: "This isn't failure—it's navigation. Choose your recovery path:",
-  NO_shame_words: ['failed', 'mistake', 'problem', 'wrong', 'bad']
+  NO_shame_words: ['failed', 'mistake', 'problem', 'wrong', 'bad'],
 };
 ```
 
 **Non-Judgmental Framing:**
+
 - ❌ "You exceeded your budget by 44%"
 - ✅ "You made a wrong turn. Let's recalculate your route."
 - ❌ "You failed to stay within your entertainment budget"
 - ✅ "Your entertainment spending took an unexpected detour. Here are 3 ways to get back on track."
 
 **Opik Metrics:**
+
 - `RecoveryPathSelection`: Which path users choose most often
 - `GoalSurvivalRate`: Users who don't abandon goal after slip
 - `TimeToRecovery`: Hours between slip and recovery path selection
@@ -294,11 +292,13 @@ const message = {
 ---
 
 ### 2.3 The Future Self Simulator (Emotional Motivation)
+
 **Mission:** Defeat Temporal Disconnect
 
 #### Technical Implementation
 
 **Trigger Mechanism:**
+
 - User requests future self conversation
 - Weekly scheduled "letter from the future"
 - After major financial decision
@@ -316,8 +316,8 @@ const simulation = {
       '1_year': 450000,
       '5_years': 2100000,
       '10_years': 4800000,
-      '20_years': 12000000
-    }
+      '20_years': 12000000,
+    },
   },
   withIKPA: {
     savingsRate: 0.18,
@@ -325,10 +325,10 @@ const simulation = {
       '1_year': 520000,
       '5_years': 3200000,
       '10_years': 8500000,
-      '20_years': 28000000
-    }
+      '20_years': 28000000,
+    },
   },
-  difference_20yr: 16000000 // ₦16M difference
+  difference_20yr: 16000000, // ₦16M difference
 };
 
 // Step 2: Generate "Letter from 2045"
@@ -352,7 +352,7 @@ const timeSlider = {
   positions: ['6mo', '1yr', '5yr', '10yr', '20yr'],
   currentPosition: '10yr',
   showDualPaths: true,
-  animateTransition: true
+  animateTransition: true,
 };
 
 // Example Letter Output:
@@ -381,6 +381,7 @@ Aisha (Age 60)
 ```
 
 **Visualization Features:**
+
 - **Time Slider**: Drag between 6mo → 1yr → 5yr → 10yr → 20yr
 - **Dual Path View**: Side-by-side comparison of "Current Path" vs "IKPA Path"
 - **Animation**: Smooth transitions showing wealth divergence over time
@@ -399,53 +400,53 @@ interface StoryCard {
   generatedAt: Date;
 
   // Visual elements
-  headline: string;           // "My 60-year-old self wrote me a letter"
-  subheadline: string;        // "Here's what changed everything"
+  headline: string; // "My 60-year-old self wrote me a letter"
+  subheadline: string; // "Here's what changed everything"
   keyMetric: {
-    label: string;            // "Potential Net Worth Difference"
-    value: string;            // "₦16,000,000"
+    label: string; // "Potential Net Worth Difference"
+    value: string; // "₦16,000,000"
   };
-  quote?: string;             // Excerpt from future self letter
+  quote?: string; // Excerpt from future self letter
 
   // Sharing metadata
   shareUrl: string;
   platforms: ('twitter' | 'linkedin' | 'whatsapp' | 'instagram')[];
-  hashtags: string[];         // ['#IKPA', '#FinancialFreedom', '#FutureSelf']
+  hashtags: string[]; // ['#IKPA', '#FinancialFreedom', '#FutureSelf']
 }
 
 // Story Card Templates
 const storyCardTemplates = {
   future_self: {
-    headline: "I talked to my 60-year-old self",
-    subheadline: "The conversation that changed my financial future",
+    headline: 'I talked to my 60-year-old self',
+    subheadline: 'The conversation that changed my financial future',
     gradient: ['#667eea', '#764ba2'],
-    includeQuote: true
+    includeQuote: true,
   },
   commitment: {
-    headline: "I put my money where my goals are",
-    subheadline: "{{stakeType}} activated for {{goalName}}",
+    headline: 'I put my money where my goals are',
+    subheadline: '{{stakeType}} activated for {{goalName}}',
     gradient: ['#f093fb', '#f5576c'],
-    includeReferee: true
+    includeReferee: true,
   },
   milestone: {
-    headline: "Goal Achieved! 🎉",
-    subheadline: "{{goalName}} - {{daysToComplete}} days of commitment",
+    headline: 'Goal Achieved! 🎉',
+    subheadline: '{{goalName}} - {{daysToComplete}} days of commitment',
     gradient: ['#4facfe', '#00f2fe'],
-    includeStats: true
+    includeStats: true,
   },
   recovery: {
-    headline: "I made a wrong turn. Then I recalculated.",
-    subheadline: "Back on track with {{recoveryPath}}",
+    headline: 'I made a wrong turn. Then I recalculated.',
+    subheadline: 'Back on track with {{recoveryPath}}',
     gradient: ['#43e97b', '#38f9d7'],
-    includeMessage: true
-  }
+    includeMessage: true,
+  },
 };
 
 // Generate shareable card
 async function generateStoryCard(
   userId: string,
   type: StoryCard['type'],
-  context: Record<string, any>
+  context: Record<string, any>,
 ): Promise<StoryCard> {
   const template = storyCardTemplates[type];
   const userData = await getUserData(userId);
@@ -460,24 +461,27 @@ async function generateStoryCard(
     quote: type === 'future_self' ? context.letterExcerpt : undefined,
     shareUrl: generateShareUrl(userId, type),
     platforms: ['twitter', 'linkedin', 'whatsapp', 'instagram'],
-    hashtags: ['#IKPA', '#FinancialFreedom', `#${type.replace('_', '')}`]
+    hashtags: ['#IKPA', '#FinancialFreedom', `#${type.replace('_', '')}`],
   };
 }
 ```
 
 **Story Card Triggers:**
+
 - **Future Self**: After reading letter from 2045 (with user consent)
 - **Commitment**: When user creates a commitment with stakes
 - **Milestone**: When goal is verified as achieved
 - **Recovery**: When user successfully completes a recovery path
 
 **Privacy Controls:**
+
 - All cards anonymize specific amounts by default (shows percentages/ratios)
 - User can choose to reveal actual numbers
 - No personal data included without explicit opt-in
 - Share preview before posting
 
 **Opik Metrics:**
+
 - `LetterEngagement`: Time spent reading letter
 - `PostLetterSavingsChange`: Savings rate change within 7 days
 - `ToneEmpathy`: G-Eval score (1-5) for emotional resonance
@@ -487,11 +491,13 @@ async function generateStoryCard(
 ---
 
 ### 2.4 The Ubuntu Manager (Cultural Context)
+
 **Mission:** Defeat Cultural Blindness
 
 #### Technical Implementation
 
 **Trigger Mechanism:**
+
 - Transaction categorized as family transfer
 - User adds family obligation
 - Monthly dependency ratio calculation
@@ -509,8 +515,8 @@ const transactionReframe = {
     'Parent Support',
     'Sibling Education',
     'Extended Family Emergency',
-    'Community Contribution (Ajo/Esusu)'
-  ]
+    'Community Contribution (Ajo/Esusu)',
+  ],
 };
 
 // Step 2: Dependency Ratio Calculation
@@ -521,10 +527,10 @@ const dependencyRatio = {
     siblingEducation: 25000,
     extendedFamily: 10000,
     totalFamilySupport: 75000,
-    netIncome: 350000
+    netIncome: 350000,
   },
   ratio: 21.4, // 21.4%
-  interpretation: 'Healthy family support level'
+  interpretation: 'Healthy family support level',
 };
 
 // Step 3: Risk Gauge (Traffic Light System)
@@ -534,7 +540,7 @@ const riskGauge = {
   red: { range: [35, 100], label: 'Review Needed', color: '#ef4444' },
   currentValue: 21.4,
   currentZone: 'orange',
-  message: 'Your family support is at a healthy moderate level.'
+  message: 'Your family support is at a healthy moderate level.',
 };
 
 // Step 4: Non-Judgmental Response to Family Emergency
@@ -545,30 +551,32 @@ const familyEmergencyResponse = {
     {
       option: 'Use emergency fund (recommended)',
       impact: 'Emergency fund: ₦250,000 → ₦150,000',
-      recovery: 'Rebuild in 3 months at current savings rate'
+      recovery: 'Rebuild in 3 months at current savings rate',
     },
     {
       option: 'Adjust goal timeline',
       impact: 'House goal: Dec 2026 → Feb 2027',
-      recovery: 'No monthly budget change needed'
+      recovery: 'No monthly budget change needed',
     },
     {
       option: 'Temporary savings reduction',
       impact: 'This month: ₦50,000 → ₦25,000',
-      recovery: 'Return to normal next month'
-    }
+      recovery: 'Return to normal next month',
+    },
   ],
-  insight: "Your dependency ratio will temporarily rise to 28%—still in the healthy orange zone."
+  insight: 'Your dependency ratio will temporarily rise to 28%—still in the healthy orange zone.',
 };
 ```
 
 **Cultural Features:**
+
 - **Ajo/Esusu Tracking**: Rotating savings group support
 - **Multi-Currency**: NGN, GHS, KES, ZAR, EGP, USD
 - **Family Obligation Calendar**: Anticipate regular support needs
 - **Social Capital Score**: Track family support as investment, not expense
 
 **Opik Metrics:**
+
 - `CulturalSensitivity`: G-Eval score for cultural appropriateness
 - `DependencyRatioHealth`: Ratio staying in healthy range
 - `FamilyEmergencyRecoveryTime`: Days to return to normal savings rate
@@ -576,11 +584,13 @@ const familyEmergencyResponse = {
 ---
 
 ### 2.5 The Commitment Device Engine (Accountability System)
+
 **Mission:** Defeat Commitment Decay
 
 #### Technical Implementation
 
 **Trigger Mechanism:**
+
 - User creates a new goal
 - Goal milestone approaches (7 days, 3 days, 1 day)
 - Referee verification request
@@ -770,6 +780,7 @@ const failureResponse = {
 - **Story Cards**: Generate shareable "commitment" cards when stakes are created, and "milestone" cards when goals are achieved
 
 **Opik Metrics:**
+
 - `StakeEffectiveness`: Goal completion rate by stake type
 - `RefereeEngagement`: How often referees verify vs. ignore requests
 - `CommitmentStrength`: Correlation between stake amount and success rate
@@ -896,7 +907,7 @@ interface SimulationInput {
   goalAmount: number;
   goalDeadline: Date;
   expectedReturnRate: number; // 7% default
-  inflationRate: number;      // 5% Nigeria, 2% US
+  inflationRate: number; // 5% Nigeria, 2% US
 }
 
 interface SimulationOutput {
@@ -924,20 +935,16 @@ function runDualPathSimulation(input: SimulationInput): SimulationOutput {
     const variance = randomNormal(0, 0.15);
 
     // Current path simulation
-    currentPathResults.push(
-      simulatePath(input, input.currentSavingsRate, variance)
-    );
+    currentPathResults.push(simulatePath(input, input.currentSavingsRate, variance));
 
     // Optimized path simulation (IKPA recommendations)
     const optimizedRate = Math.min(input.currentSavingsRate * 1.5, 0.35);
-    optimizedPathResults.push(
-      simulatePath(input, optimizedRate, variance)
-    );
+    optimizedPathResults.push(simulatePath(input, optimizedRate, variance));
   }
 
   return {
     currentPath: aggregateResults(currentPathResults),
-    optimizedPath: aggregateResults(optimizedPathResults)
+    optimizedPath: aggregateResults(optimizedPathResults),
   };
 }
 ```
@@ -969,13 +976,13 @@ async function handleSharkAudit(userId: string) {
   const trace = client.trace({
     name: 'shark_audit_cognitive_chain',
     input: { userId },
-    metadata: { agent: 'shark_auditor', version: '1.0' }
+    metadata: { agent: 'shark_auditor', version: '1.0' },
   });
 
   // Span 1: Transaction Analysis
   const txSpan = trace.span({
     name: 'transaction_analysis',
-    type: 'tool'
+    type: 'tool',
   });
   const subscriptions = await analyzeTransactions(userId);
   txSpan.end({ output: { subscriptionCount: subscriptions.length } });
@@ -983,7 +990,7 @@ async function handleSharkAudit(userId: string) {
   // Span 2: Metrics Calculation
   const metricsSpan = trace.span({
     name: 'calculate_savings_potential',
-    type: 'tool'
+    type: 'tool',
   });
   const savingsPotential = calculateAnnualizedSavings(subscriptions);
   metricsSpan.end({ output: { potentialSavings: savingsPotential } });
@@ -992,18 +999,18 @@ async function handleSharkAudit(userId: string) {
   const llmSpan = trace.span({
     name: 'generate_framing',
     type: 'llm',
-    input: { subscriptions, savingsPotential }
+    input: { subscriptions, savingsPotential },
   });
   const framing = await generateAnnualizedFraming(subscriptions);
   llmSpan.end({
     output: { framing },
-    metadata: { model: 'claude-sonnet', tokens: 450 }
+    metadata: { model: 'claude-sonnet', tokens: 450 },
   });
 
   // Span 4: User Decision Recording
   const decisionSpan = trace.span({
     name: 'await_user_decision',
-    type: 'tool'
+    type: 'tool',
   });
   // ... await user swipe decisions
   decisionSpan.end({ output: { decisionsRecorded: true } });
@@ -1025,9 +1032,10 @@ class InterventionSuccess extends BaseMetric {
     const success = userAction === 'saved' ? 1.0 : 0.0;
     return {
       score: success,
-      reason: userAction === 'saved'
-        ? 'User chose to save instead of spend'
-        : 'User proceeded with spending'
+      reason:
+        userAction === 'saved'
+          ? 'User chose to save instead of spend'
+          : 'User proceeded with spending',
     };
   }
 }
@@ -1043,7 +1051,7 @@ class ToneEmpathy extends GEvalMetric {
         - Does it feel like a supportive friend, not a lecturing parent?
         - Does it acknowledge difficulty while providing hope?`,
       scale: 5,
-      model: 'gpt-4-turbo'
+      model: 'gpt-4-turbo',
     });
   }
 }
@@ -1053,13 +1061,13 @@ class CulturalSensitivity extends GEvalMetric {
   constructor() {
     super({
       name: 'CulturalSensitivity',
-      criteria: `Evaluate cultural appropriateness for African users.
+      criteria: `Evaluate cultural appropriateness for users.
         - Does it respect family obligations as values, not problems?
         - Does it avoid Western-centric financial assumptions?
         - Does it acknowledge Ubuntu philosophy ("I am because we are")?
         - Does it frame family support as social capital investment?`,
       scale: 5,
-      model: 'gpt-4-turbo'
+      model: 'gpt-4-turbo',
     });
   }
 }
@@ -1072,7 +1080,7 @@ class FinancialSafety extends BaseMetric {
       score: safetyCheck.isSafe ? 1.0 : 0.0,
       reason: safetyCheck.isSafe
         ? 'Advice is financially sound and safe'
-        : `BLOCKED: ${safetyCheck.reason}`
+        : `BLOCKED: ${safetyCheck.reason}`,
     };
   }
 }
@@ -1094,12 +1102,12 @@ const framingExperiment = {
     Monthly: {{monthly_cost}}
     Annual: {{annual_cost}} (that's {{percentage_of_rent}}% of your rent)
     Over 5 years: {{five_year_cost}}
-    Do you want to keep it or cancel it?`
+    Do you want to keep it or cancel it?`,
 };
 
 const optimizer = new MetaPromptOptimizer({
   model: 'claude-sonnet-4-20250514',
-  reasoningModel: 'gpt-4-turbo'
+  reasoningModel: 'gpt-4-turbo',
 });
 
 const result = await optimizer.optimizePrompt({
@@ -1107,7 +1115,7 @@ const result = await optimizer.optimizePrompt({
   dataset: subscriptionDecisionDataset,
   metric: new CancellationRate(),
   nSamples: 100,
-  maxRounds: 10
+  maxRounds: 10,
 });
 
 // Expected: Annual framing increases cancellation rate by 40%
@@ -1121,14 +1129,14 @@ import { EvolutionaryOptimizer } from 'opik-optimizer';
 const letterOptimizer = new EvolutionaryOptimizer({
   model: 'claude-sonnet-4-20250514',
   populationSize: 10,
-  generations: 5
+  generations: 5,
 });
 
 const evolvedPrompt = await letterOptimizer.evolve({
   basePrompt: futureSelLetterBasePrompt,
   dataset: letterEngagementDataset,
   metrics: [new ToneEmpathy(), new PostLetterSavingsChange()],
-  survivalRate: 0.3
+  survivalRate: 0.3,
 });
 
 // Tracks prompt evolution across generations
@@ -1145,14 +1153,14 @@ const routerOptimizer = new GEPA({
   tools: [
     { name: 'time_adjustment', description: 'Extend goal deadline' },
     { name: 'rate_adjustment', description: 'Increase savings rate' },
-    { name: 'freeze_protocol', description: 'Pause category spending' }
-  ]
+    { name: 'freeze_protocol', description: 'Pause category spending' },
+  ],
 });
 
 const optimizedToolSelection = await routerOptimizer.optimize({
   dataset: recoveryPathDataset,
   metric: new GoalSurvivalRate(),
-  maxIterations: 20
+  maxIterations: 20,
 });
 
 // Learns which recovery path works best for different user profiles
@@ -1171,26 +1179,29 @@ const optimizedToolSelection = await routerOptimizer.optimize({
 
 ## Part 5: 4-Week Execution Plan
 
-| Week | Focus | Deliverables |
-|------|-------|--------------|
-| **Week 1 (Jan 13-19)** | Foundation & Financial Metrics | Cash Flow Score, Simulation Engine, Opik distributed tracing, Database schema |
-| **Week 2 (Jan 20-26)** | Shark Auditor, GPS Re-Router & Commitment Engine | Subscription detection, Tinder UI, Recovery paths, Commitment contracts, Stakes UI |
-| **Week 3 (Jan 27-Feb 2)** | Future Self & Ubuntu Manager | Letter generator, Dependency ratio, G-Eval metrics, Time slider visualization |
-| **Week 4 (Feb 3-10)** | Polish & Submission | UI polish, Demo video, Documentation, Opik dashboard screenshots |
+| Week                      | Focus                                            | Deliverables                                                                       |
+| ------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| **Week 1 (Jan 13-19)**    | Foundation & Financial Metrics                   | Cash Flow Score, Simulation Engine, Opik distributed tracing, Database schema      |
+| **Week 2 (Jan 20-26)**    | Shark Auditor, GPS Re-Router & Commitment Engine | Subscription detection, Tinder UI, Recovery paths, Commitment contracts, Stakes UI |
+| **Week 3 (Jan 27-Feb 2)** | Future Self & Ubuntu Manager                     | Letter generator, Dependency ratio, G-Eval metrics, Time slider visualization      |
+| **Week 4 (Feb 3-10)**     | Polish & Submission                              | UI polish, Demo video, Documentation, Opik dashboard screenshots                   |
 
 ### Week 1: Foundation & Financial Metrics
 
 **Days 1-2:**
+
 - [ ] Set up Opik account and TypeScript SDK integration
 - [ ] Create OpikService wrapper class with distributed tracing
 - [ ] Wire basic tracing to existing endpoints
 
 **Days 3-4:**
+
 - [ ] Implement Cash Flow Score calculator with all 5 components
 - [ ] Create NestJS Cron Job for daily score calculation
 - [ ] Build score history tracking
 
 **Days 5-7:**
+
 - [ ] Implement Dual-Path Monte Carlo Simulation Engine
 - [ ] Create simulation visualization data structures
 - [ ] Test with sample user data
@@ -1199,18 +1210,21 @@ const optimizedToolSelection = await routerOptimizer.optimize({
 ### Week 2: Shark Auditor, GPS Re-Router & Commitment Engine
 
 **Days 8-10:**
+
 - [ ] Implement Shark Auditor regex pattern matching
 - [ ] Build anomaly detection for zombie subscriptions
 - [ ] Create annualized framing logic
 - [ ] Design Tinder-style swipe UI component
 
 **Days 11-12:**
+
 - [ ] Implement GPS Re-Router webhook triggers
 - [ ] Build probability recalculation engine
 - [ ] Create 3 recovery path generators
 - [ ] Implement non-judgmental messaging
 
 **Days 13-14:**
+
 - [ ] Implement Commitment Device Engine core contracts
 - [ ] Build stake type selection UI (Social, Anti-Charity, Loss Pool)
 - [ ] Create referee invitation and notification system
@@ -1220,12 +1234,14 @@ const optimizedToolSelection = await routerOptimizer.optimize({
 ### Week 3: Future Self & Ubuntu Manager
 
 **Days 15-17:**
+
 - [ ] Implement Future Self letter generator
 - [ ] Create 60-year-old persona prompt
 - [ ] Build time slider visualization (6mo → 20yr)
 - [ ] Implement Dual-Path comparison view
 
 **Days 18-21:**
+
 - [ ] Implement Ubuntu Manager categorization
 - [ ] Build Dependency Ratio calculator
 - [ ] Create Risk Gauge (traffic light) component
@@ -1235,17 +1251,20 @@ const optimizedToolSelection = await routerOptimizer.optimize({
 ### Week 4: Polish & Submission
 
 **Days 22-24:**
+
 - [ ] UI polish across all features
 - [ ] Performance optimization
 - [ ] Bug fixes from testing
 
 **Days 25-27:**
+
 - [ ] Record demo video (5 minutes)
 - [ ] Write submission documentation
 - [ ] Capture Opik dashboard screenshots
 - [ ] Create learning curve visualization
 
 **Days 28 (Feb 10):**
+
 - [ ] Final testing
 - [ ] Submit to hackathon
 - [ ] Prepare for potential presentation
@@ -1256,32 +1275,32 @@ const optimizedToolSelection = await routerOptimizer.optimize({
 
 ### Tier 1: Must Ship (Demo-Critical)
 
-| # | Feature | Agent | Why Critical |
-|---|---------|-------|--------------|
-| 1 | **Cash Flow Score** | Foundation | Single metric for financial health |
-| 2 | **Simulation Engine (Dual-Path)** | Foundation | Powers Future Self visualizations |
-| 3 | **Future Self Letter Generator** | Future Self Simulator | "I talked to my 60-year-old self" |
-| 4 | **Commitment Device Engine** | Stakes Enforcer | "3x goal completion with real stakes" |
-| 5 | **Opik Distributed Tracing** | All | "We traced every cognitive step" |
-| 6 | **One G-Eval Metric (ToneEmpathy)** | All | "Our AI learns to be more empathetic" |
+| #   | Feature                             | Agent                 | Why Critical                          |
+| --- | ----------------------------------- | --------------------- | ------------------------------------- |
+| 1   | **Cash Flow Score**                 | Foundation            | Single metric for financial health    |
+| 2   | **Simulation Engine (Dual-Path)**   | Foundation            | Powers Future Self visualizations     |
+| 3   | **Future Self Letter Generator**    | Future Self Simulator | "I talked to my 60-year-old self"     |
+| 4   | **Commitment Device Engine**        | Stakes Enforcer       | "3x goal completion with real stakes" |
+| 5   | **Opik Distributed Tracing**        | All                   | "We traced every cognitive step"      |
+| 6   | **One G-Eval Metric (ToneEmpathy)** | All                   | "Our AI learns to be more empathetic" |
 
 ### Tier 2: Should Ship (High Impact)
 
-| # | Feature | Agent | Why Important |
-|---|---------|-------|---------------|
-| 7 | **Tinder-Style Subscription Swiper** | Shark Auditor | Viral demo moment |
-| 8 | **GPS Recovery Paths** | GPS Re-Router | "It helped me recover, not quit" |
-| 9 | **Dependency Ratio + Risk Gauge** | Ubuntu Manager | Africa differentiation |
-| 10 | **Opik Optimizer Experiment** | All | "Our prompts EVOLVED" |
+| #   | Feature                              | Agent          | Why Important                    |
+| --- | ------------------------------------ | -------------- | -------------------------------- |
+| 7   | **Tinder-Style Subscription Swiper** | Shark Auditor  | Viral demo moment                |
+| 8   | **GPS Recovery Paths**               | GPS Re-Router  | "It helped me recover, not quit" |
+| 9   | **Dependency Ratio + Risk Gauge**    | Ubuntu Manager | Africa differentiation           |
+| 10  | **Opik Optimizer Experiment**        | All            | "Our prompts EVOLVED"            |
 
 ### Tier 3: Cut If Behind
 
-| # | Feature | Why Cuttable |
-|---|---------|--------------|
-| 11 | GEPA Tool Optimization | Advanced—can show concept without full implementation |
-| 12 | Full A/B Testing Pipeline | Can show single experiment instead |
-| 13 | Push Notifications | Can simulate in demo |
-| 14 | Time Slider Animation | Static comparison sufficient for demo |
+| #   | Feature                   | Why Cuttable                                          |
+| --- | ------------------------- | ----------------------------------------------------- |
+| 11  | GEPA Tool Optimization    | Advanced—can show concept without full implementation |
+| 12  | Full A/B Testing Pipeline | Can show single experiment instead                    |
+| 13  | Push Notifications        | Can simulate in demo                                  |
+| 14  | Time Slider Animation     | Static comparison sufficient for demo                 |
 
 ### Cutoff Rules
 
@@ -1294,6 +1313,7 @@ const optimizedToolSelection = await routerOptimizer.optimize({
 ## Part 7: Demo Script (5 Minutes)
 
 ### The Narrative
+
 "Meet Aisha. She's 28, earns ₦400K/month, and wants to save ₦2M for a house down payment. Watch as IKPA defeats the five failure modes that kill 91% of resolutions."
 
 ### Demo Flow
@@ -1309,6 +1329,7 @@ const optimizedToolSelection = await routerOptimizer.optimize({
 "First, the Shark Auditor finds Aisha's invisible leaks."
 
 [Swipe interface appears]
+
 - Netflix: ₦5,000/month → ₦60,000/year. Swipe left to cancel.
 - Gym membership (unused for 5 months): ZOMBIE. ₦15,000/month → ₦180,000/year.
 
@@ -1333,6 +1354,7 @@ const optimizedToolSelection = await routerOptimizer.optimize({
 "You made a wrong turn. Let's recalculate your route."
 
 [Show 3 recovery paths]
+
 1. **Time Adjustment:** Extend goal by 2 weeks → 78% probability restored
 2. **Rate Adjustment:** Add ₦5K/week for one month → 81% probability
 3. **Freeze Protocol:** Pause entertainment for 2 weeks → 85% probability
@@ -1346,6 +1368,7 @@ const optimizedToolSelection = await routerOptimizer.optimize({
 "Now let's see Aisha's two futures."
 
 [Dual-path visualization]
+
 - Current Path: ₦8M net worth at age 48
 - IKPA Path: ₦28M net worth at age 48
 
@@ -1388,6 +1411,7 @@ Love, Aisha (Age 60)"
 "Want to increase your success rate by 3x? Add stakes to your commitment."
 
 [Show three stake options]
+
 - **Social Accountability**: "My sister Funke will be my referee"
 - **Anti-Charity Stakes**: "₦50,000 donated to [cause I oppose] if I fail"
 - **Loss Pool**: "Lock ₦100,000 until I reach my goal"
@@ -1560,79 +1584,83 @@ ENABLE_OPIK_OPTIMIZER=true
 
 ### Technical Risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Opik TypeScript SDK issues | High | Fall back to REST API; have backup code ready |
-| Claude API rate limits | Medium | Implement caching; reduce demo load; use mock responses |
-| Simulation engine too slow | Medium | Pre-compute projections; cache results |
-| Tinder UI bugs | Low | Fallback to simple list with buttons |
+| Risk                       | Impact | Mitigation                                              |
+| -------------------------- | ------ | ------------------------------------------------------- |
+| Opik TypeScript SDK issues | High   | Fall back to REST API; have backup code ready           |
+| Claude API rate limits     | Medium | Implement caching; reduce demo load; use mock responses |
+| Simulation engine too slow | Medium | Pre-compute projections; cache results                  |
+| Tinder UI bugs             | Low    | Fallback to simple list with buttons                    |
 
 ### Scope Risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Feature creep | High | Strict MVP adherence; Day 14/21 checkpoints |
-| Over-engineering | Medium | "Demo-ready" not "production-ready" mindset |
-| Time overrun | High | Cut Tier 3 at Day 14; simplify Tier 2 at Day 21 |
+| Risk             | Impact | Mitigation                                      |
+| ---------------- | ------ | ----------------------------------------------- |
+| Feature creep    | High   | Strict MVP adherence; Day 14/21 checkpoints     |
+| Over-engineering | Medium | "Demo-ready" not "production-ready" mindset     |
+| Time overrun     | High   | Cut Tier 3 at Day 14; simplify Tier 2 at Day 21 |
 
 ### Demo Risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Live API failure | Critical | Pre-record demo video; have offline fallback |
-| Opik dashboard unimpressive | High | Pre-populate with 100+ traces before demo |
-| Judges don't understand Africa context | Medium | Lead with universal "91% failure rate" hook |
+| Risk                                   | Impact   | Mitigation                                   |
+| -------------------------------------- | -------- | -------------------------------------------- |
+| Live API failure                       | Critical | Pre-record demo video; have offline fallback |
+| Opik dashboard unimpressive            | High     | Pre-populate with 100+ traces before demo    |
+| Judges don't understand Africa context | Medium   | Lead with universal "91% failure rate" hook  |
 
 ### Safety Risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Bad financial advice | Critical | FinancialSafety guardrail blocks unsafe responses |
-| Culturally insensitive output | High | CulturalSensitivity G-Eval metric |
-| Shame-inducing messaging | Medium | ToneEmpathy G-Eval metric; banned word list |
+| Risk                          | Impact   | Mitigation                                        |
+| ----------------------------- | -------- | ------------------------------------------------- |
+| Bad financial advice          | Critical | FinancialSafety guardrail blocks unsafe responses |
+| Culturally insensitive output | High     | CulturalSensitivity G-Eval metric                 |
+| Shame-inducing messaging      | Medium   | ToneEmpathy G-Eval metric; banned word list       |
 
 ### Contingency Timeline
 
-| Checkpoint | If Behind Schedule |
-|------------|-------------------|
-| **Day 14** | Cut all Tier 3 features; focus on Tier 1+2 |
-| **Day 21** | Simplify Tier 2; ensure Tier 1 is polished |
+| Checkpoint | If Behind Schedule                            |
+| ---------- | --------------------------------------------- |
+| **Day 14** | Cut all Tier 3 features; focus on Tier 1+2    |
+| **Day 21** | Simplify Tier 2; ensure Tier 1 is polished    |
 | **Day 25** | Feature freeze; polish and documentation only |
-| **Day 27** | Record demo video with whatever is ready |
+| **Day 27** | Record demo video with whatever is ready      |
 
 ---
 
 ## Part 10: Research-Backed Statistics
 
-| Statistic | Source | Design Implication |
-|-----------|--------|-------------------|
-| **91% fail** at resolutions | Journal of Clinical Psychology | Standard tools don't work |
-| **88% quit** within 2 weeks | Drive Research 2024 | Early intervention (GPS Re-Router) is critical |
-| **16% more likely to save** | MIT Future Self Study | Future Self letters work |
-| **84% underestimate** subscription costs | Consumer Reports | Annualized framing needed |
-| **"What-The-Hell Effect"** | Polivy & Herman | One slip leads to total abandonment |
-| **Approach goals 2x** success | PMC Chi-square study | Reframe avoidance → approach |
+| Statistic                                | Source                         | Design Implication                             |
+| ---------------------------------------- | ------------------------------ | ---------------------------------------------- |
+| **91% fail** at resolutions              | Journal of Clinical Psychology | Standard tools don't work                      |
+| **88% quit** within 2 weeks              | Drive Research 2024            | Early intervention (GPS Re-Router) is critical |
+| **16% more likely to save**              | MIT Future Self Study          | Future Self letters work                       |
+| **84% underestimate** subscription costs | Consumer Reports               | Annualized framing needed                      |
+| **"What-The-Hell Effect"**               | Polivy & Herman                | One slip leads to total abandonment            |
+| **Approach goals 2x** success            | PMC Chi-square study           | Reframe avoidance → approach                   |
 
 ---
 
 ## Part 11: References
 
 ### Behavior Change & Resolutions
+
 - [PMC: New Year's Resolution Study](https://pmc.ncbi.nlm.nih.gov/articles/PMC7725288/)
 - [Journal of Clinical Psychology: Resolution Success Rates](https://party.alibaba.com/newyear/how-many-people-accomplish-new-year-resolution-goals-scholarly-article)
 - [CBS News: Why Resolutions Fail](https://www.cbsnews.com/news/new-years-resolutions-tips-why-they-fail/)
 
 ### AI & Behavior Change
+
 - [MIT Media Lab: Future You Project](https://www.media.mit.edu/projects/future-you/overview/)
 - [MIT News: Future Self Research](https://news.mit.edu/2024/ai-simulation-gives-people-glimpse-potential-future-self-1001)
 - [Nature: Chatbot Meta-Analysis](https://www.nature.com/articles/s41746-023-00856-1)
 
 ### Behavioral Economics
+
 - [ScienceDirect: AI Nudging](https://www.sciencedirect.com/science/article/abs/pii/B9780128194713000021)
 - [Learning Loop: Commitment Devices](https://learningloop.io/plays/psychology/commitment-devices)
 - ["What-The-Hell Effect" - Polivy & Herman Research](https://en.wikipedia.org/wiki/What-the-hell_effect)
 
 ### Opik & Observability
+
 - [Opik Documentation](https://www.comet.com/docs/opik/)
 - [Opik Agent Optimizer](https://www.comet.com/site/products/opik/features/automatic-prompt-optimization/)
 - [Opik GitHub](https://github.com/comet-ml/opik)
@@ -1640,7 +1668,7 @@ ENABLE_OPIK_OPTIMIZER=true
 
 ---
 
-*This document serves as the strategic blueprint for IKPA's participation in the "Commit to Change" hackathon. All features, timelines, and technical decisions should reference this document.*
+_This document serves as the strategic blueprint for IKPA's participation in the "Commit to Change" hackathon. All features, timelines, and technical decisions should reference this document._
 
 **Last Updated:** January 2026
 **Timeline:** 4 weeks (January 13 - February 10, 2026)

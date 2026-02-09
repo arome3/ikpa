@@ -474,10 +474,10 @@ describe('CashFlowScoreCalculator', () => {
   });
 
   // ==========================================
-  // DEPENDENCY RATIO SCORING TESTS (AFRICA-SPECIFIC)
+  // DEPENDENCY RATIO SCORING TESTS
   // ==========================================
 
-  describe('Dependency Ratio Score (10% weight) - Africa-specific', () => {
+  describe('Dependency Ratio Score (10% weight)', () => {
     it('should score 100 for ratio <= 10%', async () => {
       const data = createBaseFinancialData({
         totalFamilySupport: new Decimal(9500),
@@ -526,7 +526,7 @@ describe('CashFlowScoreCalculator', () => {
       expect(result.components.dependencyRatio.score).toBe(100);
     });
 
-    it('should not harshly penalize family support (Africa-specific)', async () => {
+    it('should not harshly penalize family support', async () => {
       // Even 35% family support should only drop to 40 (not 0 or 20)
       const data = createBaseFinancialData({
         totalFamilySupport: new Decimal(50000),

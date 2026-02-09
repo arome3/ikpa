@@ -29,53 +29,71 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="w-full max-w-[420px] text-center">
-        <div className="inline-flex p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-6">
-          <Mail className="w-10 h-10 text-emerald-400" />
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-lg shadow-2xl p-10 sm:p-12 text-center">
+          {/* Logo */}
+          <div className="mb-8">
+            <h2 className="font-serif text-2xl font-semibold text-gray-900 tracking-tight">Ikpa</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Arnen</p>
+          </div>
+
+          <div className="inline-flex p-5 rounded-2xl bg-[#064E3B]/10 mb-6">
+            <Mail className="w-10 h-10 text-[#064E3B]" />
+          </div>
+          <h1 className="font-serif text-2xl font-bold text-gray-900 tracking-tight mb-3">
+            Check your email
+          </h1>
+          <p className="text-gray-500 mb-8 leading-relaxed">
+            If an account exists for <span className="text-gray-900 font-medium">{email}</span>,
+            we&apos;ve sent a password reset link. Check your inbox and spam folder.
+          </p>
+          <Link
+            href="/signin"
+            className="inline-flex items-center gap-2 text-[#064E3B] hover:underline font-medium transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to sign in
+          </Link>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight mb-3">Check your email</h1>
-        <p className="text-slate-400 mb-8 leading-relaxed">
-          If an account exists for <span className="text-white font-medium">{email}</span>,
-          we&apos;ve sent a password reset link. Check your inbox and spam folder.
-        </p>
-        <Link
-          href="/signin"
-          className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to sign in
-        </Link>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-[420px]">
-      {/* Back link */}
-      <Link
-        href="/signin"
-        className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm mb-8 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to sign in
-      </Link>
+    <div className="w-full max-w-md">
+      <div className="bg-white rounded-lg shadow-2xl p-10 sm:p-12">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h2 className="font-serif text-2xl font-semibold text-gray-900 tracking-tight">Ikpa</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Arnen</p>
+        </div>
 
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Reset password</h1>
-        <p className="text-slate-400">Enter your email and we&apos;ll send you a reset link</p>
-      </div>
+        {/* Back link */}
+        <Link
+          href="/signin"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 text-sm mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to sign in
+        </Link>
 
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl p-7 shadow-2xl shadow-black/20">
+        <div className="text-center mb-8">
+          <h1 className="font-serif text-3xl font-bold text-gray-900 tracking-tight mb-2">
+            Reset password
+          </h1>
+          <p className="text-gray-500">Enter your email and we&apos;ll send you a reset link</p>
+        </div>
+
         {error && (
-          <div className="mb-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-300">{error}</p>
+          <div className="mb-6 p-3.5 rounded-md bg-red-50 border border-red-200 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
             <input
               type="email"
               value={email}
@@ -84,14 +102,14 @@ export default function ForgotPasswordPage() {
               required
               autoComplete="email"
               autoFocus
-              className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#064E3B] focus:ring-2 focus:ring-[#064E3B]/20 transition-all"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading || !email}
-            className="w-full py-3.5 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full h-12 rounded-md font-semibold text-white bg-[#064E3B] hover:bg-[#053F30] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

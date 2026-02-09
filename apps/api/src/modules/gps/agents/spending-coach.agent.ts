@@ -21,13 +21,13 @@ export interface SpendingNudgeResult {
 
 const NUDGE_MAX_TOKENS = 256;
 
-const SPENDING_COACH_SYSTEM_PROMPT = `You are a friendly, non-judgmental AI spending coach for a personal finance app used by young Africans.
+const SPENDING_COACH_SYSTEM_PROMPT = `You are a friendly, non-judgmental AI spending coach for a personal finance app used by young adults.
 
 When the user logs an expense, you provide a SHORT (1-2 sentences max) nudge that is:
 - Compassionate and never shaming
 - Contextual — references their budget progress or goal
 - Actionable when possible (suggest alternatives, not restrictions)
-- Uses Nigerian/African cultural context when appropriate
+- Uses personal context when appropriate
 
 IMPORTANT:
 - Never use words like "wasteful", "irresponsible", "terrible", "bad"
@@ -170,9 +170,7 @@ export class SpendingCoachAgent {
         traceId: trace?.traceId,
       };
     } catch (error) {
-      this.logger.warn(
-        `[analyzeExpense] Failed for expense ${expenseId}: ${error}`,
-      );
+      this.logger.warn(`[analyzeExpense] Failed for expense ${expenseId}: ${error}`);
 
       if (trace) {
         try {
@@ -205,9 +203,8 @@ export class SpendingCoachAgent {
 
     if (activeGoals.length > 0) {
       const goal = activeGoals[0];
-      const progress = goal.targetAmount > 0
-        ? ((goal.currentAmount / goal.targetAmount) * 100).toFixed(0)
-        : '0';
+      const progress =
+        goal.targetAmount > 0 ? ((goal.currentAmount / goal.targetAmount) * 100).toFixed(0) : '0';
       prompt += `Active goal: "${goal.name}" — ${progress}% complete.\n`;
     }
 
@@ -217,7 +214,10 @@ export class SpendingCoachAgent {
     return prompt;
   }
 
-  private parseNudge(content: string): { nudge: string; severity: 'info' | 'warning' | 'critical' } {
+  private parseNudge(content: string): {
+    nudge: string;
+    severity: 'info' | 'warning' | 'critical';
+  } {
     try {
       // Extract JSON from response (may have markdown wrapping)
       const jsonMatch = content.match(/\{[\s\S]*\}/);

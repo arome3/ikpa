@@ -46,7 +46,12 @@ async function bootstrap() {
       'https://www.ikpa.app',
       // Development origins
       ...(configService.get('NODE_ENV') === 'development'
-        ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:8081']
+        ? [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:3002',
+            'http://localhost:8081',
+          ]
         : []),
       // Custom CORS origins from environment
       ...(configService.get<string>('CORS_ORIGINS')?.split(',') || []),
@@ -81,7 +86,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('IKPA API')
     .setDescription(
-      'AI-Powered Personal Finance Co-Pilot for Young Africans\n\n' +
+      'AI-Powered Personal Finance Co-Pilot for Young Adults\n\n' +
         '## Overview\n\n' +
         'Ikpa provides financial clarity, education, and planning tools without touching your money.\n\n' +
         '## Authentication\n\n' +

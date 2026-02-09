@@ -8,26 +8,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // IKPA Brand Colors
-        primary: {
-          DEFAULT: '#1E3A5F',
-          50: '#E8EEF4',
-          100: '#D1DDE9',
-          200: '#A3BBD3',
-          300: '#7599BD',
-          400: '#4777A7',
-          500: '#1E3A5F',
-          600: '#182E4C',
-          700: '#122339',
-          800: '#0C1726',
-          900: '#060C13',
+        cream: '#FDFCF8',
+        ivory: '#FAFAF9',
+        forest: '#1A2E22',
+        charcoal: '#1C1C1C',
+        olive: '#3F6212',
+        sage: {
+          50: '#F0F4F1',
+          100: '#D9E3DB',
+          200: '#B8CDB9',
+          300: '#97B69A',
+          400: '#6F9B74',
+          500: '#4A7A55',
+          600: '#3D6546',
+          700: '#2C4A33',
+          800: '#1F3524',
+          900: '#1A2E22',
         },
-        secondary: {
-          DEFAULT: '#2D9CDB',
-        },
-        accent: {
-          DEFAULT: '#F2994A',
-        },
+      },
+      fontFamily: {
+        serif: ['var(--font-serif)', 'Georgia', 'serif'],
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
       },
     },
   },

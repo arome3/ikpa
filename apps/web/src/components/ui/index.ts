@@ -47,3 +47,6 @@ export type { SkeletonProps } from './Skeleton';
 // Modals
 export { Modal, ModalFooter } from './Modal';
 export type { ModalProps, ModalSize } from './Modal';
+
+// Icons
+export { CategoryIcon, getCategoryIcon } from './CategoryIcon';

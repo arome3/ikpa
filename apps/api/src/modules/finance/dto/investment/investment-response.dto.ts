@@ -17,7 +17,7 @@ export class InvestmentResponseDto {
   @ApiProperty({ example: 1000000 })
   value!: number;
 
-  @ApiProperty({ enum: Currency, example: 'NGN' })
+  @ApiProperty({ enum: Currency, example: 'USD' })
   currency!: Currency;
 
   @ApiPropertyOptional({ example: 800000 })

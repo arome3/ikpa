@@ -16,7 +16,7 @@ import { InvestmentType, Currency } from '@prisma/client';
 /**
  * DTO for creating a new investment
  *
- * Supports various investment types common in Africa:
+ * Supports various investment types:
  * - Stocks, bonds, mutual funds
  * - Real estate, pension contributions
  * - Cryptocurrency
@@ -97,7 +97,7 @@ export class CreateInvestmentDto {
 
   @ApiPropertyOptional({
     enum: Currency,
-    example: 'NGN',
+    example: 'USD',
     description: 'Currency (defaults to user currency)',
   })
   @IsEnum(Currency)

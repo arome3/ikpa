@@ -49,9 +49,7 @@ describe('CulturalSensitivityMetric', () => {
     });
 
     it('should have correct description', () => {
-      expect(metric.description).toBe(
-        'Evaluates cultural appropriateness for African users',
-      );
+      expect(metric.description).toBe('Evaluates cultural appropriateness for users');
     });
   });
 
@@ -61,16 +59,16 @@ describe('CulturalSensitivityMetric', () => {
         input: 'I send money to my family monthly',
         output: '',
         context: {
-          country: 'Nigeria',
-          culture: 'Yoruba',
-          currency: 'NGN',
+          country: 'US',
+          culture: 'diverse',
+          currency: 'USD',
         },
       };
 
       mockGenerate.mockResolvedValue({
         content: JSON.stringify({
           score: 5,
-          reason: 'Excellent cultural awareness with Ubuntu philosophy',
+          reason: 'Excellent sensitivity to personal values and family obligations',
         }),
         model: 'claude-sonnet-4-20250514',
         usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 },
@@ -78,17 +76,17 @@ describe('CulturalSensitivityMetric', () => {
 
       const result = await metric.score(
         datasetItem,
-        'Your Social Capital Investment is valuable. Family comes first.',
+        'Supporting your family is important. Let\'s budget it as a priority.',
       );
 
       expect(mockGenerate).toHaveBeenCalled();
       const callArgs = mockGenerate.mock.calls[0][0];
-      expect(callArgs).toContain('Country: Nigeria');
-      expect(callArgs).toContain('Cultural context: Yoruba');
-      expect(callArgs).toContain('Currency: NGN');
+      expect(callArgs).toContain('Country: US');
+      expect(callArgs).toContain('Cultural context: diverse');
+      expect(callArgs).toContain('Currency: USD');
 
       expect(result.score).toBe(5);
-      expect(result.reason).toBe('Excellent cultural awareness with Ubuntu philosophy');
+      expect(result.reason).toBe('Excellent sensitivity to personal values and family obligations');
     });
 
     it('should handle missing context gracefully', async () => {
@@ -146,7 +144,7 @@ describe('CulturalSensitivityMetric', () => {
         input: 'Test',
         output: '',
         context: {
-          country: 'Kenya',
+          country: 'US',
           customField: 'custom value',
         },
       };
@@ -160,7 +158,7 @@ describe('CulturalSensitivityMetric', () => {
       await metric.score(datasetItem, 'Response');
 
       const callArgs = mockGenerate.mock.calls[0][0];
-      expect(callArgs).toContain('Country: Kenya');
+      expect(callArgs).toContain('Country: US');
       expect(callArgs).toContain('customField:');
     });
   });
@@ -172,9 +170,9 @@ describe('CulturalSensitivityMetric', () => {
       const datasetItem: DatasetItem = {
         input: 'I send money to family',
         output: '',
-        context: { country: 'Nigeria' },
+        context: { country: 'US' },
       };
-      const result = await metric.score(datasetItem, 'Your Social Capital Investment matters.');
+      const result = await metric.score(datasetItem, 'Supporting your family is a priority.');
 
       // Should return default without calling LLM
       expect(result.score).toBe(3);

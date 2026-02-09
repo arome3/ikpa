@@ -106,7 +106,7 @@ export class AuthService {
         email: dto.email.toLowerCase(),
         passwordHash,
         name: dto.name,
-        country: dto.country || Country.NIGERIA,
+        country: dto.country || Country.OTHER,
         emailVerified: false,
       },
     });
@@ -460,7 +460,7 @@ export class AuthService {
             email: googlePayload.email.toLowerCase(),
             name: googlePayload.name || googlePayload.email.split('@')[0],
             googleId: googlePayload.sub,
-            country: Country.NIGERIA, // Default, can be updated later
+            country: Country.OTHER, // Default, can be updated later
           },
         });
       }

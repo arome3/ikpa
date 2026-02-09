@@ -918,7 +918,7 @@ export class FutureSelfService {
   /**
    * Check in for today on a commitment
    *
-   * Creates a check-in record for today (Africa/Lagos timezone),
+   * Creates a check-in record for today (UTC),
    * increments streakDays, updates longestStreak if new high.
    * Uses $transaction for atomicity.
    *
@@ -946,8 +946,8 @@ export class FutureSelfService {
       throw new NotFoundException('Active commitment not found');
     }
 
-    // Get today's date in Africa/Lagos timezone
-    const today = this.getTodayInLagos();
+    // Get today's date in UTC
+    const today = this.getTodayUTC();
 
     // Use transaction for atomicity
     const result = await this.prisma.$transaction(async (tx) => {
@@ -1028,7 +1028,7 @@ export class FutureSelfService {
       throw new NotFoundException('Commitment not found');
     }
 
-    const today = this.getTodayInLagos();
+    const today = this.getTodayUTC();
     const todayCheckin = await this.prisma.futureSelfCheckin.findUnique({
       where: {
         commitmentId_checkinDate: {
@@ -1105,16 +1105,13 @@ export class FutureSelfService {
   }
 
   /**
-   * Get today's date in Africa/Lagos timezone as a Date object (midnight UTC representation)
+   * Get today's date in UTC as a Date object (midnight UTC)
    */
-  private getTodayInLagos(): Date {
+  private getTodayUTC(): Date {
     const now = new Date();
-    // Africa/Lagos is UTC+1 (WAT, no DST)
-    const lagosOffset = 1; // hours
-    const lagosTime = new Date(now.getTime() + lagosOffset * 60 * 60 * 1000);
-    const year = lagosTime.getUTCFullYear();
-    const month = lagosTime.getUTCMonth();
-    const day = lagosTime.getUTCDate();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    const day = now.getUTCDate();
     return new Date(Date.UTC(year, month, day));
   }
 

@@ -28,7 +28,7 @@ export class MonetaryValueDto implements MonetaryValue {
   formatted!: string;
 
   @ApiProperty({
-    example: 'NGN',
+    example: 'USD',
     description: 'Currency code',
   })
   currency!: string;

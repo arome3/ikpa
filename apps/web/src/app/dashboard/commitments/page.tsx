@@ -10,7 +10,6 @@ import {
   HeartCrack,
   Lock,
   Clock,
-  Trophy,
   Target,
   BarChart3,
   Loader2,
@@ -19,7 +18,6 @@ import {
   Ban,
   Medal,
   Award,
-  Flame,
   Share2,
   AlertTriangle,
   Scan,
@@ -34,17 +32,41 @@ import type { CommitmentContract, StakeEffectiveness, SlipAlert } from '@/hooks/
 // ============================================
 
 const STAKE_CONFIG = {
-  SOCIAL: { label: 'Social', icon: Users, color: 'purple', gradient: 'from-purple-500/20 to-violet-500/10', border: 'border-purple-500/30', text: 'text-purple-400', bg: 'bg-purple-500/20' },
-  ANTI_CHARITY: { label: 'Anti-Charity', icon: HeartCrack, color: 'red', gradient: 'from-red-500/20 to-rose-500/10', border: 'border-red-500/30', text: 'text-red-400', bg: 'bg-red-500/20' },
-  LOSS_POOL: { label: 'Loss Pool', icon: Lock, color: 'amber', gradient: 'from-amber-500/20 to-yellow-500/10', border: 'border-amber-500/30', text: 'text-amber-400', bg: 'bg-amber-500/20' },
+  SOCIAL: {
+    label: 'Social Accountability',
+    icon: Users,
+    bg: 'bg-slate-100',
+    text: 'text-slate-700',
+    border: 'border-slate-200',
+    badgeColor: 'bg-slate-100 text-slate-700 border border-slate-200',
+    barColor: 'bg-emerald-600',
+  },
+  ANTI_CHARITY: {
+    label: 'Anti-Charity Escrow',
+    icon: HeartCrack,
+    bg: 'bg-orange-50',
+    text: 'text-orange-800',
+    border: 'border-orange-200',
+    badgeColor: 'bg-orange-50 text-orange-800 border border-orange-200',
+    barColor: 'bg-orange-600',
+  },
+  LOSS_POOL: {
+    label: 'Loss Pool',
+    icon: Lock,
+    bg: 'bg-amber-50',
+    text: 'text-amber-800',
+    border: 'border-amber-200',
+    badgeColor: 'bg-amber-50 text-amber-800 border border-amber-200',
+    barColor: 'bg-amber-600',
+  },
 } as const;
 
 const STATUS_CONFIG = {
-  ACTIVE: { label: 'Active', icon: Target, color: 'text-green-400', bg: 'bg-green-500/20' },
-  PENDING_VERIFICATION: { label: 'Pending', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/20' },
-  SUCCEEDED: { label: 'Succeeded', icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
-  FAILED: { label: 'Failed', icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/20' },
-  CANCELLED: { label: 'Cancelled', icon: Ban, color: 'text-slate-400', bg: 'bg-slate-500/20' },
+  ACTIVE: { label: 'Active', icon: Target, color: 'text-emerald-700', bg: 'bg-emerald-50', badgeColor: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+  PENDING_VERIFICATION: { label: 'Pending', icon: Clock, color: 'text-amber-700', bg: 'bg-amber-50', badgeColor: 'bg-amber-50 text-amber-700 border border-amber-200' },
+  SUCCEEDED: { label: 'Fulfilled', icon: CheckCircle2, color: 'text-emerald-700', bg: 'bg-emerald-50', badgeColor: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
+  FAILED: { label: 'Breached', icon: XCircle, color: 'text-red-700', bg: 'bg-red-50', badgeColor: 'bg-red-50 text-red-700 border border-red-200' },
+  CANCELLED: { label: 'Withdrawn', icon: Ban, color: 'text-stone-500', bg: 'bg-stone-50', badgeColor: 'bg-stone-50 text-stone-500 border border-stone-200' },
 } as const;
 
 // ============================================
@@ -101,279 +123,283 @@ export default function CommitmentDashboard() {
   const activeContracts = allContracts.filter((c) => c.status === 'ACTIVE' || c.status === 'PENDING_VERIFICATION');
   const completedContracts = allContracts.filter((c) => c.status === 'SUCCEEDED' || c.status === 'FAILED' || c.status === 'CANCELLED');
   const totalStaked = activeContracts.reduce((sum, c) => sum + (c.stakeAmount || 0), 0);
+  const atRiskAmount = activeContracts.filter((c) => c.daysRemaining <= 7).reduce((sum, c) => sum + (c.stakeAmount || 0), 0);
   const successCount = allContracts.filter((c) => c.status === 'SUCCEEDED').length;
   const successRate = allContracts.length > 0 ? Math.round((successCount / allContracts.length) * 100) : 0;
+  const breachCount = allContracts.filter((c) => c.status === 'FAILED').length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Ambient background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -left-20 w-96 h-96 bg-purple-500/8 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 -right-20 w-80 h-80 bg-amber-500/8 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative max-w-lg mx-auto md:max-w-4xl px-4 py-6 safe-top">
-        {/* Header */}
-        <motion.header
-          className="mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-purple-500/20 rounded-xl backdrop-blur-sm">
-                <ShieldCheck className="w-6 h-6 text-purple-400" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Commitments</h1>
-                <p className="text-sm text-slate-400">Stakes that drive results</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => router.push('/dashboard/commitments/groups')}
-                className="flex items-center gap-1.5 px-3 py-2.5 bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white text-sm font-medium rounded-xl transition-all border border-white/10"
-              >
-                <Users className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => router.push('/dashboard/commitments/analytics')}
-                className="flex items-center gap-1.5 px-3 py-2.5 bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white text-sm font-medium rounded-xl transition-all border border-white/10"
-              >
-                <BarChart3 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => router.push('/dashboard/commitments/new')}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-purple-500/25"
-              >
-                <Plus className="w-4 h-4" />
-                New Stake
-              </button>
-            </div>
+    <div className="max-w-3xl mx-auto px-6 md:px-12 py-8">
+      {/* Header — The Escrow Office */}
+      <motion.header
+        className="mb-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-serif text-[#1A2E22] tracking-tight">
+              Active Contracts
+            </h1>
+            <p className="text-stone-500 text-sm mt-1">
+              Binding agreements and accountability protocols.
+            </p>
           </div>
-        </motion.header>
-
-        {/* Quick Stats */}
-        <motion.section
-          className="mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="grid grid-cols-4 gap-3">
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-              <p className="text-2xl font-bold text-white">{activeContracts.length}</p>
-              <p className="text-xs text-slate-400 mt-1">Active</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-              <p className="text-2xl font-bold text-white">{successRate}%</p>
-              <p className="text-xs text-slate-400 mt-1">Success Rate</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-              <p className="text-2xl font-bold text-amber-400">{formatCurrency(totalStaked, 'USD')}</p>
-              <p className="text-xs text-slate-400 mt-1">Staked</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-              <p className="text-2xl font-bold text-orange-400 flex items-center justify-center gap-1">
-                <Flame className="w-5 h-5" />0
-              </p>
-              <p className="text-xs text-slate-400 mt-1">Streak</p>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* Slip Detection Alerts */}
-        {activeContracts.length > 0 && (
-          <motion.section
-            className="mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-400" />
-                Slip Detection
-              </h2>
-              <button
-                onClick={() => triggerScan()}
-                disabled={isScanning}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-white/10 hover:bg-white/15 rounded-lg transition-all border border-white/10 disabled:opacity-50"
-              >
-                <Scan className={cn('w-3.5 h-3.5', isScanning && 'animate-spin')} />
-                {isScanning ? 'Scanning...' : 'Run Scan'}
-              </button>
-            </div>
-            {slipAlerts.length > 0 ? (
-              <div className="space-y-2">
-                {slipAlerts.filter((a) => !a.readAt).slice(0, 3).map((alert, i) => (
-                  <SlipAlertCard key={alert.id} alert={alert} index={i} />
-                ))}
-              </div>
-            ) : (
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-                <p className="text-sm text-slate-400">
-                  {isScanning ? 'Scanning your contracts for drift...' : 'No slip alerts yet. Click "Run Scan" to check if any goals are falling behind.'}
-                </p>
-              </div>
-            )}
-          </motion.section>
-        )}
-
-        {/* Active Contracts */}
-        <motion.section
-          className="mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-            <Target className="w-5 h-5 text-green-400" />
-            Active Contracts
-          </h2>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
-            </div>
-          ) : activeContracts.length === 0 ? (
-            <motion.div
-              className="p-8 rounded-xl bg-white/5 border border-white/10 text-center"
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/dashboard/commitments/groups')}
+              className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 hover:border-stone-400 text-stone-700 px-4 py-2 text-sm font-medium transition-colors"
             >
-              <div className="inline-flex p-3 bg-purple-500/20 rounded-full mb-3">
-                <ShieldCheck className="w-6 h-6 text-purple-400" />
-              </div>
-              <p className="text-white font-medium">No active commitments</p>
-              <p className="text-sm text-slate-400 mt-1 mb-4">
-                Create your first staked commitment to boost goal achievement by 3x
-              </p>
-              <button
-                onClick={() => router.push('/dashboard/commitments/new')}
-                className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 text-white text-sm font-medium rounded-xl"
-              >
-                Create Commitment
-              </button>
-            </motion.div>
-          ) : (
+              <Users className="w-4 h-4" />
+              Groups
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/commitments/analytics')}
+              className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 hover:border-stone-400 text-stone-700 px-4 py-2 text-sm font-medium transition-colors"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/commitments/new')}
+              className="inline-flex items-center gap-2 rounded-full bg-[#064E3B] hover:bg-[#053D2E] text-white px-5 py-2.5 text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Draft New Contract
+            </button>
+          </div>
+        </div>
+      </motion.header>
+
+      {/* Escrow Summary — Value Locked Strip */}
+      <motion.section
+        className="border-y border-stone-200 py-8 mb-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+      >
+        <div className="flex flex-col sm:flex-row sm:divide-x divide-stone-200 gap-6 sm:gap-0">
+          <div className="sm:pr-8">
+            <p className="text-xs font-bold tracking-widest text-stone-400 uppercase mb-1">
+              Total Value Locked
+            </p>
+            <span className="text-5xl font-serif text-[#1A2E22] tabular-nums">
+              {formatCurrency(totalStaked, 'USD')}
+            </span>
+          </div>
+          <div className="sm:px-8">
+            <p className="text-xs font-bold tracking-widest text-stone-400 uppercase mb-1">
+              At Risk
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-3xl font-mono text-orange-700 tabular-nums">
+                {formatCurrency(atRiskAmount, 'USD')}
+              </span>
+              {breachCount > 0 && (
+                <span className="text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 rounded-full px-2.5 py-0.5">
+                  {breachCount} breach{breachCount !== 1 ? 'es' : ''}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="sm:pl-8">
+            <p className="text-xs font-bold tracking-widest text-stone-400 uppercase mb-1">
+              Contract Success Rate
+            </p>
+            <span className="text-3xl font-serif text-[#064E3B] tabular-nums">
+              {successRate}%
+            </span>
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Compliance Notices — Slip Detection */}
+      {activeContracts.length > 0 && (
+        <motion.section
+          className="mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-serif text-[#1A2E22]">
+              Compliance Notices
+            </h2>
+            <button
+              onClick={() => triggerScan()}
+              disabled={isScanning}
+              className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 hover:border-stone-400 text-stone-700 px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              <Scan className={cn('w-3.5 h-3.5', isScanning && 'animate-spin')} />
+              {isScanning ? 'Scanning...' : 'Run Compliance Scan'}
+            </button>
+          </div>
+          {slipAlerts.length > 0 ? (
             <div className="space-y-3">
-              {activeContracts.map((contract, index) => (
-                <ContractCard
-                  key={contract.id}
-                  contract={contract}
-                  index={index}
-                  onCancel={async (id) => {
-                    await cancelStake(id);
-                    setAllContracts((prev) => prev.map((c) => c.id === id ? { ...c, status: 'CANCELLED' as const } : c));
-                  }}
-                  isCancelling={isCancellingStake}
-                />
+              {slipAlerts.filter((a) => !a.readAt).slice(0, 3).map((alert, i) => (
+                <SlipAlertCard key={alert.id} alert={alert} index={i} />
               ))}
+            </div>
+          ) : (
+            <div className="p-6 rounded-lg bg-stone-50 border border-stone-200 text-center">
+              <p className="text-sm text-stone-500">
+                {isScanning ? 'Scanning contracts for compliance drift...' : 'No compliance notices. Run a scan to check for goal drift.'}
+              </p>
             </div>
           )}
         </motion.section>
+      )}
 
-        {/* Effectiveness Chart */}
-        {effectiveness && effectiveness.metrics.some((m) => m.totalCommitments > 0) && (
-          <motion.section
-            className="mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+      {/* Active Contracts */}
+      <motion.section
+        className="mb-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <h2 className="text-xl font-serif text-[#1A2E22] mb-4">
+          Active Contracts
+        </h2>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-5 h-5 text-stone-400 animate-spin" />
+          </div>
+        ) : activeContracts.length === 0 ? (
+          <motion.div
+            className="p-8 rounded-lg bg-white border border-stone-200 shadow-sm text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
           >
-            <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-violet-400" />
-              Effectiveness
-            </h2>
+            <div className="inline-flex p-3 bg-stone-100 rounded-full mb-3">
+              <ShieldCheck className="w-6 h-6 text-stone-500" />
+            </div>
+            <p className="text-[#1A2E22] font-medium">No active contracts</p>
+            <p className="text-sm text-stone-500 mt-1 mb-4">
+              Draft your first binding commitment to boost goal achievement by 3x
+            </p>
+            <button
+              onClick={() => router.push('/dashboard/commitments/new')}
+              className="rounded-full bg-[#064E3B] hover:bg-[#053D2E] text-white px-5 py-2.5 text-sm font-medium transition-colors"
+            >
+              Draft Contract
+            </button>
+          </motion.div>
+        ) : (
+          <div className="space-y-4">
+            {activeContracts.map((contract, index) => (
+              <ContractCard
+                key={contract.id}
+                contract={contract}
+                index={index}
+                onCancel={async (id) => {
+                  await cancelStake(id);
+                  setAllContracts((prev) => prev.map((c) => c.id === id ? { ...c, status: 'CANCELLED' as const } : c));
+                }}
+                isCancelling={isCancellingStake}
+              />
+            ))}
+          </div>
+        )}
+      </motion.section>
 
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-              <div className="space-y-3">
-                {effectiveness.metrics
-                  .filter((m) => m.totalCommitments > 0)
-                  .map((metric) => {
-                    const config = STAKE_CONFIG[metric.stakeType as keyof typeof STAKE_CONFIG];
-                    return (
-                      <div key={metric.stakeType} className="flex items-center gap-3">
-                        <span className={cn('text-xs font-medium px-2 py-1 rounded-full', config?.bg, config?.text)}>
-                          {config?.label || metric.stakeType}
-                        </span>
-                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                          <motion.div
-                            className="h-full rounded-full bg-gradient-to-r from-purple-500 to-violet-400"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.round(metric.successRate * 100)}%` }}
-                            transition={{ duration: 1, delay: 0.3 }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium text-white w-12 text-right">
-                          {Math.round(metric.successRate * 100)}%
-                        </span>
+      {/* Contract Effectiveness */}
+      {effectiveness && effectiveness.metrics.some((m) => m.totalCommitments > 0) && (
+        <motion.section
+          className="mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h2 className="text-xl font-serif text-[#1A2E22] mb-4">
+            Contract Effectiveness
+          </h2>
+
+          <div className="p-6 rounded-lg bg-white border border-stone-200 shadow-sm">
+            <div className="space-y-4">
+              {effectiveness.metrics
+                .filter((m) => m.totalCommitments > 0)
+                .map((metric) => {
+                  const config = STAKE_CONFIG[metric.stakeType as keyof typeof STAKE_CONFIG];
+                  return (
+                    <div key={metric.stakeType} className="flex items-center gap-3">
+                      <span className={cn('text-xs font-medium px-2.5 py-1 rounded-full', config?.badgeColor)}>
+                        {config?.label || metric.stakeType}
+                      </span>
+                      <div className="flex-1 h-2 bg-stone-100 rounded-full overflow-hidden">
+                        <motion.div
+                          className={cn('h-full rounded-full', config?.barColor || 'bg-emerald-600')}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.round(metric.successRate * 100)}%` }}
+                          transition={{ duration: 1, delay: 0.3 }}
+                        />
                       </div>
-                    );
-                  })}
-              </div>
-              <p className="text-xs text-slate-400 mt-3 italic">{effectiveness.recommendation}</p>
+                      <span className="text-sm font-mono text-stone-700 w-12 text-right tabular-nums">
+                        {Math.round(metric.successRate * 100)}%
+                      </span>
+                    </div>
+                  );
+                })}
             </div>
-          </motion.section>
-        )}
+            <p className="text-sm text-stone-400 mt-4 italic font-serif">{effectiveness.recommendation}</p>
+          </div>
+        </motion.section>
+      )}
 
-        {/* Past Contracts */}
-        {completedContracts.length > 0 && (
-          <motion.section
-            className="mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-400" />
-              History
-            </h2>
-            <div className="space-y-2">
-              {completedContracts.slice(0, 5).map((contract) => {
-                const statusConf = STATUS_CONFIG[contract.status];
-                const stakeConf = STAKE_CONFIG[contract.stakeType];
-                const StatusIcon = statusConf.icon;
-                return (
-                  <div key={contract.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                    <div className={cn('p-1.5 rounded-lg', statusConf.bg)}>
-                      <StatusIcon className={cn('w-4 h-4', statusConf.color)} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{contract.goalName}</p>
-                      <p className="text-xs text-slate-400">{stakeConf.label} &middot; {new Date(contract.createdAt).toLocaleDateString()}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {contract.achievementTier === 'GOLD' && (
-                        <span className="flex items-center gap-1 text-xs font-medium text-yellow-400">
-                          <Medal className="w-3.5 h-3.5" /> Gold
-                        </span>
-                      )}
-                      {contract.achievementTier === 'SILVER' && (
-                        <span className="flex items-center gap-1 text-xs font-medium text-slate-300">
-                          <Award className="w-3.5 h-3.5" /> Silver {contract.tierRefundPercentage ? `(${contract.tierRefundPercentage}% refund)` : ''}
-                        </span>
-                      )}
-                      {contract.achievementTier === 'BRONZE' && (
-                        <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
-                          <Award className="w-3.5 h-3.5" /> Bronze {contract.tierRefundPercentage ? `(${contract.tierRefundPercentage}% refund)` : ''}
-                        </span>
-                      )}
-                      <span className={cn('text-xs font-medium', statusConf.color)}>{statusConf.label}</span>
-                      {contract.status === 'SUCCEEDED' && (
-                        <button className="p-1 rounded-lg hover:bg-white/10 transition-colors" title="Share achievement">
-                          <Share2 className="w-3.5 h-3.5 text-slate-400 hover:text-white" />
-                        </button>
-                      )}
-                    </div>
+      {/* Archived Contracts */}
+      {completedContracts.length > 0 && (
+        <motion.section
+          className="mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          <h2 className="text-xl font-serif text-[#1A2E22] mb-4">
+            Archived Contracts
+          </h2>
+          <div className="space-y-3">
+            {completedContracts.slice(0, 5).map((contract) => {
+              const statusConf = STATUS_CONFIG[contract.status];
+              const stakeConf = STAKE_CONFIG[contract.stakeType];
+              const StatusIcon = statusConf.icon;
+              return (
+                <div key={contract.id} className="flex items-center gap-3 p-4 rounded-lg bg-white border border-stone-200 shadow-sm">
+                  <div className={cn('p-1.5 rounded-lg', statusConf.bg)}>
+                    <StatusIcon className={cn('w-4 h-4', statusConf.color)} />
                   </div>
-                );
-              })}
-            </div>
-          </motion.section>
-        )}
-      </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[#1A2E22] truncate">{contract.goalName}</p>
+                    <p className="text-xs text-stone-400">{stakeConf.label} &middot; {new Date(contract.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {contract.achievementTier === 'GOLD' && (
+                      <span className="flex items-center gap-1 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5">
+                        <Medal className="w-3.5 h-3.5" /> Gold
+                      </span>
+                    )}
+                    {contract.achievementTier === 'SILVER' && (
+                      <span className="flex items-center gap-1 text-xs font-medium bg-stone-50 text-stone-600 border border-stone-200 rounded-full px-2.5 py-0.5">
+                        <Award className="w-3.5 h-3.5" /> Silver {contract.tierRefundPercentage ? `(${contract.tierRefundPercentage}%)` : ''}
+                      </span>
+                    )}
+                    {contract.achievementTier === 'BRONZE' && (
+                      <span className="flex items-center gap-1 text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 rounded-full px-2.5 py-0.5">
+                        <Award className="w-3.5 h-3.5" /> Bronze {contract.tierRefundPercentage ? `(${contract.tierRefundPercentage}%)` : ''}
+                      </span>
+                    )}
+                    <span className={cn('text-xs font-medium rounded-full px-2.5 py-0.5', statusConf.badgeColor)}>{statusConf.label}</span>
+                    {contract.status === 'SUCCEEDED' && (
+                      <button className="p-1 rounded-full hover:bg-stone-100 transition-colors" title="Share achievement">
+                        <Share2 className="w-3.5 h-3.5 text-stone-400 hover:text-stone-600" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.section>
+      )}
     </div>
   );
 }
@@ -392,58 +418,63 @@ function ContractCard({
   isCancelling: boolean;
 }) {
   const stakeConf = STAKE_CONFIG[contract.stakeType];
-  const StakeIcon = stakeConf.icon;
   const isUrgent = contract.daysRemaining <= 7;
+  const deadlineDate = new Date(contract.createdAt);
+  deadlineDate.setDate(deadlineDate.getDate() + (contract.daysRemaining || 0));
 
   return (
     <motion.div
-      className={cn(
-        'relative overflow-hidden rounded-xl border backdrop-blur-sm p-4',
-        `bg-gradient-to-br ${stakeConf.gradient} ${stakeConf.border}`,
-      )}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      className="relative bg-white border border-stone-200 rounded-lg p-8 shadow-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ delay: 0.05 * index }}
     >
-      {/* Stake type badge */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className={cn('p-2 rounded-lg', stakeConf.bg)}>
-            <StakeIcon className={cn('w-5 h-5', stakeConf.text)} />
-          </div>
-          <div>
-            <p className="font-semibold text-white">{contract.goalName}</p>
-            <p className={cn('text-xs font-medium', stakeConf.text)}>{stakeConf.label} Stake</p>
-          </div>
+      {/* Decorative corner ornaments */}
+      <div className="absolute top-3 left-3 w-4 h-4 border-t border-l border-stone-300" />
+      <div className="absolute top-3 right-3 w-4 h-4 border-t border-r border-stone-300" />
+      <div className="absolute bottom-3 left-3 w-4 h-4 border-b border-l border-stone-300" />
+      <div className="absolute bottom-3 right-3 w-4 h-4 border-b border-r border-stone-300" />
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="font-serif text-lg text-[#1A2E22]">{contract.goalName}</h3>
+          <span className={cn('inline-flex text-xs font-medium rounded-full px-2.5 py-0.5 mt-1', stakeConf.badgeColor)}>
+            {stakeConf.label}
+          </span>
         </div>
-        <span className={cn(
-          'px-2 py-1 rounded-full text-xs font-bold',
-          stakeConf.bg, stakeConf.text,
-        )}>
+        <span className="text-xs font-mono bg-stone-50 border border-stone-200 rounded-full px-3 py-1 text-stone-600 tabular-nums">
           {Math.round(contract.successProbability * 100)}% likely
         </span>
       </div>
 
-      {/* Details */}
-      <div className="flex items-center gap-4 text-sm mb-3">
+      {/* Contract oath */}
+      <p className="text-sm text-stone-600 italic mb-5" style={{ fontFamily: 'Merriweather, serif' }}>
+        &ldquo;I hereby promise to achieve {contract.goalName} by {deadlineDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}, binding {contract.stakeAmount ? formatCurrency(contract.stakeAmount, 'USD') : 'my word'} in escrow under {stakeConf.label.toLowerCase()} terms.&rdquo;
+      </p>
+
+      {/* Data grid */}
+      <div className="grid grid-cols-2 gap-4 mb-5">
         {contract.stakeAmount && (
-          <span className="text-slate-300">
-            Staked: <span className="text-white font-medium">{formatCurrency(contract.stakeAmount, 'USD')}</span>
-          </span>
+          <div>
+            <p className="text-xs font-bold tracking-widest text-stone-400 uppercase mb-0.5">Value Locked</p>
+            <p className="text-sm font-mono text-[#1A2E22] tabular-nums">{formatCurrency(contract.stakeAmount, 'USD')}</p>
+          </div>
         )}
-        <span className="text-slate-400">&middot;</span>
-        <span className={cn('flex items-center gap-1', isUrgent ? 'text-amber-400' : 'text-slate-300')}>
-          <Clock className="w-3.5 h-3.5" />
-          {contract.daysRemaining}d left
-        </span>
+        <div>
+          <p className="text-xs font-bold tracking-widest text-stone-400 uppercase mb-0.5">Time Remaining</p>
+          <p className={cn('text-sm font-mono tabular-nums', isUrgent ? 'text-orange-700' : 'text-[#1A2E22]')}>
+            {contract.daysRemaining} days
+          </p>
+        </div>
       </div>
 
-      {/* Countdown bar */}
-      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-3">
+      {/* Progress bar */}
+      <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden mb-4">
         <motion.div
           className={cn(
             'h-full rounded-full',
-            isUrgent ? 'bg-gradient-to-r from-amber-500 to-orange-400' : `bg-gradient-to-r from-purple-500 to-violet-400`,
+            isUrgent ? 'bg-orange-600' : 'bg-[#064E3B]',
           )}
           initial={{ width: 0 }}
           animate={{ width: `${Math.max(5, 100 - (contract.daysRemaining / 90) * 100)}%` }}
@@ -453,21 +484,21 @@ function ContractCard({
 
       {/* Self-verify banner */}
       {contract.selfVerifyOfferedAt && contract.selfVerifyExpiresAt && new Date(contract.selfVerifyExpiresAt) > new Date() && (
-        <div className="mt-3 p-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30">
-          <p className="text-xs text-amber-300 font-medium">
-            Self-verify available - your referee hasn&apos;t responded yet.
+        <div className="mt-2 mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
+          <p className="text-xs text-amber-800 font-medium">
+            Self-verification available — your referee has not yet responded.
           </p>
         </div>
       )}
 
-      {/* Message + Referee */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-400 italic truncate max-w-[70%]">
+      {/* Footer: message + referee */}
+      <div className="flex items-center justify-between pt-4 border-t border-stone-100">
+        <p className="text-xs text-stone-400 italic truncate max-w-[70%]">
           &ldquo;{contract.message.headline}&rdquo;
         </p>
         {contract.referee && (
-          <span className="text-xs text-slate-400 flex items-center gap-1">
-            <Users className="w-3 h-3" /> {contract.referee.name}
+          <span className="text-xs text-stone-500">
+            Witnessed by: <span className="font-medium text-stone-600">{contract.referee.name}</span>
           </span>
         )}
       </div>
@@ -480,10 +511,10 @@ function ContractCard({
 // ============================================
 
 const RISK_COLORS = {
-  high: { bg: 'bg-red-500/15', border: 'border-red-500/30', text: 'text-red-400', badge: 'bg-red-500/20 text-red-300' },
-  medium: { bg: 'bg-amber-500/15', border: 'border-amber-500/30', text: 'text-amber-400', badge: 'bg-amber-500/20 text-amber-300' },
-  low: { bg: 'bg-blue-500/15', border: 'border-blue-500/30', text: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-300' },
-  unknown: { bg: 'bg-slate-500/15', border: 'border-slate-500/30', text: 'text-slate-400', badge: 'bg-slate-500/20 text-slate-300' },
+  high: { accent: 'border-l-4 border-red-400', bg: 'bg-red-50', text: 'text-red-800', badge: 'bg-red-100 text-red-700' },
+  medium: { accent: 'border-l-4 border-amber-400', bg: 'bg-amber-50', text: 'text-amber-800', badge: 'bg-amber-100 text-amber-700' },
+  low: { accent: 'border-l-4 border-blue-400', bg: 'bg-blue-50', text: 'text-blue-800', badge: 'bg-blue-100 text-blue-700' },
+  unknown: { accent: 'border-l-4 border-stone-400', bg: 'bg-stone-50', text: 'text-stone-700', badge: 'bg-stone-100 text-stone-600' },
 } as const;
 
 function SlipAlertCard({ alert, index }: { alert: SlipAlert; index: number }) {
@@ -492,29 +523,32 @@ function SlipAlertCard({ alert, index }: { alert: SlipAlert; index: number }) {
   return (
     <motion.div
       className={cn(
-        'p-3.5 rounded-xl border backdrop-blur-sm',
+        'p-4 rounded-r-lg',
+        colors.accent,
         colors.bg,
-        colors.border,
       )}
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ delay: 0.05 * index }}
     >
       <div className="flex items-start gap-3">
-        <div className={cn('p-1.5 rounded-lg mt-0.5', colors.badge)}>
-          <AlertTriangle className={cn('w-4 h-4', colors.text)} />
-        </div>
+        <AlertTriangle className={cn('w-4 h-4 mt-0.5 shrink-0', colors.text)} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-sm font-semibold text-white">{alert.title}</p>
+            <p className="text-sm font-semibold text-stone-800">Compliance Warning: {alert.title}</p>
             <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase', colors.badge)}>
               {alert.riskLevel}
             </span>
           </div>
-          <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">{alert.message}</p>
-          <p className="text-[10px] text-slate-500 mt-1.5">
-            {alert.goalName} &middot; {new Date(alert.createdAt).toLocaleDateString()}
-          </p>
+          <p className="text-sm text-stone-600 leading-relaxed line-clamp-2 font-serif">{alert.message}</p>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-xs text-stone-400">
+              {alert.goalName} &middot; {new Date(alert.createdAt).toLocaleDateString()}
+            </p>
+            <button className="text-xs font-medium text-orange-700 underline underline-offset-2 hover:text-orange-800 transition-colors">
+              View Breach
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>

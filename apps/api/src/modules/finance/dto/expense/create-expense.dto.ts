@@ -36,7 +36,7 @@ export class CreateExpenseDto {
 
   @ApiPropertyOptional({
     description: 'Currency code (defaults to user currency)',
-    example: 'NGN',
+    example: 'USD',
   })
   @IsOptional()
   @IsString()

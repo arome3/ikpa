@@ -13,7 +13,6 @@ import { SharkModule } from './modules/shark/shark.module';
 import { GpsModule } from './modules/gps/gps.module';
 import { CommitmentModule } from './modules/commitment/commitment.module';
 import { FutureSelfModule } from './modules/future-self/future-self.module';
-import { UbuntuModule } from './modules/ubuntu/ubuntu.module';
 import { StoryCardsModule } from './modules/story-cards/story-cards.module';
 import { ImportModule } from './modules/import/import.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
@@ -85,7 +84,6 @@ import { AnthropicModule } from './modules/ai/anthropic';
     GpsModule,
     CommitmentModule,
     FutureSelfModule,
-    UbuntuModule,
     StoryCardsModule,
     ImportModule,
     OnboardingModule,

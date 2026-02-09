@@ -17,7 +17,7 @@ export class SavingsResponseDto {
   @ApiProperty({ example: 250000 })
   balance!: number;
 
-  @ApiProperty({ enum: Currency, example: 'NGN' })
+  @ApiProperty({ enum: Currency, example: 'USD' })
   currency!: Currency;
 
   @ApiPropertyOptional({ example: 4.5 })

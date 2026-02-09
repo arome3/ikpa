@@ -4,7 +4,7 @@ import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'glass' | 'glass-lg' | 'outline';
+  variant?: 'default' | 'glass' | 'glass-lg' | 'outline' | 'paper';
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
@@ -13,6 +13,7 @@ const variantStyles: Record<string, string> = {
   glass: 'glass-card',
   'glass-lg': 'glass-card-lg',
   outline: 'bg-transparent border border-gray-200 dark:border-slate-700',
+  paper: 'bg-white border border-stone-100 rounded-xl shadow-sm',
 };
 
 const paddingStyles: Record<string, string> = {

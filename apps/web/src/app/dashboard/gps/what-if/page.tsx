@@ -4,50 +4,28 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles,
+  FlaskConical,
   ArrowLeft,
   TrendingDown,
   TrendingUp,
   AlertTriangle,
   CheckCircle,
-  Target,
-  Wallet,
-  ChevronRight,
+  ChevronDown,
   Pause,
-  Utensils,
-  Car,
-  ShoppingBag,
-  Zap,
-  Film,
-  HeartPulse,
-  Home,
-  Gamepad2,
-  GraduationCap,
-  type LucideIcon,
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
+import { Card } from '@/components/ui/Card';
+import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import { useGps } from '@/hooks/useGps';
 import { useCategories, useBudgets } from '@/hooks/useFinance';
 import { useCurrency } from '@/hooks';
 
 // ============================================
-// WHAT-IF SIMULATOR
+// SCENARIO PLANNING (What-If Simulator)
 // ============================================
 
-const iconNameMap: Record<string, LucideIcon> = {
-  utensils: Utensils,
-  car: Car,
-  'shopping-bag': ShoppingBag,
-  zap: Zap,
-  film: Film,
-  'heart-pulse': HeartPulse,
-  home: Home,
-  gamepad2: Gamepad2,
-  'graduation-cap': GraduationCap,
-};
-
 export default function WhatIfSimulator() {
-  const { symbol: currencySymbol } = useCurrency();
+  const { currency, symbol: currencySymbol } = useCurrency();
   const router = useRouter();
   const { categories } = useCategories();
   const { items: budgets } = useBudgets();
@@ -57,6 +35,7 @@ export default function WhatIfSimulator() {
   const [amount, setAmount] = useState<string>('');
   const [hasSimulated, setHasSimulated] = useState(false);
   const [isCategoryFrozen, setIsCategoryFrozen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   // Get categories that have budgets
   const budgetedCategories = categories.filter((cat) =>
@@ -86,6 +65,19 @@ export default function WhatIfSimulator() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
 
+  // Click-outside handler for category popover
+  useEffect(() => {
+    if (!categoryOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-category-popover]')) {
+        setCategoryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [categoryOpen]);
+
   const handleSimulate = async () => {
     if (!selectedCategory || !amount) return;
 
@@ -96,217 +88,244 @@ export default function WhatIfSimulator() {
     setHasSimulated(true);
   };
 
-  const severityColors = {
+  const severityConfig = {
     low: {
-      bg: 'from-green-500/20 to-emerald-500/20',
-      border: 'border-green-500/30',
-      text: 'text-green-400',
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-200',
+      text: 'text-emerald-800',
       icon: CheckCircle,
+      label: 'Within Budget',
+      bar: 'bg-emerald-600',
     },
     medium: {
-      bg: 'from-amber-500/20 to-orange-500/20',
-      border: 'border-amber-500/30',
-      text: 'text-amber-400',
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+      text: 'text-amber-800',
       icon: AlertTriangle,
+      label: 'Proceed with Caution',
+      bar: 'bg-amber-500',
     },
     high: {
-      bg: 'from-red-500/20 to-rose-500/20',
-      border: 'border-red-500/30',
-      text: 'text-red-400',
+      bg: 'bg-orange-50',
+      border: 'border-orange-200',
+      text: 'text-[#C2410C]',
       icon: AlertTriangle,
+      label: 'Significant Impact',
+      bar: 'bg-[#C2410C]',
     },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Ambient effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
-      </div>
+    <div className="max-w-3xl mx-auto px-6 md:px-12 py-8 md:py-12 space-y-8">
+      {/* Back button */}
+      <motion.button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-stone-400 hover:text-stone-600 transition-colors"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      >
+        <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+        <span className="text-sm">Back</span>
+      </motion.button>
 
-      <div className="relative max-w-lg mx-auto px-4 py-6 safe-top">
-        {/* Back button */}
-        <motion.button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back</span>
-        </motion.button>
+      {/* Header */}
+      <motion.header
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
+      >
+        <div className="flex items-center gap-3 mb-2">
+          <FlaskConical className="w-6 h-6 text-stone-400" strokeWidth={1.5} />
+          <h1 className="text-3xl md:text-4xl font-serif text-[#1A2E22]">
+            Scenario Planning
+          </h1>
+        </div>
+        <p className="text-sm text-stone-400">
+          Test spending decisions before they affect your real timeline.
+        </p>
+      </motion.header>
 
-        {/* Header */}
-        <motion.header
-          className="mb-8 text-center"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="inline-flex p-4 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-2xl mb-4 backdrop-blur-sm">
-            <Sparkles className="w-10 h-10 text-indigo-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-2">What-If Simulator</h1>
-          <p className="text-slate-400">See how spending affects your goals</p>
-        </motion.header>
+      {/* Natural Language Input */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut', delay: 0.1 }}
+      >
+        <Card variant="paper" padding="lg">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-4">
+            <span className="text-2xl md:text-3xl font-serif text-stone-400">
+              If I spend
+            </span>
 
-        {/* Input Section */}
-        <motion.section
-          className="mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white mb-4">
-              If I spend...
-            </h2>
+            {/* Amount input */}
+            <span className="inline-flex items-baseline">
+              <span className="text-3xl md:text-5xl font-mono text-stone-400">
+                {currencySymbol}
+              </span>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                className={cn(
+                  'bg-transparent border-b-2 border-stone-300 focus:border-[#064E3B]',
+                  'text-3xl md:text-5xl font-mono text-[#1A2E22] placeholder-stone-300',
+                  'focus:outline-none transition-colors duration-200',
+                  'w-[5ch] min-w-[3ch]'
+                )}
+              />
+            </span>
 
-            {/* Amount Input */}
-            <div className="mb-5">
-              <label className="block text-sm text-slate-400 mb-2">Amount</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg font-medium">
-                  {currencySymbol}
-                </span>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0"
-                  className={cn(
-                    'w-full pl-10 pr-4 py-4 rounded-xl',
-                    'bg-white/5 border border-white/10',
-                    'text-2xl font-bold text-white placeholder-slate-600',
-                    'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent',
-                    'transition-all duration-200'
-                  )}
-                />
-              </div>
-            </div>
+            <span className="text-2xl md:text-3xl font-serif text-stone-400">
+              on
+            </span>
 
-            {/* Category Select */}
-            <div className="mb-6">
-              <label className="block text-sm text-slate-400 mb-2">On category</label>
-              <div className="grid grid-cols-3 gap-2">
-                {budgetedCategories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.name)}
-                    className={cn(
-                      'p-3 rounded-xl border transition-all duration-200',
-                      'flex flex-col items-center gap-1',
-                      selectedCategory === category.name
-                        ? 'bg-primary-500/20 border-primary-500/50 ring-2 ring-primary-500/30'
-                        : 'bg-white/5 border-white/10 hover:bg-white/10'
-                    )}
+            {/* Category trigger */}
+            <div className="relative" data-category-popover>
+              <button
+                onClick={() => setCategoryOpen(!categoryOpen)}
+                className={cn(
+                  'inline-flex items-baseline gap-2',
+                  'text-2xl md:text-3xl font-serif italic border-b-2 transition-colors duration-200',
+                  selectedCategory
+                    ? 'text-emerald-800 border-emerald-800/40'
+                    : 'text-stone-400 border-stone-300'
+                )}
+              >
+                {selectedCategory || 'category'}
+                <ChevronDown className={cn(
+                  'w-4 h-4 transition-transform duration-200 self-center',
+                  categoryOpen && 'rotate-180'
+                )} />
+              </button>
+
+              {/* Category Popover */}
+              <AnimatePresence>
+                {categoryOpen && (
+                  <motion.div
+                    className="absolute top-full left-0 mt-2 z-50 bg-white shadow-xl border border-stone-100 rounded-lg py-1 min-w-[220px] max-h-[280px] overflow-y-auto"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
                   >
-                    <span
-                      className="w-10 h-10 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: category.color + '30' }}
-                    >
-                      {(() => {
-                        const Icon = iconNameMap[category.icon];
-                        return Icon ? <Icon className="w-5 h-5" style={{ color: category.color }} /> : <Wallet className="w-5 h-5" style={{ color: category.color }} />;
-                      })()}
-                    </span>
-                    <span className="text-xs text-slate-300 font-medium truncate w-full text-center">
-                      {category.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                    {budgetedCategories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => {
+                          setSelectedCategory(category.name);
+                          setCategoryOpen(false);
+                        }}
+                        className={cn(
+                          'w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors',
+                          selectedCategory === category.name
+                            ? 'bg-emerald-50 font-medium text-[#1A2E22]'
+                            : 'text-stone-600 hover:bg-emerald-50'
+                        )}
+                      >
+                        <CategoryIcon
+                          name={category.icon}
+                          className="w-4 h-4 text-stone-400 shrink-0"
+                        />
+                        {category.name}
+                      </button>
+                    ))}
+                    {budgetedCategories.length === 0 && (
+                      <p className="px-4 py-3 text-sm text-stone-400">
+                        No budgeted categories found.
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+          </div>
 
-            {/* Frozen Category Warning */}
-            <AnimatePresence>
-              {isCategoryFrozen && (
-                <motion.div
-                  className="mb-6 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
-                  <Pause className="w-5 h-5 text-blue-400 shrink-0" />
-                  <p className="text-sm text-blue-200">
-                    This category is currently paused as part of a recovery action.
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Frozen Category Warning */}
+          <AnimatePresence>
+            {isCategoryFrozen && (
+              <motion.div
+                className="mt-6 p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-center gap-3"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+              >
+                <Pause className="w-4 h-4 text-blue-600 shrink-0" />
+                <p className="text-sm text-blue-800">
+                  This category is currently paused as part of a recovery action.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            {/* Simulate Button */}
+          {/* Simulate Button */}
+          <div className="mt-8 text-center">
             <button
               onClick={handleSimulate}
               disabled={!selectedCategory || !amount || isSimulating}
               className={cn(
-                'w-full py-4 rounded-xl font-semibold text-white',
-                'bg-gradient-to-r from-indigo-500 to-purple-500',
-                'hover:from-indigo-400 hover:to-purple-400',
-                'shadow-lg shadow-indigo-500/25',
+                'px-8 py-3 rounded-full font-medium text-white',
+                'bg-[#064E3B] hover:bg-[#053F30]',
                 'transition-all duration-200',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-                'flex items-center justify-center gap-2'
+                'disabled:opacity-40 disabled:cursor-not-allowed',
+                'inline-flex items-center gap-2'
               )}
             >
               {isSimulating ? (
                 <>
                   <motion.div
-                    className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                    className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
                   />
-                  <span>Simulating...</span>
+                  <span>Calculating…</span>
                 </>
               ) : (
-                <>
-                  <Sparkles className="w-5 h-5" />
-                  <span>Simulate Impact</span>
-                </>
+                <span>Calculate Ripple Effect</span>
               )}
             </button>
           </div>
-        </motion.section>
+        </Card>
+      </motion.div>
 
-        {/* Results Section */}
-        <AnimatePresence mode="wait">
-          {hasSimulated && whatIfData && (
-            <motion.section
-              key="results"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+      {/* Results Section */}
+      <AnimatePresence mode="wait">
+        {hasSimulated && whatIfData && (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="mt-10"
+          >
+            <Card variant="paper" padding="lg" className="space-y-8">
               {/* Severity Banner */}
               {(() => {
                 const severity = whatIfData.severity;
-                const colors = severityColors[severity];
-                const Icon = colors.icon;
+                const config = severityConfig[severity];
+                const Icon = config.icon;
 
                 return (
                   <motion.div
                     className={cn(
-                      'p-5 rounded-2xl border backdrop-blur-sm mb-6',
-                      `bg-gradient-to-br ${colors.bg} ${colors.border}`
+                      'flex items-start gap-3 px-4 py-3 rounded-lg border',
+                      config.bg, config.border
                     )}
-                    initial={{ scale: 0.95 }}
-                    animate={{ scale: 1 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
                   >
-                    <div className="flex items-start gap-4">
-                      <div className={cn('p-3 rounded-xl', `${colors.bg}`)}>
-                        <Icon className={cn('w-6 h-6', colors.text)} />
-                      </div>
-                      <div>
-                        <h3 className={cn('font-semibold mb-1', colors.text)}>
-                          {severity === 'low' && 'Safe to Spend'}
-                          {severity === 'medium' && 'Proceed with Caution'}
-                          {severity === 'high' && 'High Impact'}
-                        </h3>
-                        <p className="text-sm text-slate-300">
-                          {whatIfData.recommendation}
-                        </p>
-                      </div>
+                    <Icon className={cn('w-5 h-5 mt-0.5 shrink-0', config.text)} />
+                    <div>
+                      <p className={cn('font-medium text-sm', config.text)}>
+                        {config.label}
+                      </p>
+                      <p className="text-sm text-stone-500 mt-0.5">
+                        {whatIfData.recommendation}
+                      </p>
                     </div>
                   </motion.div>
                 );
@@ -314,159 +333,141 @@ export default function WhatIfSimulator() {
 
               {/* Budget Impact */}
               <motion.div
-                className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm mb-4"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
+                transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
               >
-                <div className="flex items-center gap-2 mb-4">
-                  <Wallet className="w-5 h-5 text-slate-400" />
-                  <h3 className="font-semibold text-white">Budget Impact</h3>
+                <h3 className="font-serif text-lg text-[#1A2E22] mb-4">
+                  Budget Impact
+                </h3>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="p-4 bg-stone-50 rounded-lg">
+                    <p className="text-xs text-stone-400 mb-1 uppercase tracking-wide">Before</p>
+                    <p className="text-2xl font-serif text-[#1A2E22]">
+                      {whatIfData.budgetImpact.currentPercentUsed}%
+                    </p>
+                  </div>
+                  <div className="p-4 bg-stone-50 rounded-lg">
+                    <p className="text-xs text-stone-400 mb-1 uppercase tracking-wide">After</p>
+                    <p className={cn(
+                      'text-2xl font-serif',
+                      whatIfData.budgetImpact.projectedPercentUsed > 100
+                        ? 'text-[#C2410C]'
+                        : whatIfData.budgetImpact.projectedPercentUsed > 80
+                        ? 'text-amber-700'
+                        : 'text-emerald-800'
+                    )}>
+                      {whatIfData.budgetImpact.projectedPercentUsed}%
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-4">
-                  {/* Before/After comparison */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-white/5 rounded-xl">
-                      <p className="text-xs text-slate-500 mb-1">Current Usage</p>
-                      <p className="text-xl font-bold text-white">
-                        {whatIfData.budgetImpact.currentPercentUsed}%
-                      </p>
-                    </div>
-                    <div className="p-3 bg-white/5 rounded-xl">
-                      <p className="text-xs text-slate-500 mb-1">After Spending</p>
-                      <p className={cn(
-                        'text-xl font-bold',
+                {/* Progress bar */}
+                <div>
+                  <div className="flex items-center justify-between text-xs text-stone-400 mb-2 font-mono">
+                    <span>Budget: {formatCurrency(whatIfData.budgetImpact.budgetAmount, currency)}</span>
+                    <span>Remaining: {formatCurrency(whatIfData.budgetImpact.remainingAfterSpend, currency)}</span>
+                  </div>
+                  <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
+                    <motion.div
+                      className={cn(
+                        'h-full rounded-full',
                         whatIfData.budgetImpact.projectedPercentUsed > 100
-                          ? 'text-red-400'
+                          ? 'bg-[#C2410C]'
                           : whatIfData.budgetImpact.projectedPercentUsed > 80
-                          ? 'text-amber-400'
-                          : 'text-green-400'
-                      )}>
-                        {whatIfData.budgetImpact.projectedPercentUsed}%
-                      </p>
-                    </div>
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-600'
+                      )}
+                      initial={{ width: `${whatIfData.budgetImpact.currentPercentUsed}%` }}
+                      animate={{ width: `${Math.min(whatIfData.budgetImpact.projectedPercentUsed, 100)}%` }}
+                      transition={{ duration: 0.8 }}
+                    />
                   </div>
-
-                  {/* Progress bar */}
-                  <div>
-                    <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-                      <span>Budget: {formatCurrency(whatIfData.budgetImpact.budgetAmount, 'NGN')}</span>
-                      <span>Remaining: {formatCurrency(whatIfData.budgetImpact.remainingAfterSpend, 'NGN')}</span>
-                    </div>
-                    <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div
-                        className={cn(
-                          'h-full rounded-full transition-colors duration-300',
-                          whatIfData.budgetImpact.projectedPercentUsed > 100
-                            ? 'bg-gradient-to-r from-red-500 to-red-400'
-                            : whatIfData.budgetImpact.projectedPercentUsed > 80
-                            ? 'bg-gradient-to-r from-amber-500 to-amber-400'
-                            : 'bg-gradient-to-r from-green-500 to-green-400'
-                        )}
-                        initial={{ width: `${whatIfData.budgetImpact.currentPercentUsed}%` }}
-                        animate={{ width: `${Math.min(whatIfData.budgetImpact.projectedPercentUsed, 100)}%` }}
-                        transition={{ duration: 0.8 }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Trigger Warning */}
-                  {whatIfData.triggerPreview.wouldTrigger && (
-                    <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
-                      <p className="text-sm text-orange-300">
-                        {whatIfData.triggerPreview.description}
-                      </p>
-                    </div>
-                  )}
                 </div>
+
+                {/* Trigger Warning */}
+                {whatIfData.triggerPreview.wouldTrigger && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800">
+                      {whatIfData.triggerPreview.description}
+                    </p>
+                  </div>
+                )}
               </motion.div>
 
               {/* Goal Impact */}
-              {whatIfData.probabilityImpact ? (
-                <motion.div
-                  className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm mb-4"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <div className="flex items-center gap-2 mb-4">
-                    <Target className="w-5 h-5 text-slate-400" />
-                    <h3 className="font-semibold text-white">Goal Impact</h3>
-                  </div>
+              <motion.div
+                className="border-t border-stone-100 pt-8"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: 'easeOut', delay: 0.1 }}
+              >
+                {whatIfData.probabilityImpact ? (
+                  <>
+                    <h3 className="font-serif text-lg text-[#1A2E22] mb-4">
+                      Goal Impact
+                    </h3>
 
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm text-slate-400">{whatIfData.probabilityImpact.goalName}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-white">
+                    <p className="text-sm text-stone-400 mb-3">
+                      {whatIfData.probabilityImpact.goalName}
+                    </p>
+
+                    <div className="flex items-baseline gap-3 mb-4">
+                      <span className="text-3xl font-serif text-[#1A2E22]">
                         {Math.round(whatIfData.probabilityImpact.currentProbability * 100)}%
                       </span>
-                      <ChevronRight className="w-4 h-4 text-slate-500" />
+                      <span className="text-stone-300 text-lg">→</span>
                       <span className={cn(
-                        'text-lg font-bold',
+                        'text-3xl font-serif',
                         whatIfData.probabilityImpact.probabilityChange < 0
-                          ? 'text-red-400'
-                          : 'text-green-400'
+                          ? 'text-[#C2410C]'
+                          : 'text-emerald-800'
                       )}>
                         {Math.round(whatIfData.probabilityImpact.projectedProbability * 100)}%
                       </span>
                     </div>
-                  </div>
 
-                  {/* Probability change indicator */}
-                  <div className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-lg',
-                    whatIfData.probabilityImpact.probabilityChange < 0
-                      ? 'bg-red-500/10'
-                      : 'bg-green-500/10'
-                  )}>
-                    {whatIfData.probabilityImpact.probabilityChange < 0 ? (
-                      <TrendingDown className="w-4 h-4 text-red-400" />
-                    ) : (
-                      <TrendingUp className="w-4 h-4 text-green-400" />
-                    )}
-                    <span className={cn(
-                      'text-sm font-medium',
+                    {/* Change indicator */}
+                    <div className={cn(
+                      'inline-flex items-center gap-2 px-3 py-1.5 rounded-full font-mono text-sm',
                       whatIfData.probabilityImpact.probabilityChange < 0
-                        ? 'text-red-400'
-                        : 'text-green-400'
+                        ? 'bg-orange-50 text-[#C2410C]'
+                        : 'bg-emerald-50 text-emerald-800'
                     )}>
+                      {whatIfData.probabilityImpact.probabilityChange < 0 ? (
+                        <TrendingDown className="w-3.5 h-3.5" />
+                      ) : (
+                        <TrendingUp className="w-3.5 h-3.5" />
+                      )}
                       {whatIfData.probabilityImpact.changePercentPoints > 0 ? '+' : ''}
                       {whatIfData.probabilityImpact.changePercentPoints} percentage points
-                    </span>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm mb-4"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <div className="flex items-center gap-2 mb-4">
-                    <Target className="w-5 h-5 text-slate-400" />
-                    <h3 className="font-semibold text-white">Budget-Only Mode</h3>
-                  </div>
-                  <p className="text-sm text-slate-400">
-                    No active financial goals. The simulation shows budget impact only.
-                  </p>
-                </motion.div>
-              )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-serif text-lg text-[#1A2E22] mb-2">
+                      Budget-Only Mode
+                    </h3>
+                    <p className="text-sm text-stone-400">
+                      No active financial goals. The simulation shows budget impact only.
+                    </p>
+                  </>
+                )}
+              </motion.div>
 
-              {/* Recovery Preview (if would trigger) */}
+              {/* Recovery Preview */}
               {whatIfData.triggerPreview.wouldTrigger && whatIfData.recoveryPreview && (
                 <motion.div
-                  className="p-5 rounded-2xl bg-gradient-to-br from-primary-500/10 to-secondary-500/10 border border-primary-500/20 backdrop-blur-sm"
+                  className="border-t border-stone-100 pt-8"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  transition={{ duration: 0.3, ease: 'easeOut', delay: 0.15 }}
                 >
-                  <h3 className="font-semibold text-white mb-3">
-                    Recovery Options Available
+                  <h3 className="font-serif text-lg text-[#1A2E22] mb-2">
+                    Recovery Options
                   </h3>
-                  <p className="text-sm text-slate-400 mb-4">
+                  <p className="text-sm text-stone-400 mb-4">
                     If you proceed and exceed budget, these recovery paths will be available:
                   </p>
 
@@ -474,13 +475,13 @@ export default function WhatIfSimulator() {
                     {whatIfData.recoveryPreview.slice(0, 2).map((path) => (
                       <div
                         key={path.id}
-                        className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                        className="flex items-center justify-between p-3 border border-stone-100 rounded-lg"
                       >
                         <div>
-                          <p className="font-medium text-white text-sm">{path.name}</p>
-                          <p className="text-xs text-slate-500">{path.effort} effort</p>
+                          <p className="font-medium text-sm text-[#1A2E22]">{path.name}</p>
+                          <p className="text-xs text-stone-400 capitalize">{path.effort} effort</p>
                         </div>
-                        <span className="text-green-400 font-bold">
+                        <span className="font-mono text-sm text-emerald-800">
                           {path.newProbability !== null
                             ? `${Math.round(path.newProbability * 100)}%`
                             : path.budgetImpact || 'Budget recovery'}
@@ -492,23 +493,22 @@ export default function WhatIfSimulator() {
               )}
 
               {/* Reset Button */}
-              <motion.button
-                onClick={() => {
-                  setHasSimulated(false);
-                  setAmount('');
-                  setSelectedCategory('');
-                }}
-                className="w-full mt-6 py-3 rounded-xl font-medium text-slate-400 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                Try Another Amount
-              </motion.button>
-            </motion.section>
-          )}
-        </AnimatePresence>
-      </div>
+              <div className="pt-4 text-center">
+                <button
+                  onClick={() => {
+                    setHasSimulated(false);
+                    setAmount('');
+                    setSelectedCategory('');
+                  }}
+                  className="text-sm text-stone-400 hover:text-stone-600 transition-colors"
+                >
+                  Reset and try another scenario
+                </button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

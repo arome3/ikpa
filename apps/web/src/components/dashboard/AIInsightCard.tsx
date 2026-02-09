@@ -19,49 +19,39 @@ export interface AIInsightCardProps {
   onAction?: (id: string, url: string) => void;
 }
 
-// Type configuration
+// Type configuration — flattened to stone palette with type-specific icon colors
 const typeConfig: Record<
   AIInsightType,
   {
     icon: typeof Lightbulb;
-    bgColor: string;
     iconColor: string;
-    borderColor: string;
     label: string;
   }
 > = {
   tip: {
     icon: Lightbulb,
-    bgColor: 'bg-info-50 dark:bg-info-900/20',
-    iconColor: 'text-info-500 dark:text-info-400',
-    borderColor: 'border-info-200 dark:border-info-800',
+    iconColor: 'text-emerald-600',
     label: 'Tip',
   },
   warning: {
     icon: AlertTriangle,
-    bgColor: 'bg-secondary-50 dark:bg-secondary-900/20',
-    iconColor: 'text-secondary-500 dark:text-secondary-400',
-    borderColor: 'border-secondary-200 dark:border-secondary-800',
+    iconColor: 'text-orange-600',
     label: 'Heads up',
   },
   celebration: {
     icon: PartyPopper,
-    bgColor: 'bg-primary-50 dark:bg-primary-900/20',
-    iconColor: 'text-primary-500 dark:text-primary-400',
-    borderColor: 'border-primary-200 dark:border-primary-800',
+    iconColor: 'text-emerald-600',
     label: 'Milestone',
   },
   suggestion: {
     icon: Sparkles,
-    bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-    iconColor: 'text-purple-500 dark:text-purple-400',
-    borderColor: 'border-purple-200 dark:border-purple-800',
+    iconColor: 'text-stone-500',
     label: 'Suggestion',
   },
 };
 
 /**
- * AI-generated insight card with type-specific styling
+ * AI-generated insight card with editorial stone styling
  */
 export function AIInsightCard({ className, insight, onDismiss, onAction }: AIInsightCardProps) {
   const [isDismissed, setIsDismissed] = useState(false);
@@ -89,9 +79,7 @@ export function AIInsightCard({ className, insight, onDismiss, onAction }: AIIns
       {!isDismissed && (
         <motion.div
           className={cn(
-            'relative rounded-2xl border p-4',
-            config.bgColor,
-            config.borderColor,
+            'relative rounded-xl border bg-stone-50 border-stone-200 p-4',
             className
           )}
           initial={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -103,7 +91,7 @@ export function AIInsightCard({ className, insight, onDismiss, onAction }: AIIns
             {insight.dismissible && (
               <button
                 onClick={handleDismiss}
-                className="absolute top-3 right-3 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-colors"
+                className="absolute top-3 right-3 p-1 rounded-full text-stone-300 hover:text-stone-500 hover:bg-stone-100 transition-colors"
                 aria-label="Dismiss insight"
               >
                 <X className="h-4 w-4" />
@@ -114,29 +102,29 @@ export function AIInsightCard({ className, insight, onDismiss, onAction }: AIIns
               {/* Icon */}
               <div
                 className={cn(
-                  'flex-shrink-0 p-2 rounded-xl bg-white/50 dark:bg-white/10',
+                  'flex-shrink-0 p-2 rounded-lg bg-white',
                   config.iconColor
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-5 w-5" strokeWidth={1.5} />
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0 pr-6">
                 {/* Type label */}
                 <span
-                  className={cn('text-xs font-medium uppercase tracking-wider', config.iconColor)}
+                  className="text-xs font-medium uppercase tracking-wider text-stone-400"
                 >
                   {config.label}
                 </span>
 
                 {/* Title */}
-                <h4 className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
+                <h4 className="mt-1 text-base font-serif text-[#1A2E22]">
                   {insight.title}
                 </h4>
 
                 {/* Message */}
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                <p className="mt-1 text-sm text-stone-500 leading-relaxed">
                   {insight.message}
                 </p>
 

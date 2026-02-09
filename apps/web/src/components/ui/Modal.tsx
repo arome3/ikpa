@@ -142,7 +142,7 @@ export function Modal({
               className={cn(
                 'w-full rounded-2xl bg-white dark:bg-slate-800',
                 'shadow-xl border border-gray-200 dark:border-slate-700',
-                'outline-none overflow-hidden',
+                'outline-none flex flex-col max-h-[calc(100vh-2rem)]',
                 sizeStyles[size],
                 className
               )}
@@ -182,7 +182,7 @@ export function Modal({
               )}
 
               {/* Content */}
-              <div className="p-4">{children}</div>
+              <div className="p-4 overflow-y-auto flex-1">{children}</div>
             </motion.div>
           </div>
         </Fragment>

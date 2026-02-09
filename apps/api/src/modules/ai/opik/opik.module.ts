@@ -10,7 +10,7 @@
  * Includes G-Eval Metrics submodule for evaluating AI responses:
  * - InterventionSuccessMetric: Binary (0/1) - Did user save instead of spend?
  * - ToneEmpathyMetric: G-Eval (1-5) - Is response empathetic and supportive?
- * - CulturalSensitivityMetric: G-Eval (1-5) - Is advice culturally appropriate?
+ * - CulturalSensitivityMetric: G-Eval (1-5) - Is advice personally sensitive and appropriate?
  * - FinancialSafetyMetric: Guardrail (0/1) - Is advice financially safe?
  * - StakeEffectivenessMetric: Weighted (0-1) - How effective was the stake?
  *

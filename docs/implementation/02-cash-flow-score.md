@@ -9,8 +9,9 @@
 The Cash Flow Score is IKPA's primary financial health metric (0-100), calculated daily via NestJS Cron Job. It provides a single, easy-to-understand number that represents the user's overall financial health.
 
 **Why It Matters:**
+
 - Single metric for financial health (like a credit score for cash flow)
-- Includes Africa-specific Dependency Ratio component
+- Includes Dependency Ratio component
 - Powers alerts when financial health changes significantly
 - Foundation for simulation engine projections
 
@@ -43,11 +44,11 @@ interface CashFlowScoreResult {
 const cashFlowScore = {
   // Component weights (must sum to 100%)
   weights: {
-    savingsRate: 0.30,      // 30%
-    runwayMonths: 0.25,     // 25%
-    debtToIncome: 0.20,     // 20%
-    incomeStability: 0.15,  // 15%
-    dependencyRatio: 0.10   // 10% (NEW - cultural component)
+    savingsRate: 0.3, // 30%
+    runwayMonths: 0.25, // 25%
+    debtToIncome: 0.2, // 20%
+    incomeStability: 0.15, // 15%
+    dependencyRatio: 0.1, // 10% (NEW - cultural component)
   },
 
   // Component calculations
@@ -60,8 +61,8 @@ const cashFlowScore = {
         '5-10%': 40,
         '10-15%': 60,
         '15-20%': 80,
-        '20%+': 100
-      }
+        '20%+': 100,
+      },
     },
 
     // Runway Months Score (0-100)
@@ -72,8 +73,8 @@ const cashFlowScore = {
         '1-3 months': 40,
         '3-6 months': 60,
         '6-9 months': 80,
-        '9+ months': 100
-      }
+        '9+ months': 100,
+      },
     },
 
     // Debt-to-Income Score (0-100, inverse)
@@ -84,8 +85,8 @@ const cashFlowScore = {
         '36-50%': 40,
         '20-35%': 60,
         '10-20%': 80,
-        '0-10%': 100
-      }
+        '0-10%': 100,
+      },
     },
 
     // Income Stability Score (0-100)
@@ -94,19 +95,19 @@ const cashFlowScore = {
       scoring: {
         'High variance (>30%)': 20,
         'Moderate variance (15-30%)': 60,
-        'Low variance (<15%)': 100
-      }
+        'Low variance (<15%)': 100,
+      },
     },
 
     // Dependency Ratio Health Score (0-100, NEW)
     dependencyRatio: {
       formula: '(Total Family Support / Net Income) * 100',
       scoring: {
-        '35%+': 40,      // High but not penalized harshly
-        '10-35%': 80,    // Healthy moderate level
-        '0-10%': 100     // Low family support
-      }
-    }
+        '35%+': 40, // High but not penalized harshly
+        '10-35%': 80, // Healthy moderate level
+        '0-10%': 100, // Low family support
+      },
+    },
   },
 
   // Example calculation
@@ -118,8 +119,8 @@ const cashFlowScore = {
     dependencyRatio: { value: 21, score: 80 },
 
     calculation: '(60*0.30) + (60*0.25) + (80*0.20) + (100*0.15) + (80*0.10)',
-    finalScore: 70
-  }
+    finalScore: 70,
+  },
 };
 ```
 
@@ -168,11 +169,11 @@ import { OpikService } from '../../ai/opik/opik.service';
 @Injectable()
 export class CashFlowScoreCalculator {
   private readonly weights = {
-    savingsRate: 0.30,
+    savingsRate: 0.3,
     runwayMonths: 0.25,
-    debtToIncome: 0.20,
+    debtToIncome: 0.2,
     incomeStability: 0.15,
-    dependencyRatio: 0.10,
+    dependencyRatio: 0.1,
   };
 
   constructor(private opikService: OpikService) {}
@@ -248,7 +249,7 @@ export class CashFlowScoreCalculator {
   private calculateIncomeStabilityScore(data: FinancialData): { value: number; score: number } {
     const avg = data.last6MonthsIncome.reduce((a, b) => a + b, 0) / 6;
     const variance = Math.sqrt(
-      data.last6MonthsIncome.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / 6
+      data.last6MonthsIncome.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / 6,
     );
     const coefficientOfVariation = (variance / avg) * 100;
     let score: number;
@@ -272,9 +273,11 @@ export class CashFlowScoreCalculator {
   }
 
   private formatCalculation(components: CashFlowScoreComponents): string {
-    return `(${components.savingsRate.score}*0.30) + (${components.runwayMonths.score}*0.25) + ` +
-           `(${components.debtToIncome.score}*0.20) + (${components.incomeStability.score}*0.15) + ` +
-           `(${components.dependencyRatio.score}*0.10)`;
+    return (
+      `(${components.savingsRate.score}*0.30) + (${components.runwayMonths.score}*0.25) + ` +
+      `(${components.debtToIncome.score}*0.20) + (${components.incomeStability.score}*0.15) + ` +
+      `(${components.dependencyRatio.score}*0.10)`
+    );
   }
 }
 ```
@@ -298,20 +301,20 @@ export class CashFlowScoreCalculator {
 
 ## API Routes
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/v1/finance/score` | Get current Cash Flow Score |
-| GET | `/v1/finance/score/history` | Get score history (last 30/90/365 days) |
+| Method | Path                        | Description                             |
+| ------ | --------------------------- | --------------------------------------- |
+| GET    | `/v1/finance/score`         | Get current Cash Flow Score             |
+| GET    | `/v1/finance/score/history` | Get score history (last 30/90/365 days) |
 
 ---
 
 ## Opik Metrics
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `CashFlowScoreCalculated` | Event | Score calculated for user |
-| `ScoreChangeAlert` | Event | Significant score change detected |
-| `ComponentBreakdown` | Metadata | Individual component scores |
+| Metric                    | Type     | Description                       |
+| ------------------------- | -------- | --------------------------------- |
+| `CashFlowScoreCalculated` | Event    | Score calculated for user         |
+| `ScoreChangeAlert`        | Event    | Significant score change detected |
+| `ComponentBreakdown`      | Metadata | Individual component scores       |
 
 ---
 

@@ -2,7 +2,7 @@
   "name": "ikpa",
   "version": "0.1.0",
   "private": true,
-  "description": "AI-Powered Personal Finance Co-Pilot for Young Africans",
+  "description": "AI-Powered Personal Finance Co-Pilot for Young Adults",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",

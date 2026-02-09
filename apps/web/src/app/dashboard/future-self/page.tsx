@@ -3,25 +3,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Clock,
+  Settings,
   Send,
   MessageCircle,
-  BookOpen,
-  BarChart3,
-  Sparkles,
+  Mail,
+  FileText,
+  TrendingUp,
+  Circle,
   ChevronRight,
   Loader2,
   CheckCircle2,
   Minus,
   Plus,
   GitBranch,
-  Bell,
-  BellOff,
-  Eye,
   Pause,
   Play,
-  Flame,
-  Trophy,
+  BarChart3,
   ScrollText,
 } from 'lucide-react';
 import {
@@ -36,6 +33,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
+import { Card } from '@/components/ui/Card';
 import { useFutureSelf } from '@/hooks/useFutureSelf';
 import type { ConversationMessage, LetterDetail, TimelineProjection } from '@/hooks/useFutureSelf';
 
@@ -68,11 +66,11 @@ function ChartTooltip({ active, payload, label }: {
   const diff = optimized - current;
 
   return (
-    <div className="bg-slate-800 border border-white/10 rounded-lg px-3 py-2 shadow-xl">
-      <p className="text-xs text-slate-400 mb-1">{label}</p>
-      <p className="text-sm text-slate-300">Current: <span className="text-white font-medium">{formatCurrency(current, 'USD', { compact: true })}</span></p>
-      <p className="text-sm text-emerald-400">With IKPA: <span className="font-medium">{formatCurrency(optimized, 'USD', { compact: true })}</span></p>
-      <p className="text-xs text-amber-400 mt-1 border-t border-white/10 pt-1">Gap: +{formatCurrency(diff, 'USD', { compact: true })}</p>
+    <div className="bg-white border border-stone-200 rounded-lg px-3 py-2 shadow-md">
+      <p className="font-mono text-xs text-stone-400 mb-1">{label}</p>
+      <p className="font-mono text-sm text-[#44403C]">Current: <span className="font-medium">{formatCurrency(current, 'USD', { compact: true })}</span></p>
+      <p className="font-mono text-sm text-[#064E3B]">With IKPA: <span className="font-medium">{formatCurrency(optimized, 'USD', { compact: true })}</span></p>
+      <p className="font-mono text-xs text-[#3F6212] mt-1 border-t border-stone-100 pt-1">Gap: +{formatCurrency(diff, 'USD', { compact: true })}</p>
     </div>
   );
 }
@@ -110,7 +108,7 @@ function TypewriterText({ text, speed = 15, onComplete }: {
     <span>
       {displayed}
       {displayed.length < text.length && (
-        <span className="inline-block w-0.5 h-4 bg-amber-400 animate-pulse ml-0.5 align-text-bottom" />
+        <span className="inline-block w-0.5 h-4 bg-[#064E3B] animate-pulse ml-0.5 align-text-bottom" />
       )}
     </span>
   );
@@ -344,194 +342,164 @@ export default function FutureSelfPage() {
   const activeCommitment = commitments?.find(c => c.status === 'ACTIVE' || c.status === 'PAUSED');
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      {/* Ambient background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative max-w-lg mx-auto md:max-w-4xl px-4 py-6 space-y-6">
-        {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3"
+    <div className="max-w-5xl mx-auto px-6 md:px-12 py-8 md:py-12 space-y-8">
+      {/* Header — "The Vision Statement" */}
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <h1 className="text-3xl md:text-4xl font-serif text-[#1A2E22] tracking-tight">
+            Long-Term Projection
+          </h1>
+          <p className="text-sm text-stone-400 mt-1">
+            Visualizing the compound impact of your daily choices.
+          </p>
+        </div>
+        <button
+          onClick={() => updatePreferences({ weeklyLettersEnabled: !preferences?.weeklyLettersEnabled })}
+          disabled={isLoadingPreferences || isUpdatingPreferences}
+          className="p-2 rounded-full text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors disabled:opacity-50"
+          title={preferences?.weeklyLettersEnabled ? 'Disable weekly letters' : 'Enable weekly letters'}
         >
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <Clock className="w-6 h-6 text-amber-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Future Self Simulator</h1>
-            <p className="text-sm text-slate-400">See where your money takes you</p>
-          </div>
-          <button
-            onClick={() => updatePreferences({ weeklyLettersEnabled: !preferences?.weeklyLettersEnabled })}
-            disabled={isLoadingPreferences || isUpdatingPreferences}
-            className="ml-auto p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50"
-            title={preferences?.weeklyLettersEnabled ? 'Disable weekly letters' : 'Enable weekly letters'}
-          >
-            {preferences?.weeklyLettersEnabled
-              ? <Bell className="w-4 h-4 text-amber-400" />
-              : <BellOff className="w-4 h-4 text-slate-500" />
-            }
-          </button>
-        </motion.header>
+          <Settings className="w-5 h-5" strokeWidth={1.5} />
+        </button>
+      </motion.header>
 
-        {/* Active Commitment Check-in Card */}
-        {activeCommitment && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
+      {/* Active Commitment — "Daily Ledger" Card */}
+      {activeCommitment && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        >
+          <Card
+            variant="paper"
+            padding="lg"
             className={cn(
-              'p-4 rounded-xl border',
-              activeCommitment.status === 'ACTIVE'
-                ? 'bg-gradient-to-r from-emerald-500/10 to-amber-500/10 border-emerald-500/20'
-                : 'bg-white/5 border-white/10',
+              activeCommitment.status === 'ACTIVE' && checkinStatus?.checkedInToday
+                ? 'bg-emerald-50 border-emerald-200'
+                : '',
             )}
           >
-            {/* Streak header */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <motion.div
-                  key={checkinStatus?.streakDays ?? activeCommitment.streakDays}
-                  initial={{ scale: 1 }}
-                  animate={
-                    (checkinStatus?.streakDays ?? activeCommitment.streakDays) > 0
-                      ? { scale: [1, 1.2, 1] }
-                      : {}
-                  }
-                  transition={{ duration: 0.3 }}
-                >
-                  <Flame className={cn(
-                    'w-5 h-5',
-                    (checkinStatus?.streakDays ?? activeCommitment.streakDays) > 0
-                      ? 'text-orange-400'
-                      : 'text-slate-500',
-                  )} />
-                </motion.div>
-                <span className="text-lg font-bold text-white">
-                  {checkinStatus?.streakDays ?? activeCommitment.streakDays}-day streak
-                </span>
+            <div className="flex items-center justify-between">
+              {/* Left side */}
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-wider text-stone-400">
+                  Daily Micro-Commitment
+                </p>
+                <p className="text-xl font-serif text-[#1A2E22]">
+                  Save {formatCurrency(activeCommitment.dailyAmount, activeCommitment.currency)} today.
+                </p>
+                <p className="font-mono text-sm text-stone-400">
+                  Consistency: {checkinStatus?.streakDays ?? activeCommitment.streakDays} Days
+                </p>
               </div>
-              <button
-                onClick={() => updateCommitment({
-                  id: activeCommitment.id,
-                  status: activeCommitment.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
-                })}
-                disabled={isUpdatingCommitment}
-                className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50"
-                title={activeCommitment.status === 'ACTIVE' ? 'Pause commitment' : 'Resume commitment'}
-              >
-                {activeCommitment.status === 'ACTIVE'
-                  ? <Pause className="w-3.5 h-3.5 text-slate-400" />
-                  : <Play className="w-3.5 h-3.5 text-emerald-400" />
-                }
-              </button>
+
+              {/* Right side */}
+              <div className="flex items-center gap-2">
+                {activeCommitment.status === 'ACTIVE' && (
+                  <>
+                    {isLoadingCheckinStatus ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
+                    ) : checkinStatus?.checkedInToday ? (
+                      <CheckCircle2 className="w-6 h-6 text-[#3F6212]" />
+                    ) : (
+                      <button
+                        onClick={() => checkin({ commitmentId: activeCommitment.id })}
+                        disabled={isCheckingIn}
+                        className={cn(
+                          'px-4 py-2 rounded-full text-sm font-medium transition-colors',
+                          'bg-[#064E3B] text-white hover:bg-[#053D2E]',
+                          'disabled:opacity-50 disabled:cursor-not-allowed',
+                        )}
+                      >
+                        {isCheckingIn ? (
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Checking in...
+                          </span>
+                        ) : (
+                          'Confirm Deposit'
+                        )}
+                      </button>
+                    )}
+                  </>
+                )}
+                <button
+                  onClick={() => updateCommitment({
+                    id: activeCommitment.id,
+                    status: activeCommitment.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
+                  })}
+                  disabled={isUpdatingCommitment}
+                  className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 transition-colors disabled:opacity-50"
+                  title={activeCommitment.status === 'ACTIVE' ? 'Pause commitment' : 'Resume commitment'}
+                >
+                  {activeCommitment.status === 'ACTIVE'
+                    ? <Pause className="w-4 h-4" strokeWidth={1.5} />
+                    : <Play className="w-4 h-4" strokeWidth={1.5} />
+                  }
+                </button>
+              </div>
             </div>
 
-            {/* Commitment amount */}
-            <p className="text-sm text-slate-400 mb-3">
-              {formatCurrency(activeCommitment.dailyAmount, activeCommitment.currency)}/day micro-commitment
-            </p>
-
-            {/* Check-in button */}
-            {activeCommitment.status === 'ACTIVE' && (
-              <div className="mb-3">
-                {isLoadingCheckinStatus ? (
-                  <div className="flex justify-center py-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                  </div>
-                ) : checkinStatus?.checkedInToday ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
-                  >
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                    <span className="text-sm font-medium text-emerald-400">Done for today!</span>
-                  </motion.div>
-                ) : (
-                  <motion.button
-                    onClick={() => checkin({ commitmentId: activeCommitment.id })}
-                    disabled={isCheckingIn}
-                    className={cn(
-                      'w-full py-2.5 rounded-lg font-medium text-sm transition-all',
-                      'bg-emerald-500 text-white',
-                      'hover:bg-emerald-600',
-                      'disabled:opacity-50 disabled:cursor-not-allowed',
-                      'shadow-lg shadow-emerald-500/20',
-                    )}
-                    animate={{ boxShadow: ['0 0 0 0 rgba(34,197,94,0.2)', '0 0 0 8px rgba(34,197,94,0)', '0 0 0 0 rgba(34,197,94,0.2)'] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    {isCheckingIn ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Checking in...
-                      </span>
-                    ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" />
-                        I saved today
-                      </span>
-                    )}
-                  </motion.button>
-                )}
-              </div>
-            )}
-
-            {/* Longest streak */}
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>
+            {/* Longest streak & paused indicator */}
+            <div className="flex items-center justify-between mt-3 text-xs text-stone-400">
+              <span className="font-mono">
                 Longest streak: {checkinStatus?.longestStreak ?? activeCommitment.longestStreak} days
               </span>
               {activeCommitment.status === 'PAUSED' && (
-                <span className="text-amber-400">Paused</span>
+                <span className="text-stone-500 uppercase tracking-wider">Paused</span>
               )}
             </div>
-          </motion.div>
-        )}
+          </Card>
+        </motion.div>
+      )}
 
-        {/* Leaderboard Link */}
-        <Link href="/dashboard/future-self/leaderboard">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/20 transition-colors flex items-center gap-3 cursor-pointer"
+      {/* Leaderboard Link */}
+      <Link href="/dashboard/future-self/leaderboard">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        >
+          <Card
+            variant="paper"
+            padding="md"
+            className="flex items-center gap-3 cursor-pointer hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
           >
-            <Trophy className="w-5 h-5 text-amber-400" />
+            <BarChart3 className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white">Streak Leaderboard</p>
-              <p className="text-[10px] text-slate-400">See how your streak ranks</p>
+              <p className="font-serif text-[#1A2E22]">Community Benchmarks</p>
+              <p className="text-xs text-stone-400">See how your consistency compares</p>
             </div>
             {activeCommitment && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10">
-                <Flame className="w-3 h-3 text-orange-400" />
-                <span className="text-xs font-medium text-amber-400">
-                  {checkinStatus?.streakDays ?? activeCommitment.streakDays}d
-                </span>
-              </div>
+              <span className="font-mono text-xs text-stone-500">
+                {checkinStatus?.streakDays ?? activeCommitment.streakDays}d
+              </span>
             )}
-            <ChevronRight className="w-4 h-4 text-slate-500" />
-          </motion.div>
-        </Link>
+            <ChevronRight className="w-4 h-4 text-stone-400" strokeWidth={1.5} />
+          </Card>
+        </motion.div>
+      </Link>
 
-        {/* Dual-Path Chart */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="p-4 rounded-2xl bg-white/5 border border-white/10"
-        >
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-amber-400" />
-            Two Futures
+      {/* Chart — "Scientific Projection" */}
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.3, ease: 'easeOut' }}
+      >
+        <Card variant="paper" padding="lg">
+          <h2 className="text-lg font-serif text-[#1A2E22] mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
+            Net Worth Trajectory
           </h2>
 
           {isLoadingSimulation ? (
             <div className="h-64 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+              <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
             </div>
           ) : simulation ? (
             <>
@@ -539,23 +507,23 @@ export default function FutureSelfPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <defs>
-                      <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
+                      <linearGradient id="emeraldGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#064E3B" stopOpacity={0.08} />
+                        <stop offset="100%" stopColor="#064E3B" stopOpacity={0.01} />
                       </linearGradient>
-                      <linearGradient id="grayGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#9ca3af" stopOpacity={0.15} />
-                        <stop offset="100%" stopColor="#9ca3af" stopOpacity={0.02} />
+                      <linearGradient id="stoneGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#A8A29E" stopOpacity={0.06} />
+                        <stop offset="100%" stopColor="#A8A29E" stopOpacity={0.01} />
                       </linearGradient>
                     </defs>
                     <XAxis
                       dataKey="name"
-                      tick={{ fill: '#94a3b8', fontSize: 12 }}
-                      axisLine={{ stroke: '#334155' }}
+                      tick={{ fill: '#A8A29E', fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}
+                      axisLine={{ stroke: '#E7E5E4' }}
                       tickLine={false}
                     />
                     <YAxis
-                      tick={{ fill: '#94a3b8', fontSize: 11 }}
+                      tick={{ fill: '#A8A29E', fontSize: 11, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={(v: number) => formatCurrency(v, 'USD', { compact: true })}
@@ -565,27 +533,27 @@ export default function FutureSelfPage() {
                     <Area
                       type="monotone"
                       dataKey="currentPath"
-                      stroke="#6b7280"
-                      strokeWidth={2}
-                      strokeDasharray="6 3"
-                      fill="url(#grayGradient)"
-                      dot={{ r: 4, fill: '#6b7280', strokeWidth: 0 }}
+                      stroke="#A8A29E"
+                      strokeWidth={1.5}
+                      strokeDasharray="5 5"
+                      fill="url(#stoneGradient)"
+                      dot={{ r: 3, fill: '#A8A29E', strokeWidth: 0 }}
                       name="Current Path"
                     />
                     <Area
                       type="monotone"
                       dataKey="optimizedPath"
-                      stroke="#22c55e"
-                      strokeWidth={3}
-                      fill="url(#greenGradient)"
-                      dot={{ r: 5, fill: '#22c55e', strokeWidth: 0 }}
+                      stroke="#064E3B"
+                      strokeWidth={2}
+                      fill="url(#emeraldGradient)"
+                      dot={{ r: 4, fill: '#064E3B', strokeWidth: 0 }}
                       name="With IKPA"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* Time Slider */}
+              {/* Time Horizon Pills */}
               <div className="mt-4">
                 <div className="flex justify-between mb-2">
                   {TIME_HORIZONS.map((h, i) => (
@@ -593,10 +561,10 @@ export default function FutureSelfPage() {
                       key={h.key}
                       onClick={() => setSelectedHorizon(i)}
                       className={cn(
-                        'text-xs px-2 py-1 rounded-full transition-colors',
+                        'text-xs px-2.5 py-1 rounded-full transition-colors font-mono',
                         selectedHorizon === i
-                          ? 'bg-amber-500/20 text-amber-400 font-medium'
-                          : 'text-slate-500 hover:text-slate-300',
+                          ? 'bg-[#064E3B] text-white'
+                          : 'text-stone-400 hover:bg-stone-100',
                       )}
                     >
                       {h.label}
@@ -609,24 +577,25 @@ export default function FutureSelfPage() {
                   max={4}
                   value={selectedHorizon}
                   onChange={(e) => setSelectedHorizon(Number(e.target.value))}
-                  className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  className="w-full h-1 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-emerald-900"
                 />
                 <motion.div
                   key={selectedHorizon}
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
                   className="text-center mt-3"
                 >
-                  <p className="text-sm text-slate-400">
-                    In <span className="text-white font-medium">{TIME_HORIZONS[selectedHorizon].label}</span>, you could have
+                  <p className="text-sm text-stone-400">
+                    In <span className="font-serif text-[#1A2E22] font-medium">{TIME_HORIZONS[selectedHorizon].label}</span>, you could have
                   </p>
-                  <p className="text-2xl font-bold text-emerald-400 mt-1">
+                  <p className="text-2xl font-serif text-[#1A2E22] mt-1">
                     {formatCurrency(horizonDifference, 'USD', { compact: true })}
-                    <span className="text-sm font-normal text-slate-400 ml-2">more</span>
+                    <span className="text-sm font-normal text-stone-400 ml-2">more</span>
                   </p>
                 </motion.div>
 
-                {/* Timeline Detail Card */}
+                {/* Timeline Detail Cards */}
                 <AnimatePresence mode="wait">
                   {timelineDetail && !isLoadingTimeline && (
                     <motion.div
@@ -634,23 +603,24 @@ export default function FutureSelfPage() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
                       className="mt-3 grid grid-cols-3 gap-2 text-center"
                     >
-                      <div className="p-2 rounded-lg bg-white/5">
-                        <p className="text-[10px] text-slate-500">Current Path</p>
-                        <p className="text-sm font-medium text-slate-300">
+                      <div className="p-2 rounded-lg bg-stone-50 border border-stone-100">
+                        <p className="text-[10px] uppercase tracking-wider text-stone-400">Current Path</p>
+                        <p className="font-mono text-sm text-[#44403C]">
                           {formatCurrency(timelineDetail.currentPath, 'USD', { compact: true })}
                         </p>
                       </div>
-                      <div className="p-2 rounded-lg bg-white/5">
-                        <p className="text-[10px] text-slate-500">With IKPA</p>
-                        <p className="text-sm font-medium text-emerald-400">
+                      <div className="p-2 rounded-lg bg-stone-50 border border-stone-100">
+                        <p className="text-[10px] uppercase tracking-wider text-stone-400">With IKPA</p>
+                        <p className="font-mono text-sm text-[#064E3B]">
                           {formatCurrency(timelineDetail.optimizedPath, 'USD', { compact: true })}
                         </p>
                       </div>
-                      <div className="p-2 rounded-lg bg-white/5">
-                        <p className="text-[10px] text-slate-500">Difference</p>
-                        <p className="text-sm font-medium text-amber-400">
+                      <div className="p-2 rounded-lg bg-stone-50 border border-stone-100">
+                        <p className="text-[10px] uppercase tracking-wider text-stone-400">Difference</p>
+                        <p className="font-mono text-sm text-[#3F6212]">
                           +{formatCurrency(timelineDetail.difference, 'USD', { compact: true })}
                         </p>
                       </div>
@@ -660,48 +630,48 @@ export default function FutureSelfPage() {
               </div>
 
               {/* Legend */}
-              <div className="flex items-center justify-center gap-6 mt-3 text-xs text-slate-400">
+              <div className="flex items-center justify-center gap-6 mt-3 text-xs text-stone-400">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-0.5 bg-slate-500 rounded-full inline-block" /> Current Path
+                  <span className="w-4 h-0 border-t border-dashed border-stone-400 inline-block" /> Current Path
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-0.5 bg-emerald-500 rounded-full inline-block" /> With IKPA
+                  <span className="w-4 h-0 border-t-2 border-[#064E3B] inline-block" /> With IKPA
                 </span>
               </div>
             </>
           ) : (
-            <div className="h-64 flex items-center justify-center text-slate-500">
+            <div className="h-64 flex items-center justify-center text-stone-400">
               No simulation data available
             </div>
           )}
-        </motion.section>
+        </Card>
+      </motion.section>
 
-        {/* Letter Generation */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="p-4 rounded-2xl bg-white/5 border border-white/10"
-        >
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-400" />
-            Letter from Your Future Self
+      {/* Letter Section — "Correspondence" */}
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.3, ease: 'easeOut' }}
+      >
+        <Card variant="paper" padding="lg">
+          <h2 className="text-lg font-serif text-[#1A2E22] mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
+            Correspondence
           </h2>
 
           {!letterContent ? (
             <div className="text-center py-8">
-              <p className="text-slate-400 mb-4">
+              <p className="text-stone-400 mb-4">
                 Your future self has something to tell you...
               </p>
               <button
                 onClick={handleGenerateLetter}
                 disabled={isGeneratingLetter}
                 className={cn(
-                  'px-6 py-3 rounded-xl font-medium transition-all',
-                  'bg-gradient-to-r from-amber-500 to-orange-500 text-white',
-                  'hover:from-amber-600 hover:to-orange-600',
+                  'px-6 py-3 rounded-full font-medium transition-all',
+                  'border border-[#064E3B] text-[#064E3B]',
+                  'hover:bg-[#064E3B] hover:text-white',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
-                  'shadow-lg shadow-amber-500/20',
                 )}
               >
                 {isGeneratingLetter ? (
@@ -718,18 +688,18 @@ export default function FutureSelfPage() {
             <div className="space-y-4">
               {/* Letter mode indicator */}
               {letterMode === 'regret' && (
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <GitBranch className="w-3.5 h-3.5 text-slate-500" />
+                <div className="flex items-center gap-2 text-xs text-stone-400">
+                  <GitBranch className="w-3.5 h-3.5 text-stone-400" strokeWidth={1.5} />
                   <span>Letter from the path not taken</span>
                 </div>
               )}
 
-              {/* Letter content with typewriter effect */}
+              {/* Letter content — stationery feel */}
               <div className={cn(
-                'p-6 rounded-xl bg-slate-800/50 font-serif text-slate-200 leading-relaxed whitespace-pre-wrap',
+                'p-8 rounded-xl bg-[#FDFCF8] border font-serif text-[#44403C] leading-relaxed whitespace-pre-wrap',
                 letterMode === 'regret'
-                  ? 'border border-slate-500/20'
-                  : 'border border-amber-500/10',
+                  ? 'border-stone-200'
+                  : 'border-stone-200',
               )}>
                 <TypewriterText
                   text={letterContent}
@@ -744,6 +714,7 @@ export default function FutureSelfPage() {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
                     className="space-y-3"
                   >
                     {/* Micro-commitment card */}
@@ -751,53 +722,55 @@ export default function FutureSelfPage() {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-emerald-500/10 border border-amber-500/20"
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
                       >
-                        <p className="text-sm font-medium text-amber-400 mb-2">
-                          Make a micro-commitment
-                        </p>
-                        <p className="text-xs text-slate-400 mb-3">
-                          Set aside a small daily amount to bridge the gap between your two futures.
-                        </p>
-                        <div className="flex items-center justify-center gap-4 mb-3">
-                          <button
-                            onClick={() => setCommitmentAmount(prev => Math.max(5, prev - 5))}
-                            className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <div className="text-center">
-                            <p className="text-2xl font-bold text-white">
-                              {formatCurrency(commitmentAmount, 'USD')}
-                            </p>
-                            <p className="text-xs text-slate-400">per day</p>
+                        <Card variant="paper" padding="lg">
+                          <p className="text-xs uppercase tracking-wider text-stone-400 mb-2">
+                            Make a micro-commitment
+                          </p>
+                          <p className="text-sm text-stone-400 mb-3">
+                            Set aside a small daily amount to bridge the gap between your two futures.
+                          </p>
+                          <div className="flex items-center justify-center gap-4 mb-4">
+                            <button
+                              onClick={() => setCommitmentAmount(prev => Math.max(5, prev - 5))}
+                              className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 transition-colors"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <div className="text-center">
+                              <p className="text-2xl font-serif text-[#1A2E22]">
+                                {formatCurrency(commitmentAmount, 'USD')}
+                              </p>
+                              <p className="text-xs text-stone-400">per day</p>
+                            </div>
+                            <button
+                              onClick={() => setCommitmentAmount(prev => prev + 5)}
+                              className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
                           </div>
-                          <button
-                            onClick={() => setCommitmentAmount(prev => prev + 5)}
-                            className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleCreateCommitment}
-                            disabled={isCreatingCommitment}
-                            className="flex-1 px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-sm font-medium transition-colors disabled:opacity-50"
-                          >
-                            {isCreatingCommitment ? (
-                              <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                            ) : (
-                              'I commit'
-                            )}
-                          </button>
-                          <button
-                            onClick={() => setShowCommitment(false)}
-                            className="px-4 py-2 rounded-lg bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 text-sm transition-colors"
-                          >
-                            Maybe later
-                          </button>
-                        </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleCreateCommitment}
+                              disabled={isCreatingCommitment}
+                              className="flex-1 px-4 py-2 rounded-full bg-[#064E3B] text-white text-sm font-medium transition-colors hover:bg-[#053D2E] disabled:opacity-50"
+                            >
+                              {isCreatingCommitment ? (
+                                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                              ) : (
+                                'I commit'
+                              )}
+                            </button>
+                            <button
+                              onClick={() => setShowCommitment(false)}
+                              className="px-4 py-2 rounded-full border border-stone-200 text-stone-400 hover:bg-stone-50 text-sm transition-colors"
+                            >
+                              Maybe later
+                            </button>
+                          </div>
+                        </Card>
                       </motion.div>
                     )}
 
@@ -805,71 +778,72 @@ export default function FutureSelfPage() {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3"
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
                       >
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-emerald-400">Commitment set!</p>
-                          <p className="text-xs text-slate-400">
-                            {formatCurrency(commitmentAmount, 'USD')}/day — check in daily to build your streak!
-                          </p>
-                        </div>
+                        <Card variant="paper" padding="md" className="bg-emerald-50 border-emerald-200 flex items-center gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-[#3F6212] flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-[#064E3B]">Commitment set!</p>
+                            <p className="text-xs text-stone-400">
+                              {formatCurrency(commitmentAmount, 'USD')}/day — check in daily to build your streak!
+                            </p>
+                          </div>
+                        </Card>
                       </motion.div>
                     )}
 
                     {/* Ask your future self CTA */}
-                    <button
+                    <Card
+                      variant="paper"
+                      padding="md"
+                      className="cursor-pointer hover:shadow-md transition-all duration-200"
                       onClick={() => setShowChat(prev => !prev)}
-                      className="w-full p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-left flex items-center gap-3 transition-colors"
                     >
-                      <MessageCircle className="w-5 h-5 text-amber-400" />
-                      <span className="text-sm text-slate-300">
-                        {showChat ? 'Hide conversation' : 'Ask your future self...'}
-                      </span>
-                      <ChevronRight className={cn(
-                        'w-4 h-4 text-slate-500 ml-auto transition-transform',
-                        showChat && 'rotate-90'
-                      )} />
-                    </button>
-
-                    {/* See your other future / Back to gratitude */}
-                    <button
-                      onClick={letterMode === 'gratitude' ? handleGenerateRegretLetter : handleGenerateLetter}
-                      disabled={isGeneratingRegretLetter || isGeneratingLetter}
-                      className={cn(
-                        'w-full p-3 rounded-xl border text-left flex items-center gap-3 transition-colors disabled:opacity-50',
-                        letterMode === 'gratitude'
-                          ? 'bg-slate-800/50 border-slate-500/20 hover:bg-slate-700/50'
-                          : 'bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10',
-                      )}
-                    >
-                      <GitBranch className={cn(
-                        'w-5 h-5',
-                        letterMode === 'gratitude' ? 'text-slate-400' : 'text-amber-400',
-                      )} />
-                      <div className="flex-1">
-                        <span className={cn(
-                          'text-sm font-medium',
-                          letterMode === 'gratitude' ? 'text-slate-300' : 'text-amber-400',
-                        )}>
-                          {letterMode === 'gratitude' ? 'See your other future' : 'Back to the bright path'}
+                      <div className="flex items-center gap-3">
+                        <MessageCircle className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
+                        <span className="text-sm text-[#44403C]">
+                          {showChat ? 'Hide conversation' : 'Ask your future self...'}
                         </span>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          {letterMode === 'gratitude'
-                            ? 'A letter from the future where you didn\u2019t change'
-                            : 'Read from your successful future self again'}
-                        </p>
+                        <ChevronRight className={cn(
+                          'w-4 h-4 text-stone-400 ml-auto transition-transform',
+                          showChat && 'rotate-90'
+                        )} />
                       </div>
-                      {(isGeneratingRegretLetter || isGeneratingLetter) && (
-                        <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                      )}
-                    </button>
+                    </Card>
+
+                    {/* Regret toggle */}
+                    <Card
+                      variant="paper"
+                      padding="md"
+                      className="cursor-pointer hover:shadow-md transition-all duration-200"
+                      onClick={letterMode === 'gratitude' ? handleGenerateRegretLetter : handleGenerateLetter}
+                    >
+                      <div className={cn(
+                        'flex items-center gap-3',
+                        (isGeneratingRegretLetter || isGeneratingLetter) && 'opacity-50 pointer-events-none',
+                      )}>
+                        <GitBranch className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
+                        <div className="flex-1">
+                          <span className="text-sm text-[#44403C]">
+                            {letterMode === 'gratitude' ? 'See your other future' : 'Back to the bright path'}
+                          </span>
+                          <p className="text-[10px] text-stone-400 mt-0.5">
+                            {letterMode === 'gratitude'
+                              ? 'A letter from the future where you didn\u2019t change'
+                              : 'Read from your successful future self again'}
+                          </p>
+                        </div>
+                        {(isGeneratingRegretLetter || isGeneratingLetter) && (
+                          <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
+                        )}
+                      </div>
+                    </Card>
 
                     {/* Generate new letter (same mode) */}
                     <button
                       onClick={letterMode === 'regret' ? handleGenerateRegretLetter : handleGenerateLetter}
                       disabled={isGeneratingLetter || isGeneratingRegretLetter}
-                      className="w-full p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-center text-sm text-slate-400 transition-colors disabled:opacity-50"
+                      className="w-full py-3 rounded-full border border-stone-200 text-center text-sm text-stone-400 hover:bg-stone-50 transition-colors disabled:opacity-50"
                     >
                       {(isGeneratingLetter || isGeneratingRegretLetter) ? (
                         <span className="flex items-center justify-center gap-2">
@@ -884,257 +858,239 @@ export default function FutureSelfPage() {
               </AnimatePresence>
             </div>
           )}
-        </motion.section>
+        </Card>
+      </motion.section>
 
-        {/* Chat Panel */}
-        <AnimatePresence>
-          {showChat && letterLetterId && (
-            <motion.section
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
-                <h3 className="text-sm font-medium text-amber-400 flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4" />
-                  Conversation with your future self
-                </h3>
+      {/* Chat Panel */}
+      <AnimatePresence>
+        {showChat && letterLetterId && (
+          <motion.section
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <Card variant="paper" padding="lg" className="space-y-3">
+              <h3 className="text-sm font-serif text-[#1A2E22] flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-stone-400" strokeWidth={1.5} />
+                Conversation with your future self
+              </h3>
 
-                {/* Messages */}
-                <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-                  {chatMessages.length === 0 && (
-                    isLoadingConversation ? (
-                      <div className="flex justify-center py-4">
-                        <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-500 text-center py-4">
-                        Ask a question about your financial future...
-                      </p>
-                    )
-                  )}
-                  {chatMessages.map((msg, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        'max-w-[85%] p-3 rounded-xl text-sm',
-                        msg.role === 'user'
-                          ? 'ml-auto bg-slate-700 text-white'
-                          : 'bg-amber-500/10 border border-amber-500/20 text-slate-200',
-                      )}
-                    >
-                      {msg.content}
+              {/* Messages */}
+              <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                {chatMessages.length === 0 && (
+                  isLoadingConversation ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
                     </div>
-                  ))}
-                  {isSendingMessage && (
-                    <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl max-w-[85%]">
-                      <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-amber-400/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-2 h-2 bg-amber-400/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-2 h-2 bg-amber-400/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  )}
-                  <div ref={chatEndRef} />
-                </div>
-
-                {/* Input */}
-                {chatMessages.length < 20 ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={e => setChatInput(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                      placeholder="Ask your future self..."
-                      className="flex-1 px-3 py-2 rounded-lg bg-slate-800 border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50"
-                      disabled={isSendingMessage}
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={isSendingMessage || !chatInput.trim()}
-                      className="p-2 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 transition-colors disabled:opacity-50"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-500 text-center">
-                    Conversation limit reached. Generate a new letter to start over.
-                  </p>
+                  ) : (
+                    <p className="text-xs text-stone-400 text-center py-4">
+                      Ask a question about your financial future...
+                    </p>
+                  )
                 )}
+                {chatMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'max-w-[85%] p-3 rounded-xl text-sm',
+                      msg.role === 'user'
+                        ? 'ml-auto bg-stone-100 text-[#44403C]'
+                        : 'bg-[#FDFCF8] border border-stone-200 font-serif text-[#44403C]',
+                    )}
+                  >
+                    {msg.content}
+                  </div>
+                ))}
+                {isSendingMessage && (
+                  <div className="bg-[#FDFCF8] border border-stone-200 p-3 rounded-xl max-w-[85%]">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-stone-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-stone-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-stone-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
               </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
 
-        {/* Letter History */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="p-4 rounded-2xl bg-white/5 border border-white/10"
-        >
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-amber-400" />
-            Letter History
+              {/* Input */}
+              {chatMessages.length < 20 ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="Ask your future self..."
+                    className="flex-1 px-4 py-2 rounded-full bg-white border border-stone-200 text-sm text-[#44403C] placeholder-stone-400 focus:outline-none focus:border-[#064E3B] transition-colors"
+                    disabled={isSendingMessage}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={isSendingMessage || !chatInput.trim()}
+                    className="p-2.5 rounded-full bg-[#064E3B] text-white hover:bg-[#053D2E] transition-colors disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-stone-400 text-center">
+                  Conversation limit reached. Generate a new letter to start over.
+                </p>
+              )}
+            </Card>
+          </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* Letter History — "Archive" */}
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.3, ease: 'easeOut' }}
+      >
+        <Card variant="paper" padding="lg">
+          <h2 className="text-lg font-serif text-[#1A2E22] mb-3 flex items-center gap-2">
+            <Mail className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
+            Archive
           </h2>
 
           {isLoadingHistory ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-16 rounded-lg bg-white/5 animate-pulse" />
+                <div key={i} className="h-16 rounded-lg bg-stone-50 animate-pulse" />
               ))}
             </div>
           ) : letterHistory?.letters?.length ? (
-            <div className="space-y-2">
+            <div className="divide-y divide-stone-100">
               {letterHistory.letters.map((letter) => (
                 <div
                   key={letter.id}
                   onClick={() => !isLoadingDetail && handleLetterClick(letter.id)}
                   className={cn(
-                    'p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors cursor-pointer group',
+                    'py-3 cursor-pointer transition-colors hover:bg-stone-50 -mx-2 px-2 rounded-lg',
                     isLoadingDetail && 'opacity-50 pointer-events-none',
                   )}
                 >
                   <div className="flex items-start justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <span className={cn(
-                        'text-[10px] px-1.5 py-0.5 rounded-full font-medium',
-                        letter.trigger === 'USER_REQUEST' && 'bg-amber-500/20 text-amber-400',
-                        letter.trigger === 'WEEKLY_SCHEDULED' && 'bg-blue-500/20 text-blue-400',
-                        letter.trigger === 'POST_DECISION' && 'bg-rose-500/20 text-rose-400',
-                        letter.trigger === 'GOAL_MILESTONE' && 'bg-emerald-500/20 text-emerald-400',
-                      )}>
+                      <span className="text-xs uppercase tracking-wider text-stone-400">
                         {letter.trigger.replace('_', ' ')}
                       </span>
-                      {letter.toneScore && (
-                        <div className="flex gap-0.5">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <span
-                              key={i}
-                              className={cn(
-                                'w-1.5 h-1.5 rounded-full',
-                                i < letter.toneScore! ? 'bg-amber-400' : 'bg-slate-700',
-                              )}
-                            />
-                          ))}
-                        </div>
+                      {!letter.readAt && (
+                        <Circle className="w-2 h-2 fill-[#064E3B] text-[#064E3B]" />
                       )}
                     </div>
-                    <span className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                      <Eye className="w-3 h-3 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="font-mono text-[10px] text-stone-400">
                       {new Date(letter.generatedAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 line-clamp-2">
+                  <p className="font-serif italic text-sm text-[#44403C] line-clamp-2">
                     {letter.preview}
                   </p>
-                  {!letter.readAt && (
-                    <span className="text-[10px] text-amber-400 font-medium mt-1 inline-block">
-                      Unread
-                    </span>
-                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500 text-center py-4">
+            <p className="text-sm text-stone-400 text-center py-4">
               No letters yet. Generate your first letter above.
             </p>
           )}
-        </motion.section>
+        </Card>
+      </motion.section>
 
-        {/* Weekly Debriefs */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="p-4 rounded-2xl bg-white/5 border border-white/10"
-        >
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <ScrollText className="w-5 h-5 text-amber-400" />
-            Weekly Debriefs
+      {/* Weekly Debriefs — "Weekly Review" */}
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.3, ease: 'easeOut' }}
+      >
+        <Card variant="paper" padding="lg">
+          <h2 className="text-lg font-serif text-[#1A2E22] mb-3 flex items-center gap-2">
+            <ScrollText className="w-5 h-5 text-stone-400" strokeWidth={1.5} />
+            Weekly Review
           </h2>
 
           {isLoadingDebriefs ? (
             <div className="space-y-3">
               {[1, 2].map(i => (
-                <div key={i} className="h-20 rounded-lg bg-white/5 animate-pulse" />
+                <div key={i} className="h-20 rounded-lg bg-stone-50 animate-pulse" />
               ))}
             </div>
           ) : debriefs?.length ? (
-            <div className="space-y-2">
+            <div className="divide-y divide-stone-100">
               {debriefs.map((debrief) => (
                 <motion.div
                   key={debrief.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="p-3 rounded-xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-colors"
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className="py-3"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 font-medium">
-                      WEEKLY DEBRIEF
-                    </span>
-                    <span className="text-[10px] text-slate-500">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs uppercase tracking-wider text-stone-400">
+                        Weekly Debrief
+                      </span>
+                      {!debrief.readAt && (
+                        <Circle className="w-2 h-2 fill-[#064E3B] text-[#064E3B]" />
+                      )}
+                    </div>
+                    <span className="font-mono text-[10px] text-stone-400">
                       {new Date(debrief.generatedAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">
+                  <p className="text-sm text-[#44403C] line-clamp-3 leading-relaxed">
                     {debrief.content.slice(0, 250)}
                     {debrief.content.length > 250 ? '...' : ''}
                   </p>
-                  {!debrief.readAt && (
-                    <span className="text-[10px] text-amber-400 font-medium mt-1 inline-block">
-                      New
-                    </span>
-                  )}
                 </motion.div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500 text-center py-4">
+            <p className="text-sm text-stone-400 text-center py-4">
               No weekly debriefs yet. They arrive every Sunday evening.
             </p>
           )}
-        </motion.section>
+        </Card>
+      </motion.section>
 
-        {/* Stats Bar */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="grid grid-cols-4 gap-2"
-        >
-          {isLoadingStats ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-white/5 animate-pulse" />
-            ))
-          ) : stats ? (
-            <>
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                <p className="text-xl font-bold text-white">{stats.totalLetters}</p>
-                <p className="text-[10px] text-slate-500">Total</p>
-              </div>
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                <p className="text-xl font-bold text-emerald-400">{stats.lettersRead}</p>
-                <p className="text-[10px] text-slate-500">Read</p>
-              </div>
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                <p className="text-xl font-bold text-amber-400">
-                  {stats.avgToneScore ? stats.avgToneScore.toFixed(1) : '-'}
-                </p>
-                <p className="text-[10px] text-slate-500">Tone</p>
-              </div>
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                <p className="text-xl font-bold text-white">{stats.thisMonth}</p>
-                <p className="text-[10px] text-slate-500">This Month</p>
-              </div>
-            </>
-          ) : null}
-        </motion.section>
-      </div>
+      {/* Stats Bar — "Summary" */}
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.3, ease: 'easeOut' }}
+        className="grid grid-cols-2 md:grid-cols-4 gap-3"
+      >
+        {isLoadingStats ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-20 rounded-xl bg-stone-50 animate-pulse" />
+          ))
+        ) : stats ? (
+          <>
+            <Card variant="paper" padding="md" className="text-center">
+              <p className="text-xs uppercase tracking-wider text-stone-400">Total</p>
+              <p className="text-2xl font-serif text-[#1A2E22] tabular-nums mt-1">{stats.totalLetters}</p>
+            </Card>
+            <Card variant="paper" padding="md" className="text-center">
+              <p className="text-xs uppercase tracking-wider text-stone-400">Read</p>
+              <p className="text-2xl font-serif text-[#1A2E22] tabular-nums mt-1">{stats.lettersRead}</p>
+            </Card>
+            <Card variant="paper" padding="md" className="text-center">
+              <p className="text-xs uppercase tracking-wider text-stone-400">Tone</p>
+              <p className="text-2xl font-serif text-[#1A2E22] tabular-nums mt-1">
+                {stats.avgToneScore ? stats.avgToneScore.toFixed(1) : '-'}
+              </p>
+            </Card>
+            <Card variant="paper" padding="md" className="text-center">
+              <p className="text-xs uppercase tracking-wider text-stone-400">This Month</p>
+              <p className="text-2xl font-serif text-[#1A2E22] tabular-nums mt-1">{stats.thisMonth}</p>
+            </Card>
+          </>
+        ) : null}
+      </motion.section>
 
       {/* Letter Detail Modal */}
       <Modal
@@ -1142,42 +1098,42 @@ export default function FutureSelfPage() {
         onClose={() => setSelectedLetter(null)}
         title="Letter Detail"
         size="lg"
-        className="!bg-slate-800 !border-slate-700"
+        className="!bg-[#FDFCF8] !border-stone-200"
       >
         {selectedLetter && (
           <div className="space-y-4">
             {/* Metadata grid */}
             <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-2 rounded-lg bg-white/5">
-                <p className="text-xs text-slate-500">Savings Rate</p>
-                <p className="text-sm font-medium text-white">
+              <div className="p-2 rounded-lg bg-stone-50 border border-stone-100">
+                <p className="text-xs uppercase tracking-wider text-stone-400">Savings Rate</p>
+                <p className="font-mono text-sm text-[#44403C]">
                   {(selectedLetter.currentSavingsRate * 100).toFixed(0)}%
-                  <span className="text-emerald-400 text-xs ml-1">
-                    → {(selectedLetter.optimizedSavingsRate * 100).toFixed(0)}%
+                  <span className="text-[#064E3B] text-xs ml-1">
+                    &rarr; {(selectedLetter.optimizedSavingsRate * 100).toFixed(0)}%
                   </span>
                 </p>
               </div>
-              <div className="p-2 rounded-lg bg-white/5">
-                <p className="text-xs text-slate-500">20yr Gap</p>
-                <p className="text-sm font-medium text-emerald-400">
+              <div className="p-2 rounded-lg bg-stone-50 border border-stone-100">
+                <p className="text-xs uppercase tracking-wider text-stone-400">20yr Gap</p>
+                <p className="font-mono text-sm text-[#064E3B]">
                   +{formatCurrency(selectedLetter.wealthDifference20yr, 'USD', { compact: true })}
                 </p>
               </div>
-              <div className="p-2 rounded-lg bg-white/5">
-                <p className="text-xs text-slate-500">Tone</p>
-                <p className="text-sm font-medium text-amber-400">
-                  {selectedLetter.toneScore ? `${selectedLetter.toneScore}/5` : '—'}
+              <div className="p-2 rounded-lg bg-stone-50 border border-stone-100">
+                <p className="text-xs uppercase tracking-wider text-stone-400">Tone</p>
+                <p className="font-mono text-sm text-[#44403C]">
+                  {selectedLetter.toneScore ? `${selectedLetter.toneScore}/5` : '\u2014'}
                 </p>
               </div>
             </div>
             {/* Full letter content */}
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-white/5 font-serif text-slate-200 leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto">
+            <div className="p-6 rounded-xl bg-white border border-stone-100 font-serif text-[#44403C] leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto">
               {selectedLetter.content}
             </div>
             {/* Footer metadata */}
-            <div className="flex justify-between text-xs text-slate-500">
-              <span>{selectedLetter.trigger.replace('_', ' ')}</span>
-              <span>{new Date(selectedLetter.generatedAt).toLocaleDateString()}</span>
+            <div className="flex justify-between text-xs text-stone-400">
+              <span className="uppercase tracking-wider">{selectedLetter.trigger.replace('_', ' ')}</span>
+              <span className="font-mono">{new Date(selectedLetter.generatedAt).toLocaleDateString()}</span>
             </div>
           </div>
         )}

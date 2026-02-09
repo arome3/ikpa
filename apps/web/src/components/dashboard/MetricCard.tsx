@@ -3,7 +3,7 @@
 import { forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { cn, formatCurrency } from '@/lib/utils';
-import { Card, ChangeBadge, Skeleton } from '@/components/ui';
+import { Card, Skeleton } from '@/components/ui';
 import type { LucideIcon } from 'lucide-react';
 
 export type MetricFormat = 'currency' | 'percent' | 'months' | 'number';
@@ -21,7 +21,7 @@ export interface MetricCardProps extends React.HTMLAttributes<HTMLDivElement> {
   currency?: 'NGN' | 'USD' | 'GBP' | 'EUR' | 'GHS' | 'KES' | 'ZAR';
   /** Icon component to display */
   icon: LucideIcon;
-  /** Icon background color class */
+  /** Icon background color class (kept for interface compat, not rendered) */
   iconBgColor?: string;
   /** Whether the card is clickable */
   onClick?: () => void;
@@ -53,7 +53,7 @@ function formatValue(
 }
 
 /**
- * Financial metric display card with icon and trend
+ * Financial metric card with editorial paper styling
  */
 export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
   (
@@ -65,7 +65,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       format = 'currency',
       currency = 'NGN',
       icon: Icon,
-      iconBgColor = 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400',
+      iconBgColor: _iconBgColor,
       onClick,
       isLoading = false,
       delay = 0,
@@ -77,14 +77,14 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       return (
         <Card
           ref={ref}
-          variant="default"
+          variant="paper"
           padding="md"
           className={cn('min-h-[100px]', className)}
           {...props}
         >
           <div className="flex items-start justify-between gap-2">
-            <Skeleton variant="circular" width={36} height={36} />
-            <Skeleton variant="rectangular" width={50} height={20} className="rounded-full" />
+            <Skeleton variant="circular" width={32} height={32} />
+            <Skeleton variant="rectangular" width={40} height={16} className="rounded-full" />
           </div>
           <div className="mt-3 space-y-1">
             <Skeleton variant="text" width="50%" height={12} />
@@ -97,6 +97,14 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
     const formattedValue = formatValue(value, format, currency);
     const isClickable = !!onClick;
 
+    // Inline change indicator
+    const changeColor =
+      change !== undefined && change > 0
+        ? 'text-emerald-700'
+        : change !== undefined && change < 0
+          ? 'text-orange-600'
+          : 'text-stone-400';
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -105,14 +113,14 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       >
         <Card
           ref={ref}
-          variant="default"
+          variant="paper"
           padding="md"
           className={cn(
             'min-h-[100px] transition-all duration-200',
             isClickable && [
               'cursor-pointer',
-              'hover:scale-[1.02] hover:shadow-lg',
-              'active:scale-[0.98]',
+              'hover:-translate-y-0.5 hover:shadow-md',
+              'active:translate-y-0',
             ],
             className
           )}
@@ -131,20 +139,21 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
           }
           {...props}
         >
-          {/* Top row: Icon and change badge */}
+          {/* Top row: Icon and change */}
           <div className="flex items-start justify-between gap-2">
-            <div className={cn('p-2 rounded-xl', iconBgColor)}>
-              <Icon className="h-5 w-5" />
-            </div>
+            <Icon className="h-5 w-5 text-stone-400" strokeWidth={1.5} />
             {change !== undefined && (
-              <ChangeBadge value={change} format="percent" size="sm" />
+              <span className={cn('font-mono text-xs tabular-nums', changeColor)}>
+                {change > 0 ? '+' : ''}
+                {change.toFixed(1)}%
+              </span>
             )}
           </div>
 
           {/* Bottom row: Label and value */}
           <div className="mt-3">
-            <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white tabular-nums mt-0.5">
+            <p className="text-xs uppercase tracking-wider text-stone-400 font-sans">{label}</p>
+            <p className="text-2xl font-serif text-[#1A2E22] tabular-nums mt-0.5">
               {formattedValue}
             </p>
           </div>
@@ -161,10 +170,10 @@ MetricCard.displayName = 'MetricCard';
  */
 export function MetricCardSkeleton() {
   return (
-    <Card variant="default" padding="md" className="min-h-[100px]">
+    <Card variant="paper" padding="md" className="min-h-[100px]">
       <div className="flex items-start justify-between gap-2">
-        <Skeleton variant="circular" width={36} height={36} />
-        <Skeleton variant="rectangular" width={50} height={20} className="rounded-full" />
+        <Skeleton variant="circular" width={32} height={32} />
+        <Skeleton variant="rectangular" width={40} height={16} className="rounded-full" />
       </div>
       <div className="mt-3 space-y-1">
         <Skeleton variant="text" width="50%" height={12} />

@@ -70,7 +70,7 @@ export class GpsCronService {
    */
   @Cron('0 * * * *', {
     name: 'gps-cleanup',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async runCleanup(): Promise<void> {
     const lockValue = randomUUID();
@@ -177,14 +177,14 @@ export class GpsCronService {
 
   /**
    * Daily drift detection job
-   * Runs at 7 AM Africa/Lagos timezone to detect spending velocity drift
+   * Runs at 7 AM UTC timezone to detect spending velocity drift
    * across all users with active budgets.
    *
    * Schedule: '0 7 * * *'
    */
   @Cron('0 7 * * *', {
     name: 'gps-drift-detection',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async runDriftDetection(): Promise<void> {
     const lockKey = 'gps:cron:drift-detection';
@@ -302,7 +302,7 @@ export class GpsCronService {
    */
   @Cron('0 */6 * * *', {
     name: 'gps-forecast-check',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async runForecastCheck(): Promise<void> {
     const lockKey = 'gps:cron:forecast-check';
@@ -404,7 +404,7 @@ export class GpsCronService {
 
   /**
    * Weekly recovery progress check
-   * Runs every Sunday at 9 AM Africa/Lagos timezone
+   * Runs every Sunday at 9 AM UTC timezone
    *
    * Checks all active recovery sessions for progress and:
    * - Marks completed sessions (endDate passed) as COMPLETED or records adherence
@@ -414,7 +414,7 @@ export class GpsCronService {
    */
   @Cron('0 9 * * 0', {
     name: 'gps-recovery-progress-check',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async runRecoveryProgressCheck(): Promise<void> {
     const lockKey = 'gps:cron:recovery-progress';
@@ -583,7 +583,7 @@ export class GpsCronService {
     return {
       jobName: 'gps-cleanup',
       schedule: '0 * * * *',
-      timezone: 'Africa/Lagos',
+      timezone: 'UTC',
       description: 'Deactivates expired GPS adjustments and freezes, marks stale sessions as abandoned',
       cleanupConfig: this.cleanupConfig,
     };

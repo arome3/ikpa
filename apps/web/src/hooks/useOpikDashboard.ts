@@ -23,6 +23,32 @@ export interface OpikDashboardData {
   }>;
 }
 
+// Raw API response shapes
+interface DashboardApiResponse {
+  system: Record<string, unknown>;
+  opik: Record<string, unknown>;
+  metrics: { count: number; registered: Array<Record<string, unknown>> };
+  experiments: { recent: Array<Record<string, unknown>>; stats: Record<string, number> };
+  optimizers: Record<string, unknown>;
+  evalRunners: Array<Record<string, unknown>>;
+}
+
+interface MetricsApiResponse {
+  count: number;
+  metrics: Array<Record<string, unknown>>;
+}
+
+interface ExperimentsApiResponse {
+  count: number;
+  experiments: Array<Record<string, unknown>>;
+}
+
+interface LetterHistoryApiResponse {
+  optimizer: string;
+  description: string;
+  experiments: Array<Record<string, unknown>>;
+}
+
 export interface OpikMetric {
   name: string;
   displayName: string;
@@ -68,8 +94,16 @@ export function useOpikDashboard() {
   return useQuery({
     queryKey: ['opik', 'dashboard'],
     queryFn: async () => {
-      const res = await apiClient.get('/opik/dashboard');
-      return unwrap<OpikDashboardData>(res);
+      const raw = unwrap<DashboardApiResponse>(await apiClient.get('/opik/dashboard'));
+      return {
+        overview: {
+          totalTraces: 0,
+          avgScore: 0,
+          activeExperiments: raw.experiments?.stats?.running ?? raw.experiments?.recent?.length ?? 0,
+          evaluationsRun: raw.experiments?.stats?.completed ?? 0,
+        },
+        recentTraces: [],
+      } as OpikDashboardData;
     },
   });
 }
@@ -78,8 +112,8 @@ export function useOpikMetrics() {
   return useQuery({
     queryKey: ['opik', 'metrics'],
     queryFn: async () => {
-      const res = await apiClient.get('/opik/metrics');
-      return unwrap<OpikMetric[]>(res);
+      const raw = unwrap<MetricsApiResponse>(await apiClient.get('/opik/metrics'));
+      return (raw.metrics ?? []) as unknown as OpikMetric[];
     },
   });
 }
@@ -88,8 +122,8 @@ export function useOpikExperiments() {
   return useQuery({
     queryKey: ['opik', 'experiments'],
     queryFn: async () => {
-      const res = await apiClient.get('/opik/experiments');
-      return unwrap<OpikExperiment[]>(res);
+      const raw = unwrap<ExperimentsApiResponse>(await apiClient.get('/opik/experiments'));
+      return (raw.experiments ?? []) as unknown as OpikExperiment[];
     },
   });
 }
@@ -108,8 +142,21 @@ export function useOpikExperimentDetail(id: string | null) {
 export function useRunGpsEval() {
   return useMutation({
     mutationFn: async () => {
-      const res = await apiClient.post('/opik/eval/gps', {});
-      return unwrap<EvalResult>(res);
+      const raw = unwrap<{ report: { summary: Record<string, unknown>; scenarios: Array<Record<string, unknown>> } }>(
+        await apiClient.post('/opik/eval/gps', {}),
+      );
+      const report = raw.report;
+      return {
+        totalScenarios: (report.summary?.total as number) ?? report.scenarios?.length ?? 0,
+        passed: (report.summary?.passed as number) ?? 0,
+        failed: (report.summary?.failed as number) ?? 0,
+        avgScore: (report.summary?.passRate as number) ?? 0,
+        results: (report.scenarios ?? []).map((s) => ({
+          scenario: (s.scenarioName as string) ?? '',
+          score: (s.toneScore as number) ?? 0,
+          passed: (s.passed as boolean) ?? false,
+        })),
+      } as EvalResult;
     },
   });
 }
@@ -117,8 +164,21 @@ export function useRunGpsEval() {
 export function useRunCommitmentEval() {
   return useMutation({
     mutationFn: async () => {
-      const res = await apiClient.post('/opik/eval/commitment', {});
-      return unwrap<EvalResult>(res);
+      const raw = unwrap<{ report: Record<string, unknown> }>(
+        await apiClient.post('/opik/eval/commitment', {}),
+      );
+      const report = raw.report;
+      return {
+        totalScenarios: (report.totalScenarios as number) ?? 0,
+        passed: (report.passed as number) ?? 0,
+        failed: (report.failed as number) ?? 0,
+        avgScore: (report.passRate as number) ?? 0,
+        results: ((report.scenarios as Array<Record<string, unknown>>) ?? []).map((s) => ({
+          scenario: (s.scenarioName as string) ?? '',
+          score: Object.values((s.scores as Record<string, number>) ?? {}).reduce((a, b) => a + b, 0) / Math.max(Object.keys((s.scores as Record<string, number>) ?? {}).length, 1),
+          passed: (s.passed as boolean) ?? false,
+        })),
+      } as EvalResult;
     },
   });
 }
@@ -127,8 +187,12 @@ export function useOptimizationHistory() {
   return useQuery({
     queryKey: ['opik', 'optimizers', 'letter', 'history'],
     queryFn: async () => {
-      const res = await apiClient.get('/opik/optimizers/letter/history');
-      return unwrap<Array<{ generation: number; fitness: number; prompt: string }>>(res);
+      const raw = unwrap<LetterHistoryApiResponse>(await apiClient.get('/opik/optimizers/letter/history'));
+      return (raw.experiments ?? []).map((exp, i) => ({
+        generation: i + 1,
+        fitness: (exp.fitnessScore as number) ?? 0,
+        prompt: (exp.hypothesis as string) ?? '',
+      }));
     },
   });
 }

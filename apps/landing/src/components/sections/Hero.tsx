@@ -1,104 +1,91 @@
 'use client';
 
-import { useState } from 'react';
-import { Container, Badge, Button } from '@/components/ui';
+import { Award, ArrowRight, Sparkles } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Container, FadeIn } from '@/components/ui';
 
 export function Hero() {
-  const [email, setEmail] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle waitlist signup
-    console.log('Waitlist signup:', email);
-  };
-
   return (
-    <section className="relative min-h-screen flex items-center pt-20 md:pt-24 bg-gradient-to-b from-primary-500 via-primary-600 to-primary-700">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }}
+    <>
+      <section className="relative min-h-screen flex items-center pt-20 md:pt-24 overflow-hidden bg-cream">
+        {/* Watercolor splash — top-left */}
+        <img
+          src="/header-bg.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute -top-[200px] -left-[180px] w-[700px] mix-blend-multiply pointer-events-none z-0 select-none"
+          draggable={false}
         />
-      </div>
 
-      <Container className="relative z-10">
-        <div className="text-center max-w-4xl mx-auto">
-          {/* Badge */}
-          <Badge className="mb-6">AI-Powered Finance for Africa</Badge>
+        {/* Watercolor splash — bottom-right (flipped) */}
+        <img
+          src="/header-bg.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute -bottom-[200px] -right-[180px] w-[600px] rotate-180 mix-blend-multiply pointer-events-none z-0 select-none"
+          draggable={false}
+        />
 
-          {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            See Your Financial Future
-          </h1>
+        <Container className="relative z-10">
+          <div className="text-center max-w-4xl mx-auto">
+            {/* Split-color headline */}
+            <FadeIn duration={1.5}>
+              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
+                <span className="text-[#0F172A]">Make your money </span>
+                <span className="text-olive">follow through.</span>
+              </h1>
+            </FadeIn>
 
-          {/* Subheadline */}
-          <p className="text-lg sm:text-xl md:text-2xl text-primary-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Ikpa shows you exactly where you&apos;re headed financially—and what changes to make
-            before it&apos;s too late. An AI co-pilot built for how young Africans actually manage
-            money.
-          </p>
+            {/* Subheadline with Award icon — vertically centered */}
+            <FadeIn delay={0.15} duration={1.5}>
+              <div className="flex items-start justify-center gap-3 mt-6 text-gray-600 max-w-2xl mx-auto">
+                <Award className="w-5 h-5 text-green-700 flex-shrink-0 mt-1" />
+                <p className="text-lg font-medium text-left">
+                  92% of financial resolutions fail — not from lack of knowledge,
+                  but lost accountability. AI agents that fix that with real
+                  stakes and zero judgment.
+                </p>
+              </div>
+            </FadeIn>
 
-          {/* CTA Form */}
-          <form onSubmit={handleSubmit} className="max-w-xl mx-auto mb-6">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-                className="flex-1 px-5 py-4 rounded-xl text-primary-900 placeholder-primary-400 bg-white focus:outline-none focus:ring-2 focus:ring-accent shadow-lg"
-              />
-              <Button type="submit" size="lg" className="whitespace-nowrap">
-                Join the Waitlist →
-              </Button>
-            </div>
-          </form>
+            {/* Custom buttons */}
+            <FadeIn delay={0.3} duration={1.5}>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                {/* Primary — deep green with arrow circle */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="inline-flex items-center gap-3 bg-[#064E3B] text-white font-semibold rounded-full px-8 py-4 text-lg shadow-lg shadow-[#064E3B]/20 transition-colors hover:bg-[#053D2E] focus:outline-none focus:ring-2 focus:ring-[#064E3B]/50"
+                >
+                  Meet Your AI Agents
+                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center ml-2">
+                    <ArrowRight className="w-3 h-3 text-white" />
+                  </div>
+                </motion.button>
 
-          {/* Secondary CTA */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <a
-              href="#how-it-works"
-              className="text-primary-200 hover:text-white transition-colors flex items-center gap-2"
-            >
-              <span>See How It Works</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </a>
+                {/* Secondary — transparent border */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="inline-flex items-center justify-center font-semibold rounded-full px-8 py-4 text-lg border-2 border-gray-200 text-forest transition-colors hover:bg-sage-50 focus:outline-none focus:ring-2 focus:ring-sage-500/50"
+                >
+                  See How It Works
+                </motion.button>
+              </div>
+            </FadeIn>
           </div>
+        </Container>
+      </section>
 
-          {/* Social Proof */}
-          <p className="text-primary-200">
-            <span className="font-semibold text-white">2,847 people</span> already on the waitlist
-          </p>
+      {/* Floating context pill — fixed to viewport bottom center */}
+      <FadeIn delay={0.45} duration={1.5} className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20">
+        <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/50 shadow-sm rounded-full px-4 py-1.5">
+          <Sparkles className="w-3 h-3 text-green-600 flex-shrink-0" />
+          <span className="text-xs font-mono text-gray-500 tracking-wide uppercase whitespace-nowrap">
+            Ikpa-Context-Core: Behavioral Model v2.0 active
+          </span>
         </div>
-      </Container>
-
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <svg
-          className="w-6 h-6 text-primary-200"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 14l-7 7m0 0l-7-7m7 7V3"
-          />
-        </svg>
-      </div>
-    </section>
+      </FadeIn>
+    </>
   );
 }

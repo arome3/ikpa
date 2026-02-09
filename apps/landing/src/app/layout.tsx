@@ -1,23 +1,34 @@
 import type { Metadata } from 'next';
+import { Playfair_Display, DM_Sans } from 'next/font/google';
 import './globals.css';
 
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  display: 'swap',
+});
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
-  title: 'Ikpa – See Your Financial Future | AI Finance for Young Africans',
+  title: 'Ikpa – See Your Financial Future | AI Finance for Young Adults',
   description:
-    "Ikpa shows you exactly where you're headed financially and what to change. AI-powered personal finance built for how young Africans actually manage money. Join the waitlist.",
+    "Ikpa shows you exactly where you're headed financially and what to change. AI-powered personal finance built for how young adults actually manage money. Join the waitlist.",
   keywords: [
-    'personal finance Africa',
+    'personal finance app',
     'AI financial coach',
-    'Nigeria fintech',
-    'budgeting app Africa',
+    'budgeting app',
     'financial planning young professionals',
     'cash flow score',
     'future self visualization',
     'family support tracking',
     'irregular income app',
-    'Ghana',
-    'Kenya',
-    'South Africa',
+    'money management',
+    'financial behavior change',
   ],
   authors: [{ name: 'Ikpa' }],
   creator: 'Ikpa',
@@ -29,9 +40,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Ikpa – See Your Financial Future',
     description:
-      "AI-powered personal finance for young Africans. See where you're headed. Understand what it means. Plan what to do.",
+      "AI-powered personal finance for young adults. See where you're headed. Understand what it means. Plan what to do.",
     type: 'website',
-    locale: 'en_NG',
+    locale: 'en_US',
     url: 'https://ikpa.app',
     siteName: 'Ikpa',
     images: [
@@ -47,7 +58,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Ikpa – See Your Financial Future',
     description:
-      "AI-powered personal finance for young Africans. See where you're headed. Understand what it means. Plan what to do.",
+      "AI-powered personal finance for young adults. See where you're headed. Understand what it means. Plan what to do.",
     site: '@ikpaapp',
     creator: '@ikpaapp',
     images: ['/og-image.png'],
@@ -68,14 +79,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className="antialiased">{children}</body>
+    <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
+      <body className="font-sans bg-cream text-forest antialiased">{children}</body>
     </html>
   );
 }

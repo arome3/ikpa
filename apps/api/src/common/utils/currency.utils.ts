@@ -1,7 +1,7 @@
 /**
  * Currency Formatting Utilities
  *
- * Provides currency formatting for African currencies and common international currencies.
+ * Provides currency formatting for currencies and common international currencies.
  */
 
 /**

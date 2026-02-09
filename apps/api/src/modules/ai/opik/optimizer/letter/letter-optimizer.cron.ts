@@ -2,7 +2,7 @@
  * Letter Optimizer Cron Service
  *
  * Scheduled tasks for running evolutionary prompt optimization.
- * Runs monthly on the 1st day at 3:00 AM WAT (Africa/Lagos).
+ * Runs monthly on the 1st day at 3:00 AM UTC.
  *
  * Datasets are loaded from the database via DatasetService.
  * Use the seeding mechanism or API to populate datasets.
@@ -34,7 +34,7 @@ Current situation:
 
 The letter should:
 1. Be warm and encouraging, not judgmental
-2. Acknowledge the challenges of saving in Nigeria
+2. Acknowledge the challenges of saving consistently
 3. Paint a vivid picture of future financial freedom
 4. Gently encourage increasing the savings rate
 5. Reference specific life milestones that money enables
@@ -143,7 +143,7 @@ export class LetterOptimizerCronService {
   }
 
   /**
-   * Monthly evolution run - runs on 1st of each month at 3:00 AM Africa/Lagos time
+   * Monthly evolution run - runs on 1st of each month at 3:00 AM UTC time
    *
    * Evolves the Future Self letter prompt to maximize ToneEmpathy scores.
    * This creates progressively better prompts that resonate emotionally
@@ -151,7 +151,7 @@ export class LetterOptimizerCronService {
    */
   @Cron('0 3 1 * *', {
     name: 'letter-optimizer-monthly',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async runMonthlyEvolution(): Promise<EvolutionResult | null> {
     const lockValue = randomUUID();
@@ -266,7 +266,7 @@ export class LetterOptimizerCronService {
     return {
       jobName: 'letter-optimizer-monthly',
       schedule: '0 3 1 * *',
-      timezone: 'Africa/Lagos',
+      timezone: 'UTC',
       description: 'Monthly evolutionary optimization of Future Self letter prompts',
     };
   }

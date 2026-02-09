@@ -2,7 +2,7 @@
  * Framing Optimizer Cron Service
  *
  * Scheduled tasks for running framing A/B experiments.
- * Runs weekly on Monday at 2:00 AM WAT (Africa/Lagos).
+ * Runs weekly on Monday at 2:00 AM UTC.
  *
  * Datasets are loaded from the database via DatasetService.
  * Use the seeding mechanism or API to populate datasets.
@@ -103,7 +103,7 @@ export class FramingOptimizerCronService {
   }
 
   /**
-   * Weekly framing experiment - runs Monday at 2:00 AM Africa/Lagos time
+   * Weekly framing experiment - runs Monday at 2:00 AM UTC time
    *
    * Tests whether showing annual cost (vs just monthly) increases
    * cancellation rate for zombie subscriptions in Shark Auditor.
@@ -113,7 +113,7 @@ export class FramingOptimizerCronService {
    */
   @Cron('0 2 * * 1', {
     name: 'framing-optimizer-weekly',
-    timeZone: 'Africa/Lagos',
+    timeZone: 'UTC',
   })
   async runWeeklyFramingExperiment(): Promise<FramingExperimentResult | null> {
     const lockValue = randomUUID();
@@ -228,7 +228,7 @@ export class FramingOptimizerCronService {
     return {
       jobName: 'framing-optimizer-weekly',
       schedule: '0 2 * * 1',
-      timezone: 'Africa/Lagos',
+      timezone: 'UTC',
       description: 'Weekly A/B test comparing monthly vs annual subscription framing',
     };
   }

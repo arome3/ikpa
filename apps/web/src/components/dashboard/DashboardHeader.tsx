@@ -31,7 +31,7 @@ function getGreeting(): string {
 }
 
 /**
- * Dashboard header with time-based greeting and action icons
+ * Dashboard header with editorial serif greeting
  */
 export function DashboardHeader({
   className,
@@ -52,12 +52,9 @@ export function DashboardHeader({
     >
         {/* Greeting */}
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {greeting}, {firstName}
+          <h1 className="text-3xl md:text-4xl font-serif text-[#1A2E22] tracking-tight">
+            {greeting}, {firstName}.
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Here&apos;s your financial snapshot
-          </p>
         </div>
 
         {/* Action buttons */}
@@ -69,16 +66,15 @@ export function DashboardHeader({
           <button
             onClick={onSettingsClick}
             className={cn(
-              'p-2 rounded-xl',
-              'text-gray-500 hover:text-gray-700',
-              'hover:bg-gray-100 dark:hover:bg-slate-800',
-              'dark:text-gray-400 dark:hover:text-gray-200',
+              'p-2 rounded-full',
+              'text-stone-400 hover:text-stone-600',
+              'hover:bg-stone-100',
               'transition-colors duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
+              'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2'
             )}
             aria-label="Settings"
           >
-            <Settings className="h-5 w-5" />
+            <Settings className="h-5 w-5" strokeWidth={1.5} />
           </button>
         </div>
     </motion.header>

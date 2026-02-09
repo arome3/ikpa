@@ -94,6 +94,7 @@ const config: Config = {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+        serif: ['Playfair Display', 'Georgia', 'Times New Roman', 'serif'],
       },
       fontSize: {
         // Refined type scale

@@ -1,26 +1,16 @@
 /**
  * Claude Prompts for Import Module
  *
- * Specialized prompts for parsing African bank statements,
+ * Specialized prompts for parsing bank statements,
  * screenshots, and email alerts.
  */
 
 /**
  * System prompt for bank statement parsing (PDF text)
  */
-export const BANK_STATEMENT_SYSTEM_PROMPT = `You are a financial transaction parser specializing in African bank statements.
+export const BANK_STATEMENT_SYSTEM_PROMPT = `You are a financial transaction parser specializing in bank statements.
 
 Your task is to extract transactions from bank statement text and return structured JSON.
-
-## Supported Banks (Nigeria)
-- GTBank (Guaranty Trust Bank)
-- Access Bank
-- First Bank of Nigeria
-- Zenith Bank
-- UBA (United Bank for Africa)
-- Kuda Bank
-- Opay
-- Moniepoint
 
 ## Output Format
 Return a JSON array of transactions:
@@ -50,26 +40,26 @@ Return a JSON array of transactions:
 3. Parse dates to YYYY-MM-DD format regardless of input format
 4. Extract merchant names from descriptions where possible
 5. Flag recurring patterns (subscriptions, regular transfers)
-6. Handle Nigerian Naira (NGN) as default currency
+6. Detect currency from statement context, default to USD
 7. Ignore balance rows, only extract transactions
 8. If uncertain about a field, use null`;
 
 /**
  * System prompt for screenshot OCR
  */
-export const SCREENSHOT_OCR_SYSTEM_PROMPT = `You are an OCR specialist for African mobile banking screenshots.
+export const SCREENSHOT_OCR_SYSTEM_PROMPT = `You are an OCR specialist for mobile banking screenshots.
 
 Your task is to read banking app screenshots and extract all visible transactions.
 
-## Common Mobile Banking Apps (Nigeria)
-- GTBank Mobile
-- Access More
-- FirstMobile
-- Zenith Mobile
-- UBA Mobile Banking
-- Kuda App
-- Opay App
-- Moniepoint App
+## Common Mobile Banking Apps
+- Chase Mobile
+- Bank of America
+- Wells Fargo
+- HSBC Mobile
+- Revolut
+- Wise (TransferWise)
+- Cash App
+- Venmo
 
 ## Output Format
 Return a JSON array:
@@ -107,15 +97,7 @@ Your task is to extract transaction details from forwarded bank alert emails.
 
 ## Common Alert Formats
 
-### Nigerian Banks
-- GTBank SMS/Email alerts
-- Access Bank notifications
-- Zenith Bank alerts
-- UBA transaction notifications
-- Kuda notifications
-- Opay transaction updates
-
-### US Banks
+### Banks
 - Chase: "You made a $X.XX transaction" or "Your card was charged $X.XX"
 - Bank of America: "Credit card transaction" alerts with amount and merchant
 - Wells Fargo: "Debit Card Purchase" notifications
@@ -123,7 +105,9 @@ Your task is to extract transaction details from forwarded bank alert emails.
 - Citi: "Transaction Alert" for Citi cards
 - American Express: "Large Purchase" and transaction notifications
 - Discover: "Transaction Alert" notifications
-- US Bank / PNC: standard transaction alerts
+- HSBC: "Transaction notification" alerts
+- Barclays: "Payment notification" alerts
+- Revolut / Wise: digital banking notifications
 
 ## Output Format
 {
@@ -148,8 +132,8 @@ Your task is to extract transaction details from forwarded bank alert emails.
 2. Parse various date formats to YYYY-MM-DD
 3. Extract transaction reference numbers if present
 4. Handle "Debit Alert" vs "Credit Alert" email types
-5. Look for amount patterns like "NGN 5,000.00", "N5000", "$45.99", "USD 100.00"
-6. Detect currency from context: $ or USD = "USD", NGN or ₦ = "NGN"
+5. Look for amount patterns like "$45.99", "USD 100.00", "£50.00", "€75.00", "NGN 5,000.00"
+6. Detect currency from context: $ or USD = "USD", £ or GBP = "GBP", € or EUR = "EUR", NGN or ₦ = "NGN"
 7. Extract merchant name from "at [merchant]", "to [merchant]", or description fields
 8. For US bank alerts, look for "card ending in XXXX" to extract accountNumber`;
 

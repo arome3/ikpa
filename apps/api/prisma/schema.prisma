@@ -1,12 +1,12 @@
 // IKPA Database Schema
-// AI-Powered Personal Finance Co-Pilot for Young Africans
+// AI-Powered Personal Finance Co-Pilot for Young Adults
 //
 // This schema defines the PostgreSQL database structure using Prisma ORM.
 // Key features:
 // - UUID primary keys for security and distributed systems
 // - Decimal type for monetary values (avoids floating-point errors)
-// - Africa-specific features: family support, ajo/susu savings
-// - Multi-currency support for African currencies
+// - Family support tracking and dependency ratio
+// - Multi-currency support for currencies
 
 generator client {
   provider = "prisma-client-js"
@@ -71,7 +71,6 @@ enum SavingsType {
   MOBILE_MONEY
   CASH
   FIXED_DEPOSIT
-  AJO_SUSU // Traditional African rotating savings
   COOPERATIVE
   OTHER
 }
@@ -202,7 +201,7 @@ model User {
   name                 String
   country              Country         @default(OTHER)
   currency             Currency        @default(USD)
-  timezone             String          @default("Africa/Lagos")
+  timezone             String          @default("UTC")
   dateOfBirth          DateTime?
   employmentType       EmploymentType?
   emergencyFundEstimate Decimal?       @db.Decimal(15, 2)
@@ -258,8 +257,6 @@ model User {
   futureSelfLetters         FutureSelfLetter[]
   futureSelfConversations   FutureSelfConversation[]
   futureSelfCommitments     FutureSelfCommitment[]
-  dependencyRatioHistory DependencyRatioHistory[]
-  familyEmergencies      FamilyEmergency[]
   storyCards             StoryCard[]
   gpsStreak              GpsStreak?
   gpsAchievements        GpsAchievement[]
@@ -373,7 +370,7 @@ model Expense {
   @@map("expenses")
 }
 
-/// Savings accounts - bank, mobile money, ajo/susu
+/// Savings accounts - bank, mobile money, cooperative
 model SavingsAccount {
   id              String      @id @default(uuid())
   userId          String
@@ -445,12 +442,10 @@ model Debt {
   @@index([userId, isActive])
   @@map("debts")
 }
-
-/// Family support obligations - unique to African context
 model FamilySupport {
   id           String           @id @default(uuid())
   userId       String
-  name         String // "Mom", "Brother Emeka", etc.
+  name         String // "Mom", "Brother", etc.
   relationship RelationshipType
   amount       Decimal          @db.Decimal(15, 2)
   currency     Currency         @default(USD)
@@ -1259,38 +1254,6 @@ enum LetterTrigger {
   GOAL_MILESTONE // Goal progress milestone
 }
 
-// ============================================
-// UBUNTU MANAGER ENUMS
-// ============================================
-
-enum RiskLevel {
-  GREEN // 0-10% dependency ratio - Sustainable
-  ORANGE // 10-35% dependency ratio - Moderate (healthy in African context)
-  RED // 35%+ dependency ratio - Review Needed
-}
-
-enum EmergencyType {
-  MEDICAL
-  EDUCATION
-  HOUSING
-  BUSINESS
-  FUNERAL
-  WEDDING
-  OTHER
-}
-
-enum EmergencyStatus {
-  PENDING // Emergency reported, awaiting adjustment selection
-  ADJUSTING // User selected adjustment, processing
-  RESOLVED // Emergency handled
-  CANCELLED // User cancelled
-}
-
-enum AdjustmentType {
-  EMERGENCY_FUND_TAP // Use emergency fund
-  GOAL_TIMELINE_EXTEND // Extend goal deadline
-  SAVINGS_RATE_REDUCE // Temporarily reduce savings
-}
 
 // ============================================
 // STORY CARDS ENUMS
@@ -1422,65 +1385,6 @@ enum FutureSelfCommitmentStatus {
   PAUSED
   COMPLETED
   ABANDONED
-}
-
-// ============================================
-// UBUNTU MANAGER MODELS
-// ============================================
-
-/// Dependency ratio history for trend analysis
-/// Tracks the ratio of income supporting family over time
-model DependencyRatioHistory {
-  id                    String    @id @default(uuid())
-  userId                String
-  date                  DateTime  @default(now())
-  totalRatio            Decimal   @db.Decimal(5, 4)
-  riskLevel             RiskLevel
-  parentSupport         Decimal   @db.Decimal(15, 2)
-  siblingEducation      Decimal   @db.Decimal(15, 2)
-  extendedFamily        Decimal   @db.Decimal(15, 2)
-  communityContribution Decimal   @db.Decimal(15, 2)
-  monthlyTotal          Decimal   @db.Decimal(15, 2)
-  monthlyIncome         Decimal   @db.Decimal(15, 2)
-  currency              Currency  @default(USD)
-  createdAt             DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@index([userId])
-  @@index([userId, date])
-  @@map("dependency_ratio_history")
-}
-
-/// Family emergency tracking with non-judgmental adjustments
-/// Supports the Ubuntu philosophy: "I am because we are"
-model FamilyEmergency {
-  id                      String           @id @default(uuid())
-  userId                  String
-  type                    EmergencyType
-  recipientName           String
-  relationship            RelationshipType
-  amount                  Decimal          @db.Decimal(15, 2)
-  currency                Currency         @default(USD)
-  description             String?
-  status                  EmergencyStatus  @default(PENDING)
-  adjustmentType          AdjustmentType?
-  adjustmentDetails       Json?
-  reportedAt              DateTime         @default(now())
-  adjustedAt              DateTime?
-  resolvedAt              DateTime?
-  originalGoalProbability Decimal?         @db.Decimal(5, 4)
-  newGoalProbability      Decimal?         @db.Decimal(5, 4)
-  recoveryWeeks           Int?
-  createdAt               DateTime         @default(now())
-  updatedAt               DateTime         @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([userId, status])
-  @@map("family_emergencies")
 }
 
 // ============================================
