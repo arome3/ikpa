@@ -1,6 +1,6 @@
-FROM node:20-slim AS base
+FROM node:20-slim
 
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y openssl python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@10.0.0 --activate
 
 WORKDIR /app
@@ -10,14 +10,10 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/ ./packages/
 
 # Copy API package
-COPY apps/api/package.json ./apps/api/
-COPY apps/api/prisma/ ./apps/api/prisma/
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy API source
 COPY apps/api/ ./apps/api/
+
+# Install dependencies (includes native modules like bcrypt)
+RUN pnpm install --frozen-lockfile
 
 # Generate Prisma client
 RUN cd apps/api && npx prisma generate
@@ -25,22 +21,7 @@ RUN cd apps/api && npx prisma generate
 # Build
 RUN cd apps/api && npx nest build
 
-# Production stage
-FROM node:20-slim AS production
-
-RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=base /app/apps/api/dist ./apps/api/dist
-COPY --from=base /app/apps/api/prisma ./apps/api/prisma
-COPY --from=base /app/apps/api/package.json ./apps/api/package.json
-COPY --from=base /app/packages ./packages
-
-WORKDIR /app/apps/api
-
+# Run DB migrations on start, then launch
 EXPOSE 3000
-
-CMD ["node", "dist/main"]
+WORKDIR /app/apps/api
+CMD npx prisma db push --skip-generate && node dist/main
