@@ -1,0 +1,10 @@
+node_modules
+.git
+apps/mobile
+apps/landing
+apps/web
+docs
+*.md
+!README.md
+apps/api/node_modules
+.claude
