@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that don't need authentication
-const publicPaths = ['/', '/signin', '/signup', '/forgot-password', '/reset-password', '/verify-email'];
+const publicPaths = ['/signin', '/signup', '/forgot-password', '/reset-password', '/verify-email'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Redirect root to sign-in (landing page is a separate project)
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/signin', request.url));
+  }
 
   // Allow public paths, static files, and API routes
   if (
