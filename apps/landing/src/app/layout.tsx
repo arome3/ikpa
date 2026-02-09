@@ -82,7 +82,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
-      <body className="font-sans bg-cream text-forest antialiased">{children}</body>
+      <body suppressHydrationWarning className="font-sans bg-cream text-forest antialiased">{children}</body>
     </html>
   );
 }

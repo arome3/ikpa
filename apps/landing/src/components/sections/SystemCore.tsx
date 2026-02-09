@@ -153,7 +153,7 @@ export function SystemCore() {
               backgroundSize: '40px 40px',
             }}
           >
-            {/* SVG S-curve overlay */}
+            {/* SVG S-curve overlay — always visible (no motion dependency) */}
             <svg
               className="absolute inset-0 w-full h-full"
               viewBox="0 0 1000 600"
@@ -161,21 +161,18 @@ export function SystemCore() {
               preserveAspectRatio="xMidYMid meet"
             >
               {/* Soft ambient glow behind the curve */}
-              <motion.path
+              <path
                 d={S_CURVE}
                 stroke="#B8CDB9"
                 strokeWidth="8"
                 strokeLinecap="round"
                 fill="none"
+                opacity="0.5"
                 style={{ filter: 'blur(6px)' }}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 0.5 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2, duration: 1 }}
               />
 
               {/* Main dashed path with flowing animation */}
-              <motion.path
+              <path
                 d={S_CURVE}
                 stroke="#97B69A"
                 strokeWidth="2"
@@ -183,24 +180,16 @@ export function SystemCore() {
                 strokeLinecap="round"
                 fill="none"
                 className="animate-dash-flow"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3, duration: 0.8 }}
               />
 
               {/* Junction dots at each node center */}
               {junctions.map((j, i) => (
-                <motion.circle
+                <circle
                   key={i}
                   cx={j.cx}
                   cy={j.cy}
                   r="4"
                   fill="#97B69A"
-                  initial={{ opacity: 0, scale: 0 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.4 + i * 0.1, duration: 0.3 }}
                 />
               ))}
             </svg>
